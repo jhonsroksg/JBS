@@ -1,0 +1,7 @@
+{
+  "buildCommand": "cd toy-store-inventory && npm install && npm run build",
+  "outputDirectory": "toy-store-inventory/dist",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
