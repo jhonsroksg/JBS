@@ -9,6 +9,9 @@ const Products = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
@@ -35,10 +38,22 @@ const Products = () => {
     }
   };
 
-  const filteredProducts = products.filter(p =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.sku.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Reset page when filtering
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategory]);
+
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         p.sku.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'all' || p.categoryId === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
 
   const getCategoryName = (id) => categories.find(c => c.id === id)?.name || 'Sin Categoría';
 
@@ -243,9 +258,22 @@ const Products = () => {
 
       <div className="products-content glass-panel">
         <div className="toolbar" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-          <div className="search-box">
-            <Search className="search-icon" />
-            <input type="text" placeholder="Buscar por nombre o SKU..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          <div style={{ display: 'flex', gap: '12px', flex: 1, minWidth: '300px' }}>
+            <div className="search-box" style={{ flex: 1 }}>
+              <Search className="search-icon" />
+              <input type="text" placeholder="Buscar por nombre o SKU..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            </div>
+            <select 
+              className="category-select"
+              value={selectedCategory} 
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              style={{ padding: '0 12px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none', cursor: 'pointer', minWidth: '150px' }}
+            >
+              <option value="all">Todas las Categorías</option>
+              {categories.map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <input type="file" id="import-excel-input" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleImportExcel} />
@@ -268,7 +296,7 @@ const Products = () => {
             <tbody>
               {loading ? (
                 <tr><td colSpan="6" style={{ padding: '40px' }}><LoadingSpinner /></td></tr>
-              ) : filteredProducts.map(product => (
+              ) : paginatedProducts.map(product => (
                 <tr key={product.id}>
                   <td data-label="Producto" className="product-cell">
                     <img src={product.imageUrl || 'https://via.placeholder.com/40'} alt={product.name} className="product-thumb" />
@@ -293,6 +321,41 @@ const Products = () => {
             </tbody>
           </table>
         </div>
+
+        {filteredProducts.length > 0 && (
+          <div className="pagination-container">
+            <div className="pagination-info">
+              Mostrando {startIndex + 1} - {Math.min(startIndex + itemsPerPage, filteredProducts.length)} de {filteredProducts.length} productos
+            </div>
+            <div className="pagination-controls">
+              <button 
+                className="btn-pagination" 
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => prev - 1)}
+              >
+                Anterior
+              </button>
+              <div className="pagination-pages">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <button 
+                    key={page}
+                    className={`btn-pagination ${currentPage === page ? 'active' : ''}`}
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+              <button 
+                className="btn-pagination" 
+                disabled={currentPage === totalPages || totalPages === 0}
+                onClick={() => setCurrentPage(prev => prev + 1)}
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {isModalOpen && (
