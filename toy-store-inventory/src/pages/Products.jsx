@@ -270,18 +270,18 @@ const Products = () => {
                 <tr><td colSpan="6" style={{ padding: '40px' }}><LoadingSpinner /></td></tr>
               ) : filteredProducts.map(product => (
                 <tr key={product.id}>
-                  <td className="product-cell">
+                  <td data-label="Producto" className="product-cell">
                     <img src={product.imageUrl || 'https://via.placeholder.com/40'} alt={product.name} className="product-thumb" />
                     <span>{product.name}</span>
                   </td>
-                  <td>{product.sku}</td>
-                  <td><span className="badge badge-info">{getCategoryName(product.categoryId)}</span></td>
-                  <td className="text-secondary">L. {Number(product.costPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                  <td className="highlight-price">L. {Number(product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                  <td>
+                  <td data-label="SKU">{product.sku}</td>
+                  <td data-label="Categoría"><span className="badge badge-info">{getCategoryName(product.categoryId)}</span></td>
+                  <td data-label="Costo" className="text-secondary">L. {Number(product.costPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  <td data-label="Precio Venta" className="highlight-price">L. {Number(product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  <td data-label="Stock">
                     <span className={`badge ${product.stock <= product.minStock ? 'badge-danger' : 'badge-success'}`}>{product.stock}</span>
                   </td>
-                  <td className="actions-cell">
+                  <td data-label="Acciones" className="actions-cell">
                     <button className="btn-icon" onClick={() => handleOpenModal(product)}><Edit2 /></button>
                     <button className="btn-icon danger" onClick={() => handleDelete(product.id)}><Trash2 /></button>
                   </td>

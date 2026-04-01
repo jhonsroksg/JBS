@@ -100,7 +100,7 @@ const Customers = () => {
             <tbody>
               {filteredCustomers.map(customer => (
                 <tr key={customer.id}>
-                  <td className="highlight-text" style={{ color: 'var(--text-primary)' }}>
+                  <td data-label="Nombre" className="highlight-text" style={{ color: 'var(--text-primary)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{ width: 36, height: 36, fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--accent-gradient)', color: 'white', borderRadius: '50%' }}>
                         {customer.name ? customer.name.charAt(0).toUpperCase() : '?'}
@@ -108,7 +108,7 @@ const Customers = () => {
                       <div style={{ fontWeight: 600 }}>{customer.name}</div>
                     </div>
                   </td>
-                  <td className="text-secondary" style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>
+                  <td data-label="Contacto" className="text-secondary" style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>
                     {customer.email && <div>✉️ {customer.email}</div>}
                     {customer.phone && <div style={{ marginTop: '4px' }}>📞 {customer.phone}</div>}
                     {customer.address && <div style={{ marginTop: '4px' }}>📍 {customer.address}</div>}
@@ -116,10 +116,10 @@ const Customers = () => {
                       <span style={{ fontStyle: 'italic', opacity: 0.6 }}>Sin información de contacto</span>
                     )}
                   </td>
-                  <td>
+                  <td data-label="Pedidos">
                     <span className="badge badge-info">{customer.totalOrders || 0} pedido(s)</span>
                   </td>
-                  <td style={{ textAlign: 'right', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                  <td data-label="Acciones" className="actions-cell">
                     <button className="btn-icon" title="Editar cliente" onClick={() => handleEdit(customer)}><Edit size={18} /></button>
                     <button className="btn-icon danger" title="Eliminar cliente" onClick={() => handleDelete(customer.id)}><Trash2 size={18} /></button>
                   </td>

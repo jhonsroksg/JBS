@@ -90,10 +90,10 @@ const Categories = () => {
             <tbody>
               {categories.map(category => (
                 <tr key={category.id}>
-                  <td className="highlight-text" style={{ color: 'var(--text-primary)' }}>{category.name}</td>
-                  <td className="text-secondary">{category.description}</td>
-                  <td><span className="badge badge-info">{getProductCount(category.id)} juguetes</span></td>
-                  <td className="actions-cell">
+                  <td data-label="Nombre" className="highlight-text" style={{ color: 'var(--text-primary)' }}>{category.name}</td>
+                  <td data-label="Descripción" className="text-secondary">{category.description}</td>
+                  <td data-label="Productos Asociados"><span className="badge badge-info">{getProductCount(category.id)} juguetes</span></td>
+                  <td data-label="Acciones" className="actions-cell">
                     <button className="btn-icon" onClick={() => handleOpenModal(category)}><Edit2 /></button>
                     <button className="btn-icon danger" onClick={() => handleDelete(category.id)}><Trash2 /></button>
                   </td>

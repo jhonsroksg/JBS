@@ -747,8 +747,8 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
             <tbody>
               {displayOrders.map(order => (
                 <tr key={order.id} style={{ opacity: order.isDeleted ? 0.7 : 1 }}>
-                  <td className="text-secondary" style={{ whiteSpace: 'nowrap' }}>{order.id.split('_')[2] || order.id}</td>
-                  <td style={{color: 'var(--text-primary)'}}>
+                  <td data-label="ID Pedido" className="text-secondary" style={{ whiteSpace: 'nowrap' }}>{order.id.split('_')[2] || order.id}</td>
+                  <td data-label="Cliente" style={{color: 'var(--text-primary)'}}>
                     <div style={{fontWeight: 600}}>{order.customerName}</div>
                     {(order.customerEmail || order.customerPhone) && (
                       <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px'}}>
@@ -761,10 +761,10 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
                       </div>
                     )}
                   </td>
-                  <td style={{ whiteSpace: 'nowrap' }}>{new Date(order.date).toLocaleDateString()}</td>
-                  <td style={{ whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>{new Date(order.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
-                  <td className="highlight-price" style={{ whiteSpace: 'nowrap' }}>L. {Number(order.total).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                  <td>
+                  <td data-label="Fecha" style={{ whiteSpace: 'nowrap' }}>{new Date(order.date).toLocaleDateString()}</td>
+                  <td data-label="Hora" style={{ whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>{new Date(order.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                  <td data-label="Total" className="highlight-price" style={{ whiteSpace: 'nowrap' }}>L. {Number(order.total).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                  <td data-label="Estado">
                     {order.isDeleted ? (
                       <span className="badge badge-danger">Eliminado</span>
                     ) : (
@@ -774,7 +774,7 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
                       </span>
                     )}
                   </td>
-                  <td style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+                  <td data-label="Acciones" className="actions-cell">
                     {activeTab !== 'deleted' && activeTab !== 'cancelled' ? (
                       <>
                         {activeTab === 'active' && (

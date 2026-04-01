@@ -68,30 +68,45 @@
   }
 }
 
-/* Period selector pill */
-.period-selector {
-  display: flex;
-  gap: 6px;
-  background: var(--bg-secondary);
-  padding: 6px;
-  border-radius: 14px;
-  border: 1px solid var(--border-color);
-}
-
-/* Three-column bottom row responsive */
-@media (max-width: 1200px) {
-  .dashboard-page > div[style*="grid-template-columns: 1fr 1fr 1fr"] {
-    grid-template-columns: 1fr 1fr !important;
-  }
-}
-
 @media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .metric-value {
+    font-size: 1.5rem;
+  }
+
+  .metric-card {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .metric-icon-wrapper {
+    width: 44px;
+    height: 44px;
+  }
+
+  .metric-icon {
+    width: 22px;
+    height: 22px;
+  }
+
   .dashboard-page > div[style*="grid-template-columns: 1fr 1fr 1fr"],
   .dashboard-page > div[style*="grid-template-columns: 1fr 1fr"] {
     grid-template-columns: 1fr !important;
   }
+  
   .metrics-grid {
     grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .metrics-grid {
+    grid-template-columns: 1fr !important;
   }
 }
 
