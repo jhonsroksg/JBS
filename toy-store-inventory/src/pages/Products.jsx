@@ -3,12 +3,14 @@ import { db } from '../services/db';
 import { Plus, Search, Edit2, Trash2, X, Download, Upload } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import './Products.css';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const Products = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -20,12 +22,17 @@ const Products = () => {
   }, []);
 
   const loadData = async () => {
-    const [prods, cats] = await Promise.all([
-      db.getAll('products'),
-      db.getAll('categories'),
-    ]);
-    setProducts(prods);
-    setCategories(cats);
+    setLoading(true);
+    try {
+      const [prods, cats] = await Promise.all([
+        db.getAll('products'),
+        db.getAll('categories'),
+      ]);
+      setProducts(prods);
+      setCategories(cats);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredProducts = products.filter(p =>
@@ -117,8 +124,17 @@ const Products = () => {
 
   const handleDelete = async (id) => {
     if (confirm('¿Seguro que deseas eliminar este producto?')) {
-      await db.delete('products', id);
-      await loadData();
+      // Optimistic delete
+      const originalProducts = [...products];
+      setProducts(prev => prev.filter(p => p.id !== id));
+      try {
+        await db.delete('products', id);
+        // Sync check in background
+        loadData();
+      } catch (err) {
+        alert('Error al eliminar el producto. Reintentando...');
+        setProducts(originalProducts);
+      }
     }
   };
 
@@ -250,7 +266,9 @@ const Products = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredProducts.map(product => (
+              {loading ? (
+                <tr><td colSpan="6" style={{ padding: '40px' }}><LoadingSpinner /></td></tr>
+              ) : filteredProducts.map(product => (
                 <tr key={product.id}>
                   <td className="product-cell">
                     <img src={product.imageUrl || 'https://via.placeholder.com/40'} alt={product.name} className="product-thumb" />

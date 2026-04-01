@@ -316,13 +316,28 @@ const Orders = () => {
   };
 
   const handleStatusChange = async (id, newStatus) => {
-    await db.update('orders', id, { status: newStatus });
-    await loadData();
+    // Optimistic Update
+    setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
+    try {
+      await db.update('orders', id, { status: newStatus });
+      // Minor sync load after background save
+      loadData();
+    } catch (err) {
+      alert('Error al actualizar estado. Reintentando sincronizar...');
+      await loadData();
+    }
   };
 
   const handleFieldChange = async (id, field, value) => {
-    await db.update('orders', id, { [field]: value });
-    await loadData();
+    // Optimistic Update
+    setOrders(prev => prev.map(o => o.id === id ? { ...o, [field]: value } : o));
+    try {
+      await db.update('orders', id, { [field]: value });
+      loadData();
+    } catch (err) {
+      alert('Error al actualizar campo. Reintentando sincronizar...');
+      await loadData();
+    }
   };
 
   const generatePDF = (order) => {
