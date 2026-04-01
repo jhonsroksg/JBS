@@ -157,6 +157,96 @@
   color: white;
 }
 
+.checkout-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+  color: var(--accent-primary);
+}
+
+.section-title h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-group-icon {
+  position: relative;
+  width: 100%;
+}
+
+.input-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  pointer-events: none;
+  transition: color 0.2s;
+}
+
+.form-group-icon input, 
+.form-group-icon select, 
+.form-group-icon textarea {
+  width: 100%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 14px 14px 14px 44px;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 1rem;
+  outline: none;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+
+.form-group-icon textarea {
+  padding-left: 44px;
+  min-height: 80px;
+}
+
+.form-group-icon input:focus, 
+.form-group-icon select:focus, 
+.form-group-icon textarea:focus {
+  border-color: var(--accent-primary);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(34, 193, 195, 0.1);
+}
+
+.form-group-icon input:focus + .input-icon,
+.form-group-icon select:focus + .input-icon,
+.form-group-icon textarea:focus + .input-icon {
+  color: var(--accent-primary);
+}
+
+.responsive-row {
+  display: flex;
+  gap: 16px;
+}
+
+@media (max-width: 600px) {
+  .responsive-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
 .checkout-sidebar {
   flex: 1;
   min-width: 360px;
@@ -165,14 +255,14 @@
   gap: 24px;
 }
 
-.checkout-summary, .checkout-form {
+.checkout-summary {
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
   border-radius: 20px;
   padding: 24px;
 }
 
-.checkout-summary h3, .checkout-form h3 {
+.checkout-summary h3 {
   margin-top: 0;
   margin-bottom: 20px;
   font-size: 1.3rem;

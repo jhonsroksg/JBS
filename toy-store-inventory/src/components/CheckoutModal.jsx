@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../services/db';
-import { X, Trash2, CheckCircle } from 'lucide-react';
+import { X, Trash2, CheckCircle, User, Mail, Phone, MapPin, Truck, CreditCard } from 'lucide-react';
 import { hondurasLocations } from '../data/hondurasLocations';
 import './CheckoutModal.css';
 
@@ -234,63 +234,82 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                 )}
 
                 {cart.length > 0 && (
-                  <form id="checkout-form-data" className="checkout-form" style={{ marginTop: '24px' }} onSubmit={handleCheckout}>
-                    <h3>Tus Datos</h3>
-                    <div className="form-group">
-                      <input type="text" placeholder="Nombre completo" required value={customerInfo.name} onChange={e => setCustomerInfo({ ...customerInfo, name: e.target.value })} />
-                    </div>
-                    <div className="form-group">
-                      <input type="email" placeholder="Correo electrónico" required value={customerInfo.email} onChange={e => setCustomerInfo({ ...customerInfo, email: e.target.value })} />
-                    </div>
-                    <div className="form-group">
-                      <input type="tel" placeholder="Número de teléfono" required value={customerInfo.phone} onChange={e => setCustomerInfo({ ...customerInfo, phone: e.target.value })} />
-                    </div>
-                    <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-                      <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
-                        <select required value={customerInfo.department} onChange={e => setCustomerInfo({ ...customerInfo, department: e.target.value, municipality: '' })} style={{ width: '100%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: customerInfo.department ? 'var(--text-primary)' : 'var(--text-secondary)', padding: '12px', borderRadius: '12px', fontFamily: 'inherit', outline: 'none', cursor: 'pointer' }}>
-                          <option value="" disabled>Departamento</option>
-                          {Object.keys(hondurasLocations).sort().map(dept => <option key={dept} value={dept} style={{ color: 'var(--text-primary)' }}>{dept}</option>)}
-                        </select>
+                  <form id="checkout-form-data" className="checkout-form" onSubmit={handleCheckout}>
+                    <div className="form-section">
+                      <div className="section-title">
+                        <User size={18} />
+                        <h4>Tu Contacto</h4>
                       </div>
-                      <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
-                        <select required onChange={e => {
-                          const newMuni = e.target.value;
-                          setCustomerInfo({ ...customerInfo, municipality: newMuni });
-                          if (newMuni !== 'San Pedro Sula') {
-                            const currentSelected = availableDeliveryMethods.find(m => m.id === deliveryMethodId);
-                            if (currentSelected && (currentSelected.name.toLowerCase().includes('pick up') || currentSelected.name.toLowerCase().includes('pickup'))) setDeliveryMethodId('');
-                          }
-                        }} disabled={!customerInfo.department} style={{ width: '100%', background: customerInfo.department ? 'var(--bg-secondary)' : 'var(--bg-primary)', border: '1px solid var(--border-color)', color: customerInfo.municipality ? 'var(--text-primary)' : 'var(--text-secondary)', padding: '12px', borderRadius: '12px', fontFamily: 'inherit', outline: 'none', cursor: customerInfo.department ? 'pointer' : 'not-allowed' }}>
-                          <option value="" disabled>Municipio</option>
-                          {customerInfo.department && hondurasLocations[customerInfo.department].sort().map(muni => <option key={muni} value={muni} style={{ color: 'var(--text-primary)' }}>{muni}</option>)}
-                        </select>
+                      <div className="form-group-icon">
+                        <User className="input-icon" size={18} />
+                        <input type="text" placeholder="Nombre y Apellido" required value={customerInfo.name} onChange={e => setCustomerInfo({ ...customerInfo, name: e.target.value })} />
+                      </div>
+                      <div className="form-group-icon">
+                        <Mail className="input-icon" size={18} />
+                        <input type="email" placeholder="Correo electrónico" required value={customerInfo.email} onChange={e => setCustomerInfo({ ...customerInfo, email: e.target.value })} />
+                      </div>
+                      <div className="form-group-icon">
+                        <Phone className="input-icon" size={18} />
+                        <input type="tel" placeholder="Teléfono móvil" required value={customerInfo.phone} onChange={e => setCustomerInfo({ ...customerInfo, phone: e.target.value })} />
                       </div>
                     </div>
-                    {!isPickUp && (
-                      <div className="form-group" style={{ marginBottom: '16px' }}>
-                        <textarea placeholder="Dirección completa de entrega" required rows="2" value={customerInfo.address} onChange={e => setCustomerInfo({ ...customerInfo, address: e.target.value })} style={{ width: '100%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '12px', borderRadius: '12px', fontFamily: 'inherit', resize: 'vertical', outline: 'none' }} />
+
+                    <div className="form-section">
+                      <div className="section-title">
+                        <MapPin size={18} />
+                        <h4>Detalles de Envío</h4>
                       </div>
-                    )}
-                    {filteredDeliveryMethods.length > 0 && (
-                      <div className="form-group" style={{ marginBottom: '16px' }}>
-                        <select required value={deliveryMethodId} onChange={e => setDeliveryMethodId(e.target.value)} style={{ width: '100%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: deliveryMethodId ? 'var(--text-primary)' : 'var(--text-secondary)', padding: '12px', borderRadius: '12px', fontFamily: 'inherit', outline: 'none', cursor: 'pointer', textOverflow: 'ellipsis' }}>
-                          <option value="" disabled>Seleccionar tipo de envío...</option>
+                      <div className="form-row responsive-row">
+                        <div className="form-group-icon">
+                          <MapPin className="input-icon" size={18} />
+                          <select required value={customerInfo.department} onChange={e => setCustomerInfo({ ...customerInfo, department: e.target.value, municipality: '' })}>
+                            <option value="" disabled>Departamento</option>
+                            {Object.keys(hondurasLocations).sort().map(dept => <option key={dept} value={dept}>{dept}</option>)}
+                          </select>
+                        </div>
+                        <div className="form-group-icon">
+                          <MapPin className="input-icon" size={18} />
+                          <select required onChange={e => {
+                            const newMuni = e.target.value;
+                            setCustomerInfo({ ...customerInfo, municipality: newMuni });
+                            if (newMuni !== 'San Pedro Sula') {
+                              const currentSelected = availableDeliveryMethods.find(m => m.id === deliveryMethodId);
+                              if (currentSelected && (currentSelected.name.toLowerCase().includes('pick up') || currentSelected.name.toLowerCase().includes('pickup'))) setDeliveryMethodId('');
+                            }
+                          }} disabled={!customerInfo.department} value={customerInfo.municipality}>
+                            <option value="" disabled>Municipio</option>
+                            {customerInfo.department && hondurasLocations[customerInfo.department].sort().map(muni => <option key={muni} value={muni}>{muni}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      
+                      {!isPickUp && (
+                        <div className="form-group-icon">
+                          <MapPin className="input-icon" size={18} style={{ top: '15px', transform: 'none' }} />
+                          <textarea placeholder="Punto de referencia o dirección exacta..." required rows="2" value={customerInfo.address} onChange={e => setCustomerInfo({ ...customerInfo, address: e.target.value })} />
+                        </div>
+                      )}
+
+                      <div className="form-group-icon">
+                        <Truck className="input-icon" size={18} />
+                        <select required value={deliveryMethodId} onChange={e => setDeliveryMethodId(e.target.value)}>
+                          <option value="" disabled>Método de entrega...</option>
                           {filteredDeliveryMethods.map(m => (
-                            <option key={m.id} value={m.id} style={{ color: 'var(--text-primary)' }}>
+                            <option key={m.id} value={m.id}>
                               {m.name} {Number(m.cost) > 0 ? `(+ L. ${Number(m.cost).toLocaleString('en-US', { minimumFractionDigits: 2 })})` : '(Gratis)'}
                             </option>
                           ))}
                         </select>
                       </div>
-                    )}
-                    {availableMethods.length > 0 && (
-                      <div className="form-group" style={{ marginBottom: '16px' }}>
-                        <select required value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} style={{ width: '100%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '12px', borderRadius: '12px', fontFamily: 'inherit', outline: 'none', cursor: 'pointer', textOverflow: 'ellipsis' }}>
-                          <option value="" disabled>Seleccionar forma de pago...</option>
+
+                      <div className="form-group-icon">
+                        <CreditCard className="input-icon" size={18} />
+                        <select required value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
+                          <option value="" disabled>Método de pago...</option>
                           {availableMethods.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
                         </select>
                       </div>
-                    )}
+                    </div>
                   </form>
                 )}
               </div>
