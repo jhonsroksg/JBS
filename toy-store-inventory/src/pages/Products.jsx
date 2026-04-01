@@ -81,17 +81,38 @@ const Products = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    const dataToSave = {
-      ...formData,
-      imageUrl: (formData.images && formData.images.length > 0) ? formData.images[0] : ''
-    };
-    if (editingId) {
-      await db.update('products', editingId, dataToSave);
-    } else {
-      await db.insert('products', dataToSave);
+    try {
+      // Limpiamos los datos para Supabase
+      const dataToSave = {
+        sku: formData.sku,
+        name: formData.name,
+        brand: formData.brand || null,
+        description: formData.description || null,
+        ageRange: formData.ageRange || null,
+        categoryId: formData.categoryId && formData.categoryId !== "" ? formData.categoryId : null,
+        costPrice: parseFloat(formData.costPrice) || 0,
+        sellingPrice: parseFloat(formData.sellingPrice) || 0,
+        discountPrice: (formData.discountPrice !== "" && formData.discountPrice !== null && !isNaN(formData.discountPrice)) 
+          ? parseFloat(formData.discountPrice) 
+          : null,
+        stock: parseInt(formData.stock) || 0,
+        minStock: parseInt(formData.minStock) || 0,
+        imageUrl: (formData.images && formData.images.length > 0) ? formData.images[0] : (formData.imageUrl || ''),
+        images: formData.images || []
+      };
+
+      if (editingId) {
+        await db.update('products', editingId, dataToSave);
+      } else {
+        await db.insert('products', dataToSave);
+      }
+      
+      await loadData();
+      handleCloseModal();
+    } catch (error) {
+      console.error('Error al guardar producto:', error);
+      alert('Error al guardar: ' + (error.message || 'Verifica los datos e intenta de nuevo.'));
     }
-    await loadData();
-    handleCloseModal();
   };
 
   const handleDelete = async (id) => {
