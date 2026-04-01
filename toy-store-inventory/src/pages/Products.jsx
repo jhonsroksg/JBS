@@ -125,32 +125,68 @@ const Products = () => {
   const handleImportExcel = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
     const reader = new FileReader();
     reader.onload = async (evt) => {
-      const workbook = XLSX.read(evt.target.result, { type: 'binary' });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(sheet);
-      if (rows.length === 0) { alert('El archivo está vacío o no tiene el formato correcto.'); return; }
-      let imported = 0, updated = 0;
-      for (const row of rows) {
-        const sku = (row['SKU'] || '').toString().trim();
-        if (!sku) continue;
-        const existing = products.find(p => p.sku === sku);
-        const categoryName = (row['Categoría'] || '').toString().trim();
-        const category = categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
-        const productData = {
-          sku, name: (row['Nombre'] || '').toString(), brand: (row['Marca'] || '').toString(),
-          description: (row['Descripción'] || '').toString(), ageRange: (row['Rango de Edad'] || '').toString(),
-          categoryId: category?.id || '', costPrice: Number(row['Precio Costo']) || 0,
-          sellingPrice: Number(row['Precio Venta']) || 0,
-          discountPrice: row['Precio Oferta'] ? Number(row['Precio Oferta']) : null,
-          stock: Number(row['Stock']) || 0, minStock: Number(row['Stock Mínimo']) || 0,
-        };
-        if (existing) { await db.update('products', existing.id, productData); updated++; }
-        else { await db.insert('products', { ...productData, imageUrl: '', images: [] }); imported++; }
+      try {
+        const data = evt.target.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(worksheet);
+
+        if (rows.length === 0) {
+          alert('El archivo está vacío o no tiene el formato correcto.');
+          return;
+        }
+
+        let imported = 0;
+        let updated = 0;
+
+        for (const row of rows) {
+          const sku = (row['SKU'] || '').toString().trim();
+          if (!sku) continue;
+
+          const existing = products.find(p => p.sku === sku);
+          const categoryName = (row['Categoría'] || '').toString().trim();
+          const category = categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
+
+          // Preparar datos limpios para Supabase
+          const productData = {
+            sku: sku,
+            name: (row['Nombre'] || 'Producto sin nombre').toString(),
+            brand: (row['Marca'] || '').toString(),
+            description: (row['Descripción'] || '').toString(),
+            ageRange: (row['Rango de Edad'] || '').toString(),
+            categoryId: category ? category.id : null, // Crucial: null en lugar de ""
+            costPrice: parseFloat(row['Precio Costo']) || 0,
+            sellingPrice: parseFloat(row['Precio Venta']) || 0,
+            discountPrice: row['Precio Oferta'] && !isNaN(parseFloat(row['Precio Oferta'])) 
+              ? parseFloat(row['Precio Oferta']) 
+              : null,
+            stock: parseInt(row['Stock']) || 0,
+            minStock: parseInt(row['Stock Mínimo']) || 0,
+          };
+
+          if (existing) {
+            await db.update('products', existing.id, productData);
+            updated++;
+          } else {
+            await db.insert('products', {
+              ...productData,
+              imageUrl: '',
+              images: []
+            });
+            imported++;
+          }
+        }
+
+        await loadData();
+        alert(`✅ Importación exitosa:\n- ${imported} productos nuevos\n- ${updated} productos actualizados`);
+      } catch (error) {
+        console.error('Error importando Excel:', error);
+        alert('Error al procesar el archivo Excel. Asegúrate de que las columnas tengan los nombres correctos.');
       }
-      await loadData();
-      alert(`✅ Importación completada:\n- ${imported} productos nuevos agregados\n- ${updated} productos actualizados`);
     };
     reader.readAsBinaryString(file);
     e.target.value = '';
