@@ -24,6 +24,19 @@ export const db = {
     return data;
   },
 
+  // ─── Get By Filter ────────────────────────────────────────────────────────
+  getByFilter: async (collection, column, value) => {
+    const { data, error } = await supabase
+      .from(collection)
+      .select('*')
+      .eq(column, value);
+    if (error) {
+      console.error(`[db.getByFilter] Error en "${collection}":`, error.message);
+      return null;
+    }
+    return data && data.length > 0 ? data[0] : null;
+  },
+
   // ─── Insert ─────────────────────────────────────────────────────────────────
   insert: async (collection, item) => {
     const { data, error } = await supabase

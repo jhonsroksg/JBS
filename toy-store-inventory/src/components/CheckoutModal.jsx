@@ -96,8 +96,21 @@ const CheckoutModal = ({ isOpen, onClose }) => {
     const finalTotal = Math.max(0, currentSubtotal - currentDiscount) + deliveryCost;
 
     try {
-      // Create Order
-      await db.insert('orders', {
+      // 1. Sanitize Cart (Remove heavy images to prevent slowdown)
+      const sanitizedCart = cart.map(item => ({
+        quantity: item.quantity,
+        product: {
+          id: item.product.id,
+          sku: item.product.sku,
+          name: item.product.name,
+          sellingPrice: item.product.sellingPrice,
+          discountPrice: item.product.discountPrice,
+          imageUrl: item.product.imageUrl // Only keep ONE small reference image
+        }
+      }));
+
+      // 2. Prepare Order Object
+      const orderData = {
         customerName: customerInfo.name,
         customerEmail: customerInfo.email,
         customerPhone: customerInfo.phone,
@@ -106,7 +119,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
         municipality: customerInfo.municipality,
         paymentMethod,
         deliveryMethodId,
-        items: cart,
+        items: sanitizedCart, // Using LIGHTWEIGHT items
         subtotal: currentSubtotal,
         coupon: appliedCoupon,
         discountAmount: currentDiscount,
@@ -114,38 +127,48 @@ const CheckoutModal = ({ isOpen, onClose }) => {
         total: finalTotal,
         status: 'Pendiente',
         date: new Date().toISOString()
-      });
+      };
 
-      // Update or create Customer
-      const allCustomers = await db.getAll('customers');
-      const existingCust = allCustomers.find(c => c.email === customerInfo.email);
-      if (existingCust) {
-        await db.update('customers', existingCust.id, {
-          totalOrders: (existingCust.totalOrders || 0) + 1,
-          phone: customerInfo.phone || existingCust.phone,
-          address: `${customerInfo.address}, ${customerInfo.municipality}, ${customerInfo.department}` || existingCust.address
-        });
-      } else {
-        await db.insert('customers', {
-          name: customerInfo.name,
-          email: customerInfo.email,
-          phone: customerInfo.phone,
-          address: `${customerInfo.address}, ${customerInfo.municipality}, ${customerInfo.department}`,
-          totalOrders: 1
-        });
-      }
+      // 3. Parallel Background Tasks
+      const tasks = [];
 
-      // Deduct Stock for each cart item
-      await Promise.all(
-        cart.map(async (item) => {
+      // Task A: Create Order (Priority 1)
+      tasks.push(db.insert('orders', orderData));
+
+      // Task B: Update/Create Customer (Optimized search)
+      tasks.push((async () => {
+        const existingCust = await db.getByFilter('customers', 'email', customerInfo.email);
+        if (existingCust) {
+          return db.update('customers', existingCust.id, {
+            totalOrders: (existingCust.totalOrders || 0) + 1,
+            phone: customerInfo.phone || existingCust.phone,
+            address: `${customerInfo.address}, ${customerInfo.municipality}, ${customerInfo.department}` || existingCust.address
+          });
+        } else {
+          return db.insert('customers', {
+            name: customerInfo.name,
+            email: customerInfo.email,
+            phone: customerInfo.phone,
+            address: `${customerInfo.address}, ${customerInfo.municipality}, ${customerInfo.department}`,
+            totalOrders: 1
+          });
+        }
+      })());
+
+      // Task C: Batch Stock Update
+      sanitizedCart.forEach(item => {
+        tasks.push((async () => {
           const dbProduct = await db.getById('products', item.product.id);
           if (dbProduct) {
-            await db.update('products', dbProduct.id, { stock: dbProduct.stock - item.quantity });
+            return db.update('products', dbProduct.id, { stock: Math.max(0, dbProduct.stock - item.quantity) });
           }
-        })
-      );
+        })());
+      });
 
-      // Clear Cart
+      // Execute everything in Parallel for instant speed
+      await Promise.all(tasks);
+
+      // 4. Success Routine
       localStorage.removeItem('toy_store_cart');
       setCart([]);
       window.dispatchEvent(new Event('cart_updated'));
