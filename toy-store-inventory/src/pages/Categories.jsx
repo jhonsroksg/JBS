@@ -7,60 +7,46 @@ const Categories = () => {
   const [products, setProducts] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
-
   const [formData, setFormData] = useState({ name: '', description: '' });
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
-  const loadData = () => {
-    setCategories(db.getAll('categories'));
-    setProducts(db.getAll('products'));
+  const loadData = async () => {
+    const [cats, prods] = await Promise.all([
+      db.getAll('categories'),
+      db.getAll('products'),
+    ]);
+    setCategories(cats);
+    setProducts(prods);
   };
 
-  const getProductCount = (categoryId) => {
-    return products.filter(p => p.categoryId === categoryId).length;
-  };
+  const getProductCount = (categoryId) => products.filter(p => p.categoryId === categoryId).length;
 
   const handleOpenModal = (category = null) => {
-    if (category) {
-      setFormData(category);
-      setEditingId(category.id);
-    } else {
-      setFormData({ name: '', description: '' });
-      setEditingId(null);
-    }
+    if (category) { setFormData(category); setEditingId(category.id); }
+    else { setFormData({ name: '', description: '' }); setEditingId(null); }
     setIsModalOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-  };
+  const handleCloseModal = () => setIsModalOpen(false);
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (editingId) {
-      db.update('categories', editingId, formData);
-    } else {
-      db.insert('categories', formData);
-    }
-    loadData();
+    if (editingId) { await db.update('categories', editingId, formData); }
+    else { await db.insert('categories', formData); }
+    await loadData();
     handleCloseModal();
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (getProductCount(id) > 0) {
       alert('No puedes eliminar una categoría que tiene productos asignados.');
       return;
     }
-    if(confirm('¿Seguro que deseas eliminar esta categoría?')) {
-      db.delete('categories', id);
-      loadData();
+    if (confirm('¿Seguro que deseas eliminar esta categoría?')) {
+      await db.delete('categories', id);
+      await loadData();
     }
   };
 
@@ -81,7 +67,7 @@ const Categories = () => {
           <table className="data-table">
             <thead>
               <tr>
-                <th><Tags className="icon-sm" style={{marginRight: '8px', verticalAlign: 'middle'}}/> Nombre</th>
+                <th><Tags className="icon-sm" style={{ marginRight: '8px', verticalAlign: 'middle' }} /> Nombre</th>
                 <th>Descripción</th>
                 <th>Productos Asociados</th>
                 <th>Acciones</th>
@@ -90,11 +76,9 @@ const Categories = () => {
             <tbody>
               {categories.map(category => (
                 <tr key={category.id}>
-                  <td className="highlight-text" style={{color: 'var(--text-primary)'}}>{category.name}</td>
+                  <td className="highlight-text" style={{ color: 'var(--text-primary)' }}>{category.name}</td>
                   <td className="text-secondary">{category.description}</td>
-                  <td>
-                    <span className="badge badge-info">{getProductCount(category.id)} juguetes</span>
-                  </td>
+                  <td><span className="badge badge-info">{getProductCount(category.id)} juguetes</span></td>
                   <td className="actions-cell">
                     <button className="btn-icon" onClick={() => handleOpenModal(category)}><Edit2 /></button>
                     <button className="btn-icon danger" onClick={() => handleDelete(category.id)}><Trash2 /></button>
@@ -102,9 +86,7 @@ const Categories = () => {
                 </tr>
               ))}
               {categories.length === 0 && (
-                <tr>
-                  <td colSpan="4" className="empty-state">No hay categorías registradas.</td>
-                </tr>
+                <tr><td colSpan="4" className="empty-state">No hay categorías registradas.</td></tr>
               )}
             </tbody>
           </table>
@@ -127,7 +109,6 @@ const Categories = () => {
                 <label>Descripción</label>
                 <input type="text" name="description" value={formData.description} onChange={handleChange} />
               </div>
-              
               <div className="modal-actions">
                 <button type="button" className="btn-secondary" onClick={handleCloseModal}>Cancelar</button>
                 <button type="submit" className="btn-primary">Guardar</button>

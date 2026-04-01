@@ -28,7 +28,6 @@ const startOf = (period) => {
   return new Date(0);
 };
 
-// Minimal SVG bar chart (no external library)
 const BarChart = ({ data, color = '#22C1C3', label = 'L.' }) => {
   const max = Math.max(...data.map(d => d.value), 1);
   return (
@@ -85,9 +84,17 @@ const Dashboard = () => {
   const [customers, setCustomers] = useState([]);
 
   useEffect(() => {
-    setAllOrders(db.getAll('orders'));
-    setProducts(db.getAll('products'));
-    setCustomers(db.getAll('customers'));
+    const loadData = async () => {
+      const [orders, prods, custs] = await Promise.all([
+        db.getAll('orders'),
+        db.getAll('products'),
+        db.getAll('customers'),
+      ]);
+      setAllOrders(orders);
+      setProducts(prods);
+      setCustomers(custs);
+    };
+    loadData();
   }, []);
 
   const periodOrders = useMemo(() => {
@@ -101,7 +108,7 @@ const Dashboard = () => {
   }, [allOrders, period, customStart, customEnd]);
 
   const prevPeriodOrders = useMemo(() => {
-    if (period === 'custom') return []; // no prev comparison for custom
+    if (period === 'custom') return [];
     const from = startOf(period);
     const duration = Date.now() - from.getTime();
     const prevFrom = new Date(from.getTime() - duration);
@@ -122,7 +129,6 @@ const Dashboard = () => {
 
   const lowStock = products.filter(p => p.stock <= (p.minStock || 0));
 
-  // Top 5 products by units sold in period
   const topProducts = useMemo(() => {
     const map = {};
     periodOrders.forEach(o => {
@@ -137,19 +143,14 @@ const Dashboard = () => {
     return Object.values(map).sort((a, b) => b.qty - a.qty).slice(0, 5);
   }, [periodOrders]);
 
-
-  // Chart data (handles all periods including custom)
-  // chartData is defined below
-
   const chartData = useMemo(() => {
     if (period === 'custom') {
-      // Split custom range into ≤7 equal buckets
       const from = new Date(customStart + 'T00:00:00');
       const to   = new Date(customEnd + 'T23:59:59');
       const diffDays = Math.ceil((to - from) / 86400000) + 1;
       const buckets = Math.min(diffDays, 7);
       const bucketSize = diffDays / buckets;
-      const data = Array.from({ length: buckets }, (_, i) => {
+      return Array.from({ length: buckets }, (_, i) => {
         const bStart = new Date(from.getTime() + i * bucketSize * 86400000);
         const bEnd   = new Date(from.getTime() + (i + 1) * bucketSize * 86400000);
         const label  = bStart.toLocaleDateString('es-HN', { day: 'numeric', month: 'short' });
@@ -158,15 +159,11 @@ const Dashboard = () => {
           .reduce((a, o) => a + Number(o.total || 0), 0);
         return { name: label, value };
       });
-      return data;
     }
     if (period === 'week') {
       const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
       const vals = Array(7).fill(0);
-      periodOrders.forEach(o => {
-        const d = new Date(o.date).getDay();
-        vals[d] += Number(o.total || 0);
-      });
+      periodOrders.forEach(o => { const d = new Date(o.date).getDay(); vals[d] += Number(o.total || 0); });
       return days.map((name, i) => ({ name, value: vals[i] }));
     }
     if (period === 'month') {
@@ -194,7 +191,6 @@ const Dashboard = () => {
       });
       return months;
     }
-    // year: all 12 months
     const now = new Date();
     const months = Array.from({ length: 12 }, (_, i) => ({
       name: new Date(now.getFullYear(), i, 1).toLocaleString('es-HN', { month: 'short' }),
@@ -202,14 +198,11 @@ const Dashboard = () => {
     }));
     periodOrders.forEach(o => {
       const d = new Date(o.date);
-      if (d.getFullYear() === now.getFullYear()) {
-        months[d.getMonth()].value += Number(o.total || 0);
-      }
+      if (d.getFullYear() === now.getFullYear()) months[d.getMonth()].value += Number(o.total || 0);
     });
     return months;
   }, [periodOrders, period, customStart, customEnd]);
 
-  // Ticket size distribution
   const ticketBrackets = useMemo(() => {
     const brackets = [
       { name: '< L.100', count: 0 },
@@ -228,12 +221,10 @@ const Dashboard = () => {
   }, [periodOrders]);
 
   const recentOrders = [...allOrders].filter(o => !o.isDeleted).sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 6);
-
   const fmt = (n) => `L. ${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   return (
     <div className="dashboard-page">
-      {/* Header */}
       <div className="dashboard-header">
         <div>
           <h1>🍼 Joa Baby Shop</h1>
@@ -258,69 +249,30 @@ const Dashboard = () => {
         </div>
       </div>
 
-        {/* Custom date range row */}
-        {period === 'custom' && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '12px',
-            padding: '12px 16px', marginTop: '-16px',
-            background: 'var(--bg-secondary)', borderRadius: '14px',
-            border: '1px solid var(--border-color)', flexWrap: 'wrap'
-          }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Rango personalizado:</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <label style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Desde</label>
-              <input
-                type="date"
-                value={customStart}
-                max={customEnd}
-                onChange={e => setCustomStart(e.target.value)}
-                style={{
-                  padding: '8px 12px', borderRadius: '10px',
-                  border: '1px solid var(--border-color)',
-                  background: 'var(--bg-tertiary)', color: 'var(--text-primary)',
-                  fontFamily: 'inherit', fontSize: '0.85rem', outline: 'none'
-                }}
-              />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <label style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Hasta</label>
-              <input
-                type="date"
-                value={customEnd}
-                min={customStart}
-                max={new Date().toISOString().split('T')[0]}
-                onChange={e => setCustomEnd(e.target.value)}
-                style={{
-                  padding: '8px 12px', borderRadius: '10px',
-                  border: '1px solid var(--border-color)',
-                  background: 'var(--bg-tertiary)', color: 'var(--text-primary)',
-                  fontFamily: 'inherit', fontSize: '0.85rem', outline: 'none'
-                }}
-              />
-            </div>
-            <div style={{ fontSize: '0.82rem', color: 'var(--accent-primary)', fontWeight: 600 }}>
-              {Math.ceil((new Date(customEnd + 'T23:59:59') - new Date(customStart + 'T00:00:00')) / 86400000) + 1} días seleccionados
-            </div>
+      {period === 'custom' && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', marginTop: '-16px', background: 'var(--bg-secondary)', borderRadius: '14px', border: '1px solid var(--border-color)', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Rango personalizado:</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <label style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Desde</label>
+            <input type="date" value={customStart} max={customEnd} onChange={e => setCustomStart(e.target.value)} style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: '0.85rem', outline: 'none' }} />
           </div>
-        )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <label style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Hasta</label>
+            <input type="date" value={customEnd} min={customStart} max={new Date().toISOString().split('T')[0]} onChange={e => setCustomEnd(e.target.value)} style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: '0.85rem', outline: 'none' }} />
+          </div>
+          <div style={{ fontSize: '0.82rem', color: 'var(--accent-primary)', fontWeight: 600 }}>
+            {Math.ceil((new Date(customEnd + 'T23:59:59') - new Date(customStart + 'T00:00:00')) / 86400000) + 1} días seleccionados
+          </div>
+        </div>
+      )}
 
-      {/* KPI Cards */}
       <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-        {/* Ingresos */}
         <div className="metric-card glass-panel" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-            <div className="metric-icon-wrapper" style={{ background: 'rgba(34,193,195,0.12)', color: '#22C1C3' }}>
-              <DollarSign className="metric-icon" />
-            </div>
+            <div className="metric-icon-wrapper" style={{ background: 'rgba(34,193,195,0.12)', color: '#22C1C3' }}><DollarSign className="metric-icon" /></div>
             {revenueChange !== null && (
-              <span style={{
-                fontSize: '0.78rem', fontWeight: 700, padding: '3px 8px', borderRadius: '20px',
-                background: Number(revenueChange) >= 0 ? 'rgba(39,174,96,0.15)' : 'rgba(231,76,60,0.15)',
-                color: Number(revenueChange) >= 0 ? '#27ae60' : '#e74c3c',
-                display: 'flex', alignItems: 'center', gap: '2px'
-              }}>
-                {Number(revenueChange) >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                {Math.abs(revenueChange)}%
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, padding: '3px 8px', borderRadius: '20px', background: Number(revenueChange) >= 0 ? 'rgba(39,174,96,0.15)' : 'rgba(231,76,60,0.15)', color: Number(revenueChange) >= 0 ? '#27ae60' : '#e74c3c', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                {Number(revenueChange) >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}{Math.abs(revenueChange)}%
               </span>
             )}
           </div>
@@ -329,133 +281,68 @@ const Dashboard = () => {
             <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{fmt(revenue)}</div>
           </div>
         </div>
-
-        {/* Pedidos */}
         <div className="metric-card glass-panel" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
-          <div className="metric-icon-wrapper" style={{ background: 'rgba(243,156,18,0.12)', color: '#f39c12' }}>
-            <ShoppingBag className="metric-icon" />
-          </div>
+          <div className="metric-icon-wrapper" style={{ background: 'rgba(243,156,18,0.12)', color: '#f39c12' }}><ShoppingBag className="metric-icon" /></div>
           <div>
             <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '2px' }}>Pedidos totales</div>
             <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{periodOrders.length}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-              ✅ {completedOrders.length} completados · ⏳ {pendingOrders.length} pendientes
-            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>✅ {completedOrders.length} completados · ⏳ {pendingOrders.length} pendientes</div>
           </div>
         </div>
-
-        {/* Ticket promedio */}
         <div className="metric-card glass-panel" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
-          <div className="metric-icon-wrapper" style={{ background: 'rgba(155,89,182,0.12)', color: '#9b59b6' }}>
-            <Award className="metric-icon" />
-          </div>
+          <div className="metric-icon-wrapper" style={{ background: 'rgba(155,89,182,0.12)', color: '#9b59b6' }}><Award className="metric-icon" /></div>
           <div>
             <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '2px' }}>Ticket promedio</div>
             <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{fmt(avgTicket)}</div>
           </div>
         </div>
-
-        {/* Clientes */}
         <div className="metric-card glass-panel" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
-          <div className="metric-icon-wrapper" style={{ background: 'rgba(52,152,219,0.12)', color: '#3498db' }}>
-            <Users className="metric-icon" />
-          </div>
+          <div className="metric-icon-wrapper" style={{ background: 'rgba(52,152,219,0.12)', color: '#3498db' }}><Users className="metric-icon" /></div>
           <div>
             <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '2px' }}>Clientes registrados</div>
             <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{customers.length}</div>
           </div>
         </div>
-
-        {/* Productos */}
         <div className="metric-card glass-panel" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
-          <div className="metric-icon-wrapper" style={{ background: 'rgba(39,174,96,0.12)', color: '#27ae60' }}>
-            <Package className="metric-icon" />
-          </div>
+          <div className="metric-icon-wrapper" style={{ background: 'rgba(39,174,96,0.12)', color: '#27ae60' }}><Package className="metric-icon" /></div>
           <div>
             <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '2px' }}>Productos activos</div>
             <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{products.length}</div>
-            {lowStock.length > 0 && (
-              <div style={{ fontSize: '0.75rem', color: '#e74c3c', marginTop: '4px' }}>
-                ⚠️ {lowStock.length} con stock crítico
-              </div>
-            )}
+            {lowStock.length > 0 && <div style={{ fontSize: '0.75rem', color: '#e74c3c', marginTop: '4px' }}>⚠️ {lowStock.length} con stock crítico</div>}
           </div>
         </div>
-
-        {/* Cancelados */}
         <div className="metric-card glass-panel" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
-          <div className="metric-icon-wrapper" style={{ background: 'rgba(231,76,60,0.12)', color: '#e74c3c' }}>
-            <AlertTriangle className="metric-icon" />
-          </div>
+          <div className="metric-icon-wrapper" style={{ background: 'rgba(231,76,60,0.12)', color: '#e74c3c' }}><AlertTriangle className="metric-icon" /></div>
           <div>
             <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '2px' }}>Pedidos cancelados</div>
             <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{cancelledOrders.length}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-              Tasa de cancelación: {periodOrders.length > 0 ? ((cancelledOrders.length / periodOrders.length) * 100).toFixed(1) : 0}%
-            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>Tasa de cancelación: {periodOrders.length > 0 ? ((cancelledOrders.length / periodOrders.length) * 100).toFixed(1) : 0}%</div>
           </div>
         </div>
       </div>
 
-      {/* Charts Row */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-        {/* Ventas por período */}
         <div className="dashboard-section glass-panel">
-          <div className="section-header">
-            <h2>📈 Ventas por período</h2>
-            <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Ingresos (L.)</span>
-          </div>
-          {chartData.every(d => d.value === 0) ? (
-            <div className="empty-state" style={{ padding: '32px 0' }}>Sin ventas en este período.</div>
-          ) : (
-            <BarChart data={chartData} color="#22C1C3" label="L." />
-          )}
+          <div className="section-header"><h2>📈 Ventas por período</h2><span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Ingresos (L.)</span></div>
+          {chartData.every(d => d.value === 0) ? <div className="empty-state" style={{ padding: '32px 0' }}>Sin ventas en este período.</div> : <BarChart data={chartData} color="#22C1C3" label="L." />}
         </div>
-
-        {/* Distribución de tickets */}
         <div className="dashboard-section glass-panel">
-          <div className="section-header">
-            <h2>🎯 Distribución de pedidos</h2>
-            <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Por monto</span>
-          </div>
-          {ticketBrackets.every(d => d.value === 0) ? (
-            <div className="empty-state" style={{ padding: '32px 0' }}>Sin datos.</div>
-          ) : (
-            <BarChart data={ticketBrackets} color="#9b59b6" label="pedidos" />
-          )}
+          <div className="section-header"><h2>🎯 Distribución de pedidos</h2><span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Por monto</span></div>
+          {ticketBrackets.every(d => d.value === 0) ? <div className="empty-state" style={{ padding: '32px 0' }}>Sin datos.</div> : <BarChart data={ticketBrackets} color="#9b59b6" label="pedidos" />}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '8px' }}>
-            {ticketBrackets.map((b, i) => (
-              <MiniStat key={i} label={b.name} value={`${b.value} pedidos`} color="#9b59b6" />
-            ))}
+            {ticketBrackets.map((b, i) => <MiniStat key={i} label={b.name} value={`${b.value} pedidos`} color="#9b59b6" />)}
           </div>
         </div>
       </div>
 
-      {/* Bottom Row */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px' }}>
-
-        {/* Top productos más vendidos */}
         <div className="dashboard-section glass-panel">
-          <div className="section-header">
-            <h2>🏆 Top Productos</h2>
-            <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Más vendidos</span>
-          </div>
-          {topProducts.length === 0 ? (
-            <div className="empty-state">Sin datos de ventas.</div>
-          ) : (
+          <div className="section-header"><h2>🏆 Top Productos</h2><span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Más vendidos</span></div>
+          {topProducts.length === 0 ? <div className="empty-state">Sin datos de ventas.</div> : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {topProducts.map((p, i) => (
-                <div key={i} style={{
-                  display: 'flex', alignItems: 'center', gap: '12px',
-                  padding: '10px 12px', background: 'var(--bg-tertiary)',
-                  borderRadius: '10px', border: '1px solid var(--border-color)'
-                }}>
-                  <span style={{
-                    width: '26px', height: '26px', borderRadius: '50%',
-                    background: i === 0 ? '#f39c12' : i === 1 ? '#95a5a6' : 'var(--accent-primary)',
-                    color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '0.75rem', fontWeight: 800, flexShrink: 0
-                  }}>{i + 1}</span>
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', background: 'var(--bg-tertiary)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                  <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: i === 0 ? '#f39c12' : i === 1 ? '#95a5a6' : 'var(--accent-primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800, flexShrink: 0 }}>{i + 1}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '0.85rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{p.qty} unidades · {fmt(p.revenue)}</div>
@@ -465,12 +352,8 @@ const Dashboard = () => {
             </div>
           )}
         </div>
-
-        {/* Estado pedidos */}
         <div className="dashboard-section glass-panel">
-          <div className="section-header">
-            <h2>📦 Estado de Pedidos</h2>
-          </div>
+          <div className="section-header"><h2>📦 Estado de Pedidos</h2></div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {[
               { label: 'Completados', count: completedOrders.length, color: '#27ae60', icon: <CheckCircle size={16} /> },
@@ -478,48 +361,24 @@ const Dashboard = () => {
               { label: 'Cancelados', count: cancelledOrders.length,  color: '#e74c3c', icon: <AlertTriangle size={16} /> },
               { label: 'Enviados',   count: periodOrders.filter(o => o.status === 'Enviado').length, color: '#3498db', icon: <Package size={16} /> },
             ].map((s, i) => (
-              <div key={i} style={{
-                display: 'flex', alignItems: 'center', gap: '10px',
-                padding: '12px 14px', background: 'var(--bg-tertiary)',
-                borderRadius: '10px', border: `1px solid ${s.color}33`
-              }}>
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', background: 'var(--bg-tertiary)', borderRadius: '10px', border: `1px solid ${s.color}33` }}>
                 <span style={{ color: s.color }}>{s.icon}</span>
                 <span style={{ flex: 1, fontSize: '0.9rem', fontWeight: 500 }}>{s.label}</span>
                 <span style={{ fontWeight: 800, fontSize: '1.1rem', color: s.color }}>{s.count}</span>
-                <div style={{
-                  width: '60px', height: '6px', borderRadius: '3px',
-                  background: 'var(--border-color)', overflow: 'hidden'
-                }}>
-                  <div style={{
-                    height: '100%', borderRadius: '3px', background: s.color,
-                    width: periodOrders.length > 0 ? `${(s.count / periodOrders.length) * 100}%` : '0%',
-                    transition: 'width 0.6s ease'
-                  }} />
+                <div style={{ width: '60px', height: '6px', borderRadius: '3px', background: 'var(--border-color)', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', borderRadius: '3px', background: s.color, width: periodOrders.length > 0 ? `${(s.count / periodOrders.length) * 100}%` : '0%', transition: 'width 0.6s ease' }} />
                 </div>
               </div>
             ))}
           </div>
         </div>
-
-        {/* Pedidos recientes */}
         <div className="dashboard-section glass-panel">
-          <div className="section-header">
-            <h2>🕐 Últimos Pedidos</h2>
-          </div>
+          <div className="section-header"><h2>🕐 Últimos Pedidos</h2></div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {recentOrders.length === 0 && <div className="empty-state">Sin pedidos.</div>}
             {recentOrders.map(order => (
-              <div key={order.id} style={{
-                display: 'flex', alignItems: 'center', gap: '10px',
-                padding: '10px 12px', background: 'var(--bg-tertiary)',
-                borderRadius: '10px', border: '1px solid var(--border-color)'
-              }}>
-                <div style={{
-                  width: '34px', height: '34px', borderRadius: '50%',
-                  background: 'var(--accent-gradient)', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center',
-                  color: 'white', fontWeight: 800, fontSize: '0.9rem', flexShrink: 0
-                }}>
+              <div key={order.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: 'var(--bg-tertiary)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'var(--accent-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: '0.9rem', flexShrink: 0 }}>
                   {(order.customerName || '?').charAt(0).toUpperCase()}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -528,11 +387,7 @@ const Dashboard = () => {
                 </div>
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--accent-primary)' }}>{fmt(order.total)}</div>
-                  <span style={{
-                    fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: '10px',
-                    background: order.status === 'Completado' ? 'rgba(39,174,96,0.15)' : order.status === 'Cancelado' ? 'rgba(231,76,60,0.15)' : 'rgba(243,156,18,0.15)',
-                    color: order.status === 'Completado' ? '#27ae60' : order.status === 'Cancelado' ? '#e74c3c' : '#f39c12'
-                  }}>{order.status}</span>
+                  <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '2px 6px', borderRadius: '10px', background: order.status === 'Completado' ? 'rgba(39,174,96,0.15)' : order.status === 'Cancelado' ? 'rgba(231,76,60,0.15)' : 'rgba(243,156,18,0.15)', color: order.status === 'Completado' ? '#27ae60' : order.status === 'Cancelado' ? '#e74c3c' : '#f39c12' }}>{order.status}</span>
                 </div>
               </div>
             ))}
@@ -540,7 +395,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Stock crítico */}
       {lowStock.length > 0 && (
         <div className="dashboard-section glass-panel" style={{ border: '1px solid rgba(231,76,60,0.3)' }}>
           <div className="section-header">
@@ -549,13 +403,8 @@ const Dashboard = () => {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
             {lowStock.map(p => (
-              <div key={p.id} style={{
-                display: 'flex', alignItems: 'center', gap: '12px',
-                padding: '10px 14px', background: 'rgba(231,76,60,0.06)',
-                borderRadius: '10px', border: '1px solid rgba(231,76,60,0.2)'
-              }}>
-                <img src={p.imageUrl || 'https://via.placeholder.com/36'} alt={p.name}
-                  style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} />
+              <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: 'rgba(231,76,60,0.06)', borderRadius: '10px', border: '1px solid rgba(231,76,60,0.2)' }}>
+                <img src={p.imageUrl || 'https://via.placeholder.com/36'} alt={p.name} style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '0.85rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>SKU: {p.sku}</div>

@@ -34,13 +34,18 @@ const Orders = () => {
     loadData();
   }, []);
 
-  const loadData = () => {
-    const data = db.getAll('orders');
+  const loadData = async () => {
+    const [data, prods, delMethods, payMethods] = await Promise.all([
+      db.getAll('orders'),
+      db.getAll('products'),
+      db.getAll('delivery_methods'),
+      db.getAll('payment_methods'),
+    ]);
     data.sort((a, b) => new Date(b.date) - new Date(a.date));
     setOrders(data);
-    setProducts(db.getAll('products'));
-    setDeliveryMethods(db.getAll('delivery_methods'));
-    setPaymentMethods(db.getAll('payment_methods'));
+    setProducts(prods);
+    setDeliveryMethods(delMethods);
+    setPaymentMethods(payMethods);
   };
 
   const allTabOrders    = orders;
@@ -188,82 +193,66 @@ const Orders = () => {
   };
   // --------------------------
 
-  const saveShippingInfo = () => {
-    db.update('orders', shippingOrder.id, {
+  const saveShippingInfo = async () => {
+    await db.update('orders', shippingOrder.id, {
       deliveryMethodId: shippingOrder.deliveryMethodId,
       shippingCompany: shippingOrder.shippingCompany,
       trackingNumber: shippingOrder.trackingNumber,
       status: shippingOrder.status,
-      // Update total since delivery method might have changed
       total: shippingOrder.total
     });
-    
     closeShippingModal();
-    loadData();
+    await loadData();
   };
 
-  const saveOrder = () => {
+  const saveOrder = async () => {
     if (!editedOrder.customerName || !editedOrder.customerName.trim()) {
-      alert('El nombre del cliente es obligatorio. Por favor ingresa un nombre válido.');
+      alert('El nombre del cliente es obligatorio.');
       return;
     }
-    
     if (editedOrder.customerEmail && editedOrder.customerEmail.trim()) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(editedOrder.customerEmail)) {
-        alert('El correo electrónico tiene un formato inválido. Por favor, corrígelo o déjalo en blanco si no es necesario.');
+        alert('El correo electrónico tiene un formato inválido.');
         return;
       }
     }
-
-    // --- INVENTORY DELTA LOGIC ---
     const origMap = {};
     if (selectedOrder && selectedOrder.items) {
       selectedOrder.items.forEach(item => {
-        if (item.product && item.product.id) {
-          origMap[item.product.id] = (origMap[item.product.id] || 0) + item.quantity;
-        }
+        if (item.product && item.product.id) origMap[item.product.id] = (origMap[item.product.id] || 0) + item.quantity;
       });
     }
-    
     const newMap = {};
     if (editedOrder && editedOrder.items) {
       editedOrder.items.forEach(item => {
-        if (item.product && item.product.id) {
-          newMap[item.product.id] = (newMap[item.product.id] || 0) + item.quantity;
-        }
+        if (item.product && item.product.id) newMap[item.product.id] = (newMap[item.product.id] || 0) + item.quantity;
       });
     }
-    
-    const deltas = []; 
     const allProductIds = new Set([...Object.keys(origMap), ...Object.keys(newMap)]);
-    
+    // Pre-fetch all products
+    const productList = await Promise.all([...allProductIds].map(id => db.getById('products', id)));
+    const productMap = {};
+    productList.forEach(p => { if (p) productMap[p.id] = p; });
+    const deltas = [];
     for (const pId of allProductIds) {
-      const origQty = origMap[pId] || 0;
-      const newQty = newMap[pId] || 0;
-      const delta = newQty - origQty;
-      
+      const delta = (newMap[pId] || 0) - (origMap[pId] || 0);
       if (delta !== 0) {
         if (delta > 0) {
-          const product = db.getById('products', pId);
+          const product = productMap[pId];
           if (!product || product.stock < delta) {
-            alert(`No hay suficiente inventario disponible para el producto "${product ? product.name : pId}". Requerido extra: ${delta}, Disponible en Stock: ${product ? product.stock : 0}`);
+            alert(`Stock insuficiente para "${product ? product.name : pId}". Requerido: ${delta}, Disponible: ${product ? product.stock : 0}`);
             return;
           }
         }
         deltas.push({ pId, delta });
       }
     }
-    
-    // Apply Deltas to Inventory
-    deltas.forEach(({ pId, delta }) => {
-      const product = db.getById('products', pId);
-      if (product) {
-        db.update('products', pId, { stock: product.stock - delta });
-      }
-    });
-
-    db.update('orders', editedOrder.id, {
+    await Promise.all(deltas.map(({ pId, delta }) => {
+      const product = productMap[pId];
+      if (product) return db.update('products', pId, { stock: product.stock - delta });
+    }));
+    await db.update('orders', editedOrder.id, {
       customerName: editedOrder.customerName,
       customerEmail: editedOrder.customerEmail,
       customerPhone: editedOrder.customerPhone,
@@ -278,45 +267,40 @@ const Orders = () => {
       discountAmount: editedOrder.discountAmount,
       total: editedOrder.total
     });
-    
-    loadData();
+    await loadData();
     setSelectedOrder({ ...editedOrder });
     setIsEditing(false);
   };
 
-  const handleCancelOrder = (order) => {
-    if (order.status === 'Cancelado') {
-      alert('Este pedido ya está cancelado.');
-      return;
-    }
-    if (confirm(`¿Cancelar el pedido de ${order.customerName}?\n\nLos artículos serán devueltos al inventario y el pedido pasará a la pestaña de Cancelados.`)) {
-      // Restore stock
+  const handleCancelOrder = async (order) => {
+    if (order.status === 'Cancelado') { alert('Este pedido ya está cancelado.'); return; }
+    if (confirm(`¿Cancelar el pedido de ${order.customerName}?\n\nLos artículos serán devueltos al inventario.`)) {
       if (order.items && order.items.length > 0) {
-        order.items.forEach(item => {
-          if (item.product && item.product.id) {
-            const product = db.getById('products', item.product.id);
-            if (product) {
-              db.update('products', product.id, { stock: product.stock + item.quantity });
-            }
-          }
-        });
+        const productIds = [...new Set(order.items.filter(i => i.product?.id).map(i => i.product.id))];
+        const productList = await Promise.all(productIds.map(id => db.getById('products', id)));
+        const productMap = {};
+        productList.forEach(p => { if (p) productMap[p.id] = p; });
+        await Promise.all(order.items.map(item => {
+          const product = productMap[item.product?.id];
+          if (product) return db.update('products', product.id, { stock: product.stock + item.quantity });
+        }));
       }
-      db.update('orders', order.id, { status: 'Cancelado', cancelledAt: new Date().toISOString() });
-      loadData();
+      await db.update('orders', order.id, { status: 'Cancelado', cancelledAt: new Date().toISOString() });
+      await loadData();
     }
   };
 
-  const handleSoftDelete = (order) => {
-    if (confirm('¿Eliminar este registro permanentemente del historial? Esta acción no restaura inventario.')) {
-      db.update('orders', order.id, { isDeleted: true });
-      loadData();
+  const handleSoftDelete = async (order) => {
+    if (confirm('¿Eliminar este registro del historial?')) {
+      await db.update('orders', order.id, { isDeleted: true });
+      await loadData();
     }
   };
 
-  const handleHardDelete = (id) => {
-    if (confirm('¿ATENCIÓN: Estás seguro de que deseas eliminar este registro permanentemente? Esta acción no se puede deshacer.')) {
-      db.delete('orders', id);
-      loadData();
+  const handleHardDelete = async (id) => {
+    if (confirm('¿Eliminar este registro permanentemente? Esta acción no se puede deshacer.')) {
+      await db.delete('orders', id);
+      await loadData();
     }
   };
 
@@ -331,14 +315,14 @@ const Orders = () => {
     boxSizing: 'border-box'
   };
 
-  const handleStatusChange = (id, newStatus) => {
-    db.update('orders', id, { status: newStatus });
-    loadData();
+  const handleStatusChange = async (id, newStatus) => {
+    await db.update('orders', id, { status: newStatus });
+    await loadData();
   };
 
-  const handleFieldChange = (id, field, value) => {
-    db.update('orders', id, { [field]: value });
-    loadData();
+  const handleFieldChange = async (id, field, value) => {
+    await db.update('orders', id, { [field]: value });
+    await loadData();
   };
 
   const generatePDF = (order) => {
