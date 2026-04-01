@@ -200,29 +200,34 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                 ) : (
                   cart.map((item, index) => (
                     <div key={item.product.id} className="cart-item">
-                      <img src={item.product.imageUrl} alt={item.product.name} />
-                      <div className="cart-item-info">
-                        <h4>{item.product.name}</h4>
-                        <p className="cart-item-price">
-                          {item.product.discountPrice ? (
-                            <>
-                              <span style={{ textDecoration: 'line-through', color: 'var(--text-secondary)', marginRight: '6px', fontSize: '0.9rem' }}>L. {(item.product.sellingPrice * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                              <span style={{ color: 'var(--danger)', fontWeight: 'bold' }}>L. {(item.product.discountPrice * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                              {item.quantity > 1 && <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '8px', fontWeight: 'normal' }}>(L. {Number(item.product.discountPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} c/u)</span>}
-                            </>
-                          ) : (
-                            <>
-                              L. {(item.product.sellingPrice * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              {item.quantity > 1 && <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '8px', fontWeight: 'normal' }}>(L. {Number(item.product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} c/u)</span>}
-                            </>
-                          )}
-                        </p>
+                      <div className="cart-item-main">
+                        <img src={item.product.imageUrl} alt={item.product.name} className="cart-item-img" />
+                        <div className="cart-item-info">
+                          <h4>{item.product.name}</h4>
+                          <div className="cart-item-price-display">
+                            {item.product.discountPrice ? (
+                              <>
+                                <span className="price-original">L. {Number(item.product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                                <span className="price-current">L. {Number(item.product.discountPrice).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                              </>
+                            ) : (
+                              <span className="price-current">L. {Number(item.product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <div className="cart-item-actions">
-                        <button onClick={() => updateQuantity(index, -1)}>-</button>
-                        <span>{item.quantity}</span>
-                        <button onClick={() => updateQuantity(index, 1)}>+</button>
-                        <button className="btn-icon danger" onClick={() => removeItem(index)}><Trash2 size={16} /></button>
+                      <div className="cart-item-footer">
+                        <div className="quantity-selector">
+                          <button type="button" className="qty-btn" onClick={() => updateQuantity(index, -1)} disabled={item.quantity <= 1}>-</button>
+                          <span className="qty-number">{item.quantity}</span>
+                          <button type="button" className="qty-btn" onClick={() => updateQuantity(index, 1)}>+</button>
+                        </div>
+                        <div className="cart-item-subtotal">
+                          L. {( (item.product.discountPrice || item.product.sellingPrice) * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        </div>
+                        <button type="button" className="remove-item-btn" onClick={() => removeItem(index)}>
+                          <Trash2 size={18} />
+                        </button>
                       </div>
                     </div>
                   ))
