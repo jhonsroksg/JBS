@@ -33,10 +33,24 @@ const Categories = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (editingId) { await db.update('categories', editingId, formData); }
-    else { await db.insert('categories', formData); }
-    await loadData();
-    handleCloseModal();
+    try {
+      const dataToSave = {
+        name: formData.name.trim(),
+        description: formData.description ? formData.description.trim() : null
+      };
+      
+      if (editingId) {
+        await db.update('categories', editingId, dataToSave);
+      } else {
+        await db.insert('categories', dataToSave);
+      }
+      
+      await loadData();
+      handleCloseModal();
+    } catch (error) {
+      console.error('Error al guardar categoría:', error);
+      alert('Error al guardar la categoría. Intenta de nuevo.');
+    }
   };
 
   const handleDelete = async (id) => {

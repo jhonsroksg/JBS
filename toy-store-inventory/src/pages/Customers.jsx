@@ -33,15 +33,20 @@ const Customers = () => {
       alert('El nombre del cliente es obligatorio');
       return;
     }
-    await db.update('customers', editingCustomer.id, {
-      name: editingCustomer.name,
-      email: editingCustomer.email,
-      phone: editingCustomer.phone,
-      address: editingCustomer.address
-    });
-    setIsModalOpen(false);
-    setEditingCustomer(null);
-    await loadData();
+    try {
+      await db.update('customers', editingCustomer.id, {
+        name: editingCustomer.name.trim(),
+        email: editingCustomer.email ? editingCustomer.email.trim() : null,
+        phone: editingCustomer.phone ? editingCustomer.phone.trim() : null,
+        address: editingCustomer.address ? editingCustomer.address.trim() : null
+      });
+      setIsModalOpen(false);
+      setEditingCustomer(null);
+      await loadData();
+    } catch (error) {
+      console.error('Error al guardar cliente:', error);
+      alert('Error al actualizar el cliente.');
+    }
   };
 
   const filteredCustomers = customers.filter(customer => {

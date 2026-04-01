@@ -43,25 +43,46 @@ const Settings = () => {
 
   const handleSaveStoreInfo = async (e) => {
     e.preventDefault();
-    await db.updateStoreInfo(storeInfo);
-    alert('Configuración de la tienda guardada.');
+    try {
+      const infoToSave = {
+        name: storeInfo.name.trim(),
+        phone: storeInfo.phone ? storeInfo.phone.trim() : null,
+        welcomeMessage: storeInfo.welcomeMessage ? storeInfo.welcomeMessage.trim() : null
+      };
+      await db.updateStoreInfo(infoToSave);
+      alert('✅ Información de la tienda actualizada.');
+      await loadData();
+    } catch (error) {
+      console.error('Error al guardar info de tienda:', error);
+      alert('Error al guardar la información de la tienda.');
+    }
   };
 
   // Payment Methods
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!newMethod.trim()) return;
-    await db.insert('payment_methods', { name: newMethod.trim() });
-    setNewMethod('');
-    await loadData();
+    try {
+      await db.insert('payment_methods', { name: newMethod.trim() });
+      setNewMethod('');
+      await loadData();
+    } catch (error) {
+      alert('Error al agregar forma de pago.');
+    }
   };
 
   const handleEdit = (method) => { setEditingId(method.id); setEditingName(method.name); };
 
   const handleSaveEdit = async () => {
-    if (editingName.trim()) await db.update('payment_methods', editingId, { name: editingName.trim() });
-    setEditingId(null); setEditingName('');
-    await loadData();
+    if (!editingName.trim()) return;
+    try {
+      await db.update('payment_methods', editingId, { name: editingName.trim() });
+      setEditingId(null);
+      setEditingName('');
+      await loadData();
+    } catch (error) {
+      alert('Error al editar forma de pago.');
+    }
   };
 
   const handleDelete = async (id) => {
@@ -75,9 +96,17 @@ const Settings = () => {
   const handleAddDelivery = async (e) => {
     e.preventDefault();
     if (!newDeliveryName.trim()) return;
-    await db.insert('delivery_methods', { name: newDeliveryName.trim(), cost: Number(newDeliveryCost) || 0 });
-    setNewDeliveryName(''); setNewDeliveryCost('');
-    await loadData();
+    try {
+      await db.insert('delivery_methods', {
+        name: newDeliveryName.trim(),
+        cost: parseFloat(newDeliveryCost) || 0
+      });
+      setNewDeliveryName('');
+      setNewDeliveryCost('');
+      await loadData();
+    } catch (error) {
+      alert('Error al agregar método de envío.');
+    }
   };
 
   const handleEditDelivery = (method) => {
@@ -87,11 +116,19 @@ const Settings = () => {
   };
 
   const handleSaveEditDelivery = async () => {
-    if (editingDeliveryName.trim()) {
-      await db.update('delivery_methods', editingDeliveryId, { name: editingDeliveryName.trim(), cost: Number(editingDeliveryCost) || 0 });
+    if (!editingDeliveryName.trim()) return;
+    try {
+      await db.update('delivery_methods', editingDeliveryId, {
+        name: editingDeliveryName.trim(),
+        cost: parseFloat(editingDeliveryCost) || 0
+      });
+      setEditingDeliveryId(null);
+      setEditingDeliveryName('');
+      setEditingDeliveryCost('');
+      await loadData();
+    } catch (error) {
+      alert('Error al editar método de envío.');
     }
-    setEditingDeliveryId(null); setEditingDeliveryName(''); setEditingDeliveryCost('');
-    await loadData();
   };
 
   const handleDeleteDelivery = async (id) => {
@@ -105,9 +142,19 @@ const Settings = () => {
   const handleAddCoupon = async (e) => {
     e.preventDefault();
     if (!newCouponCode.trim() || !newCouponValue) return;
-    await db.insert('coupons', { code: newCouponCode.trim().toUpperCase(), discountType: newCouponType, discountValue: Number(newCouponValue) || 0, isActive: true });
-    setNewCouponCode(''); setNewCouponValue('');
-    await loadData();
+    try {
+      await db.insert('coupons', {
+        code: newCouponCode.trim().toUpperCase(),
+        discountType: newCouponType,
+        discountValue: parseFloat(newCouponValue) || 0,
+        isActive: true
+      });
+      setNewCouponCode('');
+      setNewCouponValue('');
+      await loadData();
+    } catch (error) {
+      alert('Error al crear cupón. Puede que el código ya exista.');
+    }
   };
 
   const handleEditCoupon = (coupon) => {
@@ -118,15 +165,18 @@ const Settings = () => {
   };
 
   const handleSaveEditCoupon = async () => {
-    if (editingCouponCode.trim()) {
+    if (!editingCouponCode.trim()) return;
+    try {
       await db.update('coupons', editingCouponId, {
         code: editingCouponCode.trim().toUpperCase(),
         discountType: editingCouponType,
-        discountValue: Number(editingCouponValue) || 0
+        discountValue: parseFloat(editingCouponValue) || 0
       });
+      setEditingCouponId(null);
+      await loadData();
+    } catch (error) {
+      alert('Error al actualizar cupón.');
     }
-    setEditingCouponId(null);
-    await loadData();
   };
 
   const handleDeleteCoupon = async (id) => {
