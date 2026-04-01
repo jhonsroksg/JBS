@@ -255,8 +255,10 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                     </div>
                   ))
                 )}
+              </div>
 
-                {cart.length > 0 && (
+              {cart.length > 0 && (
+                <div className="checkout-sidebar">
                   <form id="checkout-form-data" className="checkout-form" onSubmit={handleCheckout}>
                     <div className="form-section">
                       <div className="section-title">
@@ -333,53 +335,49 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                         </select>
                       </div>
                     </div>
-                  </form>
-                )}
-              </div>
 
-              {cart.length > 0 && (
-                <div className="checkout-sidebar">
-                  <div className="checkout-summary">
-                    <h3>Resumen</h3>
-                    <div className="summary-row">
-                      <span>Subtotal</span>
-                      <span>L. {cartSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    </div>
-                    {appliedCoupon && (
-                      <div className="summary-row discount" style={{ color: 'var(--danger)', margin: '4px 0' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span>Cupón ({appliedCoupon.code})</span>
-                          <button type="button" className="btn-icon danger" style={{ padding: '2px', width: '20px', height: '20px', color: 'var(--danger)', background: 'rgba(231, 76, 60, 0.1)' }} onClick={() => setAppliedCoupon(null)} title="Quitar cupón"><X size={12} /></button>
-                        </div>
-                        <span>- L. {cartDiscountAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                      </div>
-                    )}
-                    {selectedDelivery && (
+                    <div className="checkout-summary">
+                      <h3>Resumen</h3>
                       <div className="summary-row">
-                        <span>Envío ({selectedDelivery.name})</span>
-                        <span>{deliveryCostUI > 0 ? `L. ${deliveryCostUI.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Gratis'}</span>
+                        <span>Subtotal</span>
+                        <span>L. {cartSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                      {appliedCoupon && (
+                        <div className="summary-row discount" style={{ color: 'var(--danger)', margin: '4px 0' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span>Cupón ({appliedCoupon.code})</span>
+                            <button type="button" className="btn-icon danger" style={{ padding: '2px', width: '20px', height: '20px', color: 'var(--danger)', background: 'rgba(231, 76, 60, 0.1)' }} onClick={() => setAppliedCoupon(null)} title="Quitar cupón"><X size={12} /></button>
+                          </div>
+                          <span>- L. {cartDiscountAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
+                      )}
+                      {selectedDelivery && (
+                        <div className="summary-row">
+                          <span>Envío ({selectedDelivery.name})</span>
+                          <span>{deliveryCostUI > 0 ? `L. ${deliveryCostUI.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Gratis'}</span>
+                        </div>
+                      )}
+                      <div className="summary-row total">
+                        <span>Total de Compra</span>
+                        <span>L. {cartTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                    </div>
+
+                    {!appliedCoupon && activeCouponsCount > 0 && (
+                      <div className="coupon-section" style={{ marginBottom: '20px', padding: '15px', background: 'var(--bg-tertiary)', borderRadius: '12px', border: '1px dashed var(--border-color)' }}>
+                        <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '8px', color: 'var(--text-secondary)' }}>¿Tienes un cupón de descuento?</label>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <input type="text" placeholder="Ingresar código" value={couponInput} onChange={(e) => setCouponInput(e.target.value.toUpperCase())} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none', background: 'var(--bg-secondary)', color: 'var(--text-primary)', textTransform: 'uppercase' }} />
+                          <button type="button" className="btn-secondary" onClick={handleApplyCoupon} style={{ padding: '0 15px', borderRadius: '8px' }}>Aplicar</button>
+                        </div>
+                        {couponError && <div style={{ color: 'var(--danger)', fontSize: '0.85rem', marginTop: '8px' }}>{couponError}</div>}
                       </div>
                     )}
-                    <div className="summary-row total">
-                      <span>Total</span>
-                      <span>L. {cartTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    </div>
-                  </div>
 
-                  {!appliedCoupon && activeCouponsCount > 0 && (
-                    <div className="coupon-section" style={{ marginBottom: '20px', padding: '15px', background: 'var(--bg-tertiary)', borderRadius: '12px', border: '1px dashed var(--border-color)' }}>
-                      <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '8px', color: 'var(--text-secondary)' }}>¿Tienes un cupón de descuento?</label>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <input type="text" placeholder="Ingresar código" value={couponInput} onChange={(e) => setCouponInput(e.target.value.toUpperCase())} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none', background: 'var(--bg-secondary)', color: 'var(--text-primary)', textTransform: 'uppercase' }} />
-                        <button type="button" className="btn-secondary" onClick={handleApplyCoupon} style={{ padding: '0 15px', borderRadius: '8px' }}>Aplicar</button>
-                      </div>
-                      {couponError && <div style={{ color: 'var(--danger)', fontSize: '0.85rem', marginTop: '8px' }}>{couponError}</div>}
-                    </div>
-                  )}
-
-                  <button type="submit" form="checkout-form-data" className="btn-primary checkout-btn" disabled={isSubmitting} style={{ fontSize: '1.1rem', padding: '16px', borderRadius: '12px', marginTop: '8px', opacity: isSubmitting ? 0.7 : 1 }}>
-                    {isSubmitting ? 'Procesando...' : `Confirmar Pedido (L. ${cartTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`}
-                  </button>
+                    <button type="submit" className="btn-primary checkout-btn" disabled={isSubmitting} style={{ fontSize: '1.1rem', padding: '16px', borderRadius: '12px', marginTop: '8px', opacity: isSubmitting ? 0.7 : 1 }}>
+                      {isSubmitting ? 'Procesando...' : `Confirmar Pedido (L. ${cartTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`}
+                    </button>
+                  </form>
                 </div>
               )}
             </>
