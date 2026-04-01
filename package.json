@@ -1,0 +1,9 @@
+{
+  "name": "jbs",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd toy-store-inventory && npm install && npm run build",
+    "dev": "cd toy-store-inventory && npm run dev"
+  }
+}
