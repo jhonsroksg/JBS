@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../services/db';
-import { ShoppingCart, X, Zap } from 'lucide-react';
+import { ShoppingCart, X, Zap, Search, Filter } from 'lucide-react';
 import './Storefront.css';
 
 const Storefront = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [activeCategory, setActiveCategory] = useState('all');
+  const [activeAgeRange, setActiveAgeRange] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [storeInfo, setStoreInfo] = useState({ name: 'Joa Baby Shop', welcomeMessage: '¡Bienvenido a nuestra tienda!' });
@@ -32,9 +34,23 @@ const Storefront = () => {
     return () => window.removeEventListener('store_info_updated', handleStoreUpdate);
   }, []);
 
-  const filteredProducts = activeCategory === 'all'
-    ? products
-    : products.filter(p => p.categoryId === activeCategory);
+  // Extraer rangos de edad únicos
+  const ageRanges = useMemo(() => {
+    const rawRanges = products.map(p => p.ageRange).filter(Boolean);
+    return [...new Set(rawRanges)].sort();
+  }, [products]);
+
+  // Filtrado eficiente con useMemo para evitar renderizados innecesarios
+  const filteredProducts = useMemo(() => {
+    return products.filter(p => {
+      const matchCategory = activeCategory === 'all' || p.categoryId === activeCategory;
+      const matchAgeRange = activeAgeRange === 'all' || p.ageRange === activeAgeRange;
+      const matchSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          (p.sku && p.sku.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      return matchCategory && matchAgeRange && matchSearch;
+    });
+  }, [products, activeCategory, activeAgeRange, searchTerm]);
 
   const handleAddToCart = (product) => {
     const currentCart = JSON.parse(localStorage.getItem('toy_store_cart') || '[]');
@@ -64,11 +80,48 @@ const Storefront = () => {
         </div>
       </div>
 
-      <div className="category-filters">
-        <button className={`filter-btn ${activeCategory === 'all' ? 'active' : ''}`} onClick={() => setActiveCategory('all')}>Todos</button>
-        {categories.map(cat => (
-          <button key={cat.id} className={`filter-btn ${activeCategory === cat.id ? 'active' : ''}`} onClick={() => setActiveCategory(cat.id)}>{cat.name}</button>
-        ))}
+      <div className="filters-container glass-panel" style={{ padding: '24px', marginBottom: '32px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {/* Barra de Búsqueda Integrada */}
+        <div style={{ position: 'relative', width: '100%' }}>
+          <Search style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} size={20} />
+          <input 
+            type="text" 
+            placeholder="Buscar juguetes por nombre o SKU..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: '100%', padding: '14px 14px 14px 48px', borderRadius: '12px', border: '1px solid var(--border-color)', outline: 'none', fontSize: '1rem', background: 'var(--bg-secondary)', color: 'var(--text-primary)', transition: 'border-color 0.2s', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)' }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', justifyContent: 'space-between' }}>
+          {/* Opciones de Categoría */}
+          <div style={{ flex: '1 1 300px' }}>
+            <h3 style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold' }}><Filter size={14}/> Categoría</h3>
+            <div className="category-filters" style={{ margin: 0, padding: 0, border: 'none', background: 'transparent' }}>
+              <button className={`filter-btn ${activeCategory === 'all' ? 'active' : ''}`} onClick={() => setActiveCategory('all')}>Todas</button>
+              {categories.map(cat => (
+                <button key={cat.id} className={`filter-btn ${activeCategory === cat.id ? 'active' : ''}`} onClick={() => setActiveCategory(cat.id)}>{cat.name}</button>
+              ))}
+            </div>
+          </div>
+          
+          {/* Filtro Rango de Edad */}
+          {ageRanges.length > 0 && (
+            <div style={{ flex: '0 1 250px' }}>
+              <h3 style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold' }}><Filter size={14}/> Rango de Edad</h3>
+              <select 
+                value={activeAgeRange} 
+                onChange={(e) => setActiveAgeRange(e.target.value)}
+                style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none', cursor: 'pointer', fontSize: '0.95rem' }}
+              >
+                <option value="all">Todas las edades</option>
+                {ageRanges.map(age => (
+                  <option key={age} value={age}>{age}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="products-grid">
@@ -106,7 +159,12 @@ const Storefront = () => {
           </div>
         ))}
         {filteredProducts.length === 0 && (
-          <div className="empty-state" style={{ gridColumn: '1 / -1' }}>No hay productos disponibles en esta categoría.</div>
+          <div className="empty-state glass-panel" style={{ gridColumn: '1 / -1', padding: '60px 20px', textAlign: 'center', borderRadius: '24px' }}>
+            <div style={{ fontSize: '4rem', marginBottom: '16px' }}>😕</div>
+            <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', marginBottom: '8px' }}>No hay resultados</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>Intenta ajustando tus filtros de categoría, edad, o revisa cómo has escrito tu búsqueda.</p>
+            <button className="btn-secondary" style={{ marginTop: '20px' }} onClick={() => { setActiveCategory('all'); setActiveAgeRange('all'); setSearchTerm(''); }}>Limpiar Filtros</button>
+          </div>
         )}
       </div>
 
