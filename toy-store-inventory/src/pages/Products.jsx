@@ -83,6 +83,29 @@ const Products = () => {
     setFormData(prev => ({ ...prev, images: (prev.images || []).filter((_, i) => i !== index) }));
   };
 
+  const resizeImage = (dataUrl) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const targetSize = 1080;
+        canvas.width = targetSize;
+        canvas.height = targetSize;
+        const ctx = canvas.getContext('2d');
+
+        // Center crop logic
+        const minDimension = Math.min(img.width, img.height);
+        const sourceX = (img.width - minDimension) / 2;
+        const sourceY = (img.height - minDimension) / 2;
+
+        ctx.drawImage(img, sourceX, sourceY, minDimension, minDimension, 0, 0, targetSize, targetSize);
+        // Regresamos como JPEG con 85% de calidad para balancear peso y nitidez
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.src = dataUrl;
+    });
+  };
+
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
     const currentImages = formData.images || [];
@@ -90,14 +113,26 @@ const Products = () => {
       alert('Puedes subir un máximo de 5 imágenes.');
       return;
     }
+
     const readers = files.map(file => new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (event) => resolve(event.target.result);
+      reader.onload = async (event) => {
+        try {
+          const resized = await resizeImage(event.target.result);
+          resolve(resized);
+        } catch (err) {
+          reject(err);
+        }
+      };
       reader.onerror = (error) => reject(error);
       reader.readAsDataURL(file);
     }));
+
     Promise.all(readers).then(base64Images => {
       setFormData(prev => ({ ...prev, images: [...(prev.images || []), ...base64Images] }));
+    }).catch(err => {
+      console.error('Error al procesar imágenes:', err);
+      alert('Ocurrió un error al procesar las imágenes. Por favor intenta de nuevo.');
     });
   };
 

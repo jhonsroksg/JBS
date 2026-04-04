@@ -202,9 +202,9 @@ const CheckoutModal = ({ isOpen, onClose }) => {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content glass-panel checkout-modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Carrito de Compras</h2>
-          <button className="btn-icon" onClick={onClose}><X /></button>
+        <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px 32px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-secondary)', borderRadius: '24px 24px 0 0', width: '100%' }}>
+          <h2 style={{ fontSize: '1.8rem', margin: 0, color: 'var(--text-primary)', fontWeight: 800 }}>Carrito de Compras</h2>
+          <button type="button" className="btn-icon" onClick={onClose} style={{ marginLeft: 'auto', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><X size={20} /></button>
         </div>
 
         <div className="checkout-body">
