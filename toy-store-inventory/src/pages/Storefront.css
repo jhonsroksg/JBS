@@ -141,69 +141,109 @@
 .card-actions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  margin-top: 20px;
 }
 
 .btn-buy-now,
-.btn-add-cart {
+.btn-add-cart, 
+.btn-whatsapp {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 11px 16px;
+  gap: 10px;
+  padding: 13px 16px;
   border-radius: 12px;
   font-family: inherit;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: none;
+  position: relative;
+  overflow: hidden;
 }
 
-/* Comprar ahora — Fondo Sólido Turquesa */
+.btn-buy-now:active,
+.btn-add-cart:active, 
+.btn-whatsapp:active {
+  transform: scale(0.97);
+}
+
+/* Comprar ahora — UX Premium con Gradiente y Glow */
 .btn-buy-now {
-  background: var(--accent-primary);
+  background: linear-gradient(135deg, #1FB7B9 0%, #159EA0 100%);
   color: #fff;
-  box-shadow: 0 4px 12px rgba(31, 183, 185, 0.2);
+  box-shadow: 0 4px 15px rgba(31, 183, 185, 0.35);
+}
+
+.btn-buy-now .icon-sm {
+  animation: boltPulse 3s infinite ease-in-out;
 }
 
 .btn-buy-now:hover {
-  background: var(--accent-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(31, 183, 185, 0.3);
+  background: linear-gradient(135deg, #23C8CA 0%, #1FB7B9 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(31, 183, 185, 0.45);
 }
 
-/* Añadir al carrito — Borde Turquesa */
+@keyframes boltPulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.8; filter: drop-shadow(0 0 5px #fff); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Añadir al carrito — Glassmorphism Refinado */
 .btn-add-cart {
-  background: #fff;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
   color: var(--accent-primary);
-  border: 2px solid var(--accent-primary);
+  border: 1px solid rgba(31, 183, 185, 0.3);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.btn-add-cart .icon-sm {
+  transition: transform 0.3s ease;
 }
 
 .btn-add-cart:hover {
-  background: rgba(31, 183, 185, 0.05);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(31, 183, 185, 0.1);
+  background: #fff;
+  border-color: var(--accent-primary);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(31, 183, 185, 0.15);
 }
 
-/* Botón de WhatsApp — Verde Sólido */
+.btn-add-cart:hover .icon-sm {
+  transform: translateX(3px) rotate(-10deg);
+}
+
+/* Botón de WhatsApp — Elevación y Profundidad */
 .btn-whatsapp {
   background: var(--success);
   color: #fff;
-  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.2);
+  box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
 }
 
 .btn-whatsapp:hover {
-  filter: brightness(1.05);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(37, 211, 102, 0.3);
+  filter: brightness(1.08);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4);
+}
+
+.btn-whatsapp .icon-sm {
+  transition: transform 0.3s ease;
+}
+
+.btn-whatsapp:hover .icon-sm {
+  transform: scale(1.15) rotate(10deg);
 }
 
 .product-price {
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   font-weight: 800;
   color: var(--text-primary);
+  letter-spacing: -0.02em;
 }
 
 /* --- RESPONSIVE STOREFRONT --- */
