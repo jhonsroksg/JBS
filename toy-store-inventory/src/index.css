@@ -1,5 +1,13 @@
+@import "tailwindcss";
+
 @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap');
 
+@theme {
+  --color-peach-500: #fb923c;
+  --color-peach-600: #f97316;
+  --color-baby-blue: #EBF5FB;
+  --color-baby-gray: #F4F9FD;
+}
 :root {
   /* Colors - Joa Baby Shop Theme */
   --bg-primary: #EBF5FB;
