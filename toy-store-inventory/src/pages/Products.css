@@ -96,12 +96,12 @@
 }
 
 .btn-icon {
-  background: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  border-radius: 8px;
-  width: 32px;
-  height: 32px;
+  background: rgba(31, 183, 185, 0.1);
+  border: 1px solid rgba(31, 183, 185, 0.15);
+  color: var(--accent-primary);
+  border-radius: 10px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -110,19 +110,28 @@
 }
 
 .btn-icon svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 .btn-icon:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
+  background: var(--accent-primary);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(31, 183, 185, 0.3);
+}
+
+.btn-icon.danger {
+  background: rgba(255, 75, 117, 0.1);
+  border: 1px solid rgba(255, 75, 117, 0.15);
+  color: var(--danger);
 }
 
 .btn-icon.danger:hover {
-  background: rgba(239, 68, 68, 0.15);
-  color: var(--danger);
+  background: var(--danger);
+  color: white;
   border-color: var(--danger);
+  box-shadow: 0 5px 15px rgba(255, 75, 117, 0.3);
 }
 
 /* Modal Styles */

@@ -4,6 +4,7 @@ import { Eye, X, Download, Send, Edit, Save, Trash2, List, Archive, Truck, Packa
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import './Products.css';
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
@@ -48,7 +49,7 @@ const Orders = () => {
     setPaymentMethods(payMethods);
   };
 
-  const allTabOrders    = orders;
+  const allTabOrders    = orders.filter(o => !o.isDeleted);
   const activeOrders    = orders.filter(o => !o.isDeleted && o.status !== 'Enviado' && o.status !== 'Completado' && o.status !== 'Cancelado');
   const shippedOrders   = orders.filter(o => !o.isDeleted && o.status === 'Enviado');
   const completedOrders = orders.filter(o => !o.isDeleted && o.status === 'Completado');
@@ -302,16 +303,26 @@ const Orders = () => {
   };
 
   const handleSoftDelete = async (order) => {
-    if (confirm('¿Eliminar este registro del historial?')) {
-      await db.update('orders', order.id, { isDeleted: true });
-      await loadData();
+    if (confirm('¿Mover este pedido a la papelera?')) {
+      try {
+        await db.update('orders', order.id, { isDeleted: true });
+        await loadData();
+      } catch (err) {
+        console.error('Error al mover a papelera:', err);
+        alert('Hubo un error al mover el pedido. Por favor, intenta de nuevo.');
+      }
     }
   };
 
   const handleHardDelete = async (id) => {
-    if (confirm('¿Eliminar este registro permanentemente? Esta acción no se puede deshacer.')) {
-      await db.delete('orders', id);
-      await loadData();
+    if (confirm('¿Eliminar este registro permanentemente? Esta acción NO se puede deshacer.')) {
+      try {
+        await db.delete('orders', id);
+        await loadData();
+      } catch (err) {
+        console.error('Error al eliminar permanentemente:', err);
+        alert('No se pudo borrar el registro permanentemente. Verifica tu conexión.');
+      }
     }
   };
 
@@ -789,24 +800,24 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
                     {activeTab !== 'deleted' && activeTab !== 'cancelled' ? (
                       <>
                         {activeTab === 'active' && (
-                          <button className="btn-icon" style={{color: '#e74c3c', borderColor: 'rgba(231,76,60,0.3)'}} title="Cancelar pedido (retorna stock)" onClick={() => handleCancelOrder(order)}><XCircle size={20} /></button>
+                          <button className="btn-icon" style={{color: '#e74c3c', borderColor: 'rgba(231,76,60,0.3)'}} title="Cancelar pedido" onClick={() => handleCancelOrder(order)}><XCircle size={20} strokeWidth={2.5} /></button>
                         )}
-                        <button className="btn-icon" title="Gestión de Despacho" onClick={() => openShippingModal(order)}><Truck size={20} /></button>
-                        <button className="btn-icon" title="Ver detalles" onClick={() => openModal(order, false)}><Eye size={20} /></button>
-                        <button className="btn-icon" title="Editar pedido" onClick={() => openModal(order, true)}><Edit size={20} /></button>
-                        <button className="btn-icon" title="Generar Factura PDF" onClick={() => generatePDF(order)}><Download size={20} /></button>
-                        <button className="btn-icon" title="Enviar por WhatsApp" onClick={() => sendWhatsApp(order)}><Send size={20} /></button>
-                        <button className="btn-icon danger" title="Eliminar pedido del historial" onClick={() => handleSoftDelete(order)}><Trash2 size={20} /></button>
+                        <button className="btn-icon" title="Logística" onClick={() => openShippingModal(order)}><Truck size={20} strokeWidth={2.5} /></button>
+                        <button className="btn-icon" title="Ver" onClick={() => openModal(order, false)}><Eye size={20} strokeWidth={2.5} /></button>
+                        <button className="btn-icon" title="Editar" onClick={() => openModal(order, true)}><Edit size={20} strokeWidth={2.5} /></button>
+                        <button className="btn-icon" title="PDF" onClick={() => generatePDF(order)}><Download size={20} strokeWidth={2.5} /></button>
+                        <button className="btn-icon" title="WhatsApp" onClick={() => sendWhatsApp(order)}><Send size={20} strokeWidth={2.5} /></button>
+                        <button className="btn-icon danger" title="Mover a papelera" onClick={() => handleSoftDelete(order)}><Trash2 size={20} strokeWidth={2.5} /></button>
                       </>
                     ) : activeTab === 'cancelled' ? (
                       <>
-                        <button className="btn-icon" title="Ver detalles" onClick={() => openModal(order, false)}><Eye size={20} /></button>
-                        <button className="btn-icon danger" title="Eliminar del historial" onClick={() => handleSoftDelete(order)}><Trash2 size={20} /></button>
+                        <button className="btn-icon" title="Ver" onClick={() => openModal(order, false)}><Eye size={20} strokeWidth={2.5} /></button>
+                        <button className="btn-icon danger" title="Mover a papelera" onClick={() => handleSoftDelete(order)}><Trash2 size={20} strokeWidth={2.5} /></button>
                       </>
                     ) : (
                       <>
-                        <button className="btn-icon" title="Ver detalles" onClick={() => openModal(order, false)}><Eye size={20} /></button>
-                        <button className="btn-icon danger" title="Borrar registro permanentemente" onClick={() => handleHardDelete(order.id)}><Trash2 size={20} /></button>
+                        <button className="btn-icon" title="Ver" onClick={() => openModal(order, false)}><Eye size={20} strokeWidth={2.5} /></button>
+                        <button className="btn-icon danger" title="Eliminar permanentemente" onClick={() => handleHardDelete(order.id)}><Trash2 size={20} strokeWidth={2.5} /></button>
                       </>
                     )}
                   </td>

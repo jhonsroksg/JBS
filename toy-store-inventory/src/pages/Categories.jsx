@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../services/db';
 import { Plus, Edit2, Trash2, X, Tags } from 'lucide-react';
+import './Products.css';
 
 const Categories = () => {
   const [categories, setCategories] = useState([]);
@@ -72,7 +73,7 @@ const Categories = () => {
           <p>Organiza tus juguetes en colecciones.</p>
         </div>
         <button className="btn-primary" onClick={() => handleOpenModal()}>
-          <Plus className="icon-sm" /> Nueva Categoría
+          <Plus size={20} strokeWidth={3} /> Nueva Categoría
         </button>
       </div>
 
@@ -81,7 +82,7 @@ const Categories = () => {
           <table className="data-table">
             <thead>
               <tr>
-                <th><Tags className="icon-sm" style={{ marginRight: '8px', verticalAlign: 'middle' }} /> Nombre</th>
+                <th><Tags size={20} strokeWidth={2.5} style={{ marginRight: '8px', verticalAlign: 'middle', color: 'var(--accent-primary)' }} /> Nombre</th>
                 <th>Descripción</th>
                 <th>Productos Asociados</th>
                 <th>Acciones</th>
@@ -94,8 +95,8 @@ const Categories = () => {
                   <td data-label="Descripción" className="text-secondary">{category.description}</td>
                   <td data-label="Productos Asociados"><span className="badge badge-info">{getProductCount(category.id)} juguetes</span></td>
                   <td data-label="Acciones" className="actions-cell">
-                    <button className="btn-icon" onClick={() => handleOpenModal(category)}><Edit2 /></button>
-                    <button className="btn-icon danger" onClick={() => handleDelete(category.id)}><Trash2 /></button>
+                    <button className="btn-icon" title="Editar" onClick={() => handleOpenModal(category)}><Edit2 strokeWidth={2.5} /></button>
+                    <button className="btn-icon danger" title="Eliminar" onClick={() => handleDelete(category.id)}><Trash2 strokeWidth={2.5} /></button>
                   </td>
                 </tr>
               ))}

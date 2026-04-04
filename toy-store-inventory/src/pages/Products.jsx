@@ -306,7 +306,7 @@ const Products = () => {
           <p>Administra los productos de tu tienda.</p>
         </div>
         <button className="btn-primary" onClick={() => handleOpenModal()}>
-          <Plus className="icon-sm" /> Agregar Juguete
+          <Plus size={20} strokeWidth={3} /> Agregar Juguete
         </button>
       </div>
 
@@ -364,8 +364,8 @@ const Products = () => {
                     <span className={`badge ${product.stock <= product.minStock ? 'badge-danger' : 'badge-success'}`}>{product.stock}</span>
                   </td>
                   <td data-label="Acciones" className="actions-cell">
-                    <button className="btn-icon" onClick={() => handleOpenModal(product)}><Edit2 /></button>
-                    <button className="btn-icon danger" onClick={() => handleDelete(product.id)}><Trash2 /></button>
+                    <button className="btn-icon" title="Editar" onClick={() => handleOpenModal(product)}><Edit2 strokeWidth={2.5} /></button>
+                    <button className="btn-icon danger" title="Eliminar" onClick={() => handleDelete(product.id)}><Trash2 strokeWidth={2.5} /></button>
                   </td>
                 </tr>
               ))}
