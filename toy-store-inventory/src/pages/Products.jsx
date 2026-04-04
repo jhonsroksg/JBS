@@ -450,7 +450,7 @@ const Products = () => {
               </div>
               <div className="modal-actions">
                 <button type="button" className="btn-secondary" onClick={handleCloseModal}>Cancelar</button>
-                <button type="submit" className="btn-primary">Guardar</button>
+                <button type="submit" className="btn-primary">Guardar cambios</button>
               </div>
             </form>
           </div>
