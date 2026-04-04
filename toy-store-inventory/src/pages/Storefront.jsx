@@ -189,13 +189,13 @@ const Storefront = () => {
               </div>
               <div className="card-actions" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 <button className="btn-buy-now" onClick={() => handleBuyNow(product)} style={{ gridColumn: '1 / -1' }}>
-                  <Zap className="icon-sm" /> Comprar ahora
+                  <Zap size={20} strokeWidth={2.5} /> Comprar ahora
                 </button>
                 <button className="btn-whatsapp" onClick={() => handleWhatsAppContact(product)}>
-                  <MessageCircle className="icon-sm" /> WhatsApp
+                  <MessageCircle size={20} strokeWidth={2} /> WhatsApp
                 </button>
                 <button className="btn-add-cart" onClick={() => handleAddToCart(product)}>
-                  <ShoppingCart className="icon-sm" /> Carrito
+                  <ShoppingCart size={20} strokeWidth={2.5} /> Carrito
                 </button>
               </div>
             </div>
