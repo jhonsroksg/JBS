@@ -144,98 +144,13 @@
   background: rgba(99, 102, 241, 0.1);
 }
 
-/* Common Table Styles */
-.table-responsive {
-  width: 100%;
-  overflow-x: auto;
-}
-
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-}
-
-.data-table th, .data-table td {
-  padding: 16px;
-  border-bottom: 1px solid var(--border-color);
-}
-
+/* Common Table styles moved to index.css */
 .data-table th {
   color: var(--text-secondary);
-  font-weight: 500;
-  font-size: 0.85rem;
+  font-weight: 600;
+  font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-}
-
-.data-table tbody tr {
-  transition: background var(--transition-fast);
-}
-
-.data-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.product-cell {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-weight: 500;
-}
-
-.product-thumb {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  object-fit: cover;
-}
-
-.highlight-text {
-  font-weight: 700;
-  color: var(--danger);
-  font-size: 1.1rem;
-}
-
-.text-secondary {
-  color: var(--text-secondary);
-}
-
-/* Badges */
-.badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.badge-danger {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-}
-
-.badge-success {
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
-}
-
-.badge-warning {
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
-}
-
-.badge-info {
-  background: rgba(99, 102, 241, 0.15);
-  color: #6366f1;
-}
-
-.empty-state {
-  text-align: center;
-  color: var(--text-secondary);
-  padding: 32px !important;
-  font-style: italic;
 }
 
 /* Recent Orders List */
