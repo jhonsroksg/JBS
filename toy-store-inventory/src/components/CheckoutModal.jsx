@@ -217,95 +217,80 @@ const CheckoutModal = ({ isOpen, onClose }) => {
             </div>
           ) : (
             <>
-              <div className="cart-items">
-                {cart.length === 0 ? (
-                  <p className="empty-state">Tu carrito está vacío.</p>
-                ) : (
-                  cart.map((item, index) => (
-                    <div key={item.product.id} className="cart-item">
-                      <div className="cart-item-main">
-                        <img 
-                          src={item.product.imageUrl} 
-                          alt={`Juguete ${item.product.name} en el carrito`} 
-                          className="cart-item-img" 
-                          loading="lazy"
-                        />
-                        <div className="cart-item-info">
-                          <h4>{item.product.name}</h4>
-                          <div className="cart-item-price-display">
-                            {item.product.discountPrice ? (
-                              <>
-                                <span className="price-original">L. {Number(item.product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-                                <span className="price-current">L. {Number(item.product.discountPrice).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-                              </>
-                            ) : (
-                              <span className="price-current">L. {Number(item.product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-                            )}
+              <div className="checkout-content">
+                <div className="cart-column">
+                  <h3 className="column-title">Carrito de Compras</h3>
+                  {cart.length === 0 ? (
+                    <p className="empty-state">Tu carrito está vacío.</p>
+                  ) : (
+                    <div className="cart-items-list">
+                      {cart.map((item, index) => (
+                        <div key={item.product.id} className="cart-item-card">
+                          <img src={item.product.imageUrl} alt={item.product.name} className="item-card-img" />
+                          <div className="item-card-details">
+                            <div className="item-card-header">
+                              <h4>{item.product.name}</h4>
+                              <span className="item-card-price">L. {Number(item.product.discountPrice || item.product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                            </div>
+                            <div className="item-card-footer">
+                              <div className="item-qty-selector">
+                                <button type="button" onClick={() => updateQuantity(index, -1)} disabled={item.quantity <= 1}>-</button>
+                                <span>{item.quantity}</span>
+                                <button type="button" onClick={() => updateQuantity(index, 1)}>+</button>
+                              </div>
+                              <div className="item-card-subtotal">
+                                L. {((item.product.discountPrice || item.product.sellingPrice) * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                              </div>
+                              <button type="button" className="item-remove-btn" onClick={() => removeItem(index)}>
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="cart-item-footer">
-                        <div className="quantity-selector">
-                          <button type="button" className="qty-btn" onClick={() => updateQuantity(index, -1)} disabled={item.quantity <= 1}>-</button>
-                          <span className="qty-number">{item.quantity}</span>
-                          <button type="button" className="qty-btn" onClick={() => updateQuantity(index, 1)}>+</button>
-                        </div>
-                        <div className="cart-item-subtotal">
-                          L. {( (item.product.discountPrice || item.product.sellingPrice) * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                        </div>
-                        <button type="button" className="remove-item-btn" onClick={() => removeItem(index)}>
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
+                      ))}
                     </div>
-                  ))
-                )}
-              </div>
+                  )}
+                </div>
 
-              {cart.length > 0 && (
-                <div className="checkout-sidebar">
+                <div className="form-column">
                   <form id="checkout-form-data" className="checkout-form" onSubmit={handleCheckout}>
                     <div className="form-section">
-                      <div className="section-title">
+                      <div className="section-header">
                         <User size={18} />
-                        <h4>Tu Contacto</h4>
+                        <h4>TU CONTACTO</h4>
                       </div>
-                      <div className="form-group-icon">
+                      <div className="form-input-group">
                         <User className="input-icon" size={18} />
                         <input type="text" placeholder="Nombre y Apellido" required value={customerInfo.name} onChange={e => setCustomerInfo({ ...customerInfo, name: e.target.value })} />
                       </div>
-                      <div className="form-group-icon">
+                      <div className="form-input-group">
                         <Mail className="input-icon" size={18} />
                         <input type="email" placeholder="Correo electrónico" required value={customerInfo.email} onChange={e => setCustomerInfo({ ...customerInfo, email: e.target.value })} />
                       </div>
-                      <div className="form-group-icon">
+                      <div className="form-input-group">
                         <Phone className="input-icon" size={18} />
                         <input type="tel" placeholder="Teléfono móvil" required value={customerInfo.phone} onChange={e => setCustomerInfo({ ...customerInfo, phone: e.target.value })} />
                       </div>
                     </div>
 
                     <div className="form-section">
-                      <div className="section-title">
+                      <div className="section-header">
                         <MapPin size={18} />
-                        <h4>Detalles de Envío</h4>
+                        <h4>DETALLES DE ENVÍO</h4>
                       </div>
-                      <div className="form-row responsive-row">
-                        <div className="form-group-icon">
+                      <div className="form-row-nested">
+                        <div className="form-input-group">
                           <MapPin className="input-icon" size={18} />
                           <select required value={customerInfo.department} onChange={e => setCustomerInfo({ ...customerInfo, department: e.target.value, municipality: '' })}>
                             <option value="" disabled>Departamento</option>
                             {Object.keys(hondurasLocations).sort().map(dept => <option key={dept} value={dept}>{dept}</option>)}
                           </select>
                         </div>
-                        <div className="form-group-icon">
+                        <div className="form-input-group">
                           <MapPin className="input-icon" size={18} />
                           <select required onChange={e => {
                             const newMuni = e.target.value;
                             setCustomerInfo({ ...customerInfo, municipality: newMuni });
-                            if (newMuni !== 'San Pedro Sula') {
-                              const currentSelected = availableDeliveryMethods.find(m => m.id === deliveryMethodId);
-                              if (currentSelected && (currentSelected.name.toLowerCase().includes('pick up') || currentSelected.name.toLowerCase().includes('pickup'))) setDeliveryMethodId('');
-                            }
                           }} disabled={!customerInfo.department} value={customerInfo.municipality}>
                             <option value="" disabled>Municipio</option>
                             {customerInfo.department && hondurasLocations[customerInfo.department].sort().map(muni => <option key={muni} value={muni}>{muni}</option>)}
@@ -314,13 +299,13 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                       </div>
                       
                       {!isPickUp && (
-                        <div className="form-group-icon">
+                        <div className="form-input-group">
                           <MapPin className="input-icon" size={18} style={{ top: '15px', transform: 'none' }} />
                           <textarea placeholder="Punto de referencia o dirección exacta..." required rows="2" value={customerInfo.address} onChange={e => setCustomerInfo({ ...customerInfo, address: e.target.value })} />
                         </div>
                       )}
 
-                      <div className="form-group-icon">
+                      <div className="form-input-group">
                         <Truck className="input-icon" size={18} />
                         <select required value={deliveryMethodId} onChange={e => setDeliveryMethodId(e.target.value)}>
                           <option value="" disabled>Método de entrega...</option>
@@ -332,7 +317,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                         </select>
                       </div>
 
-                      <div className="form-group-icon">
+                      <div className="form-input-group">
                         <CreditCard className="input-icon" size={18} />
                         <select required value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
                           <option value="" disabled>Método de pago...</option>
@@ -341,50 +326,36 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                       </div>
                     </div>
 
-                    <div className="checkout-summary">
+                    <div className="summary-section">
                       <h3>Resumen</h3>
-                      <div className="summary-row">
+                      <div className="summary-line">
                         <span>Subtotal</span>
-                        <span>L. {cartSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span>L. {cartSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                       </div>
                       {appliedCoupon && (
-                        <div className="summary-row discount" style={{ color: 'var(--danger)', margin: '4px 0' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span>Cupón ({appliedCoupon.code})</span>
-                            <button type="button" className="btn-icon danger" style={{ padding: '2px', width: '20px', height: '20px', color: 'var(--danger)', background: 'rgba(231, 76, 60, 0.1)' }} onClick={() => setAppliedCoupon(null)} title="Quitar cupón"><X size={12} /></button>
-                          </div>
-                          <span>- L. {cartDiscountAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <div className="summary-line discount">
+                          <span>Cupón ({appliedCoupon.code})</span>
+                          <span>- L. {cartDiscountAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                         </div>
                       )}
                       {selectedDelivery && (
-                        <div className="summary-row">
-                          <span>Envío ({selectedDelivery.name})</span>
-                          <span>{deliveryCostUI > 0 ? `L. ${deliveryCostUI.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Gratis'}</span>
+                        <div className="summary-line">
+                          <span>Envío</span>
+                          <span>{deliveryCostUI > 0 ? `L. ${deliveryCostUI.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : 'Gratis'}</span>
                         </div>
                       )}
-                      <div className="summary-row total">
+                      <div className="summary-line total-line">
                         <span>Total de Compra</span>
-                        <span>L. {cartTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span>L. {cartTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                       </div>
+                      
+                      <button type="submit" className="confirm-order-btn" disabled={isSubmitting}>
+                        {isSubmitting ? 'Procesando...' : `Confirmar Pedido`}
+                      </button>
                     </div>
-
-                    {!appliedCoupon && activeCouponsCount > 0 && (
-                      <div className="coupon-section" style={{ marginBottom: '20px', padding: '15px', background: 'var(--bg-tertiary)', borderRadius: '12px', border: '1px dashed var(--border-color)' }}>
-                        <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '8px', color: 'var(--text-secondary)' }}>¿Tienes un cupón de descuento?</label>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <input type="text" placeholder="Ingresar código" value={couponInput} onChange={(e) => setCouponInput(e.target.value.toUpperCase())} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', outline: 'none', background: 'var(--bg-secondary)', color: 'var(--text-primary)', textTransform: 'uppercase' }} />
-                          <button type="button" className="btn-secondary" onClick={handleApplyCoupon} style={{ padding: '0 15px', borderRadius: '8px' }}>Aplicar</button>
-                        </div>
-                        {couponError && <div style={{ color: 'var(--danger)', fontSize: '0.85rem', marginTop: '8px' }}>{couponError}</div>}
-                      </div>
-                    )}
-
-                    <button type="submit" className="btn-primary checkout-btn" disabled={isSubmitting} style={{ fontSize: '1.1rem', padding: '16px', borderRadius: '12px', marginTop: '8px', opacity: isSubmitting ? 0.7 : 1 }}>
-                      {isSubmitting ? 'Procesando...' : `Confirmar Pedido (L. ${cartTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`}
-                    </button>
                   </form>
                 </div>
-              )}
+              </div>
             </>
           )}
         </div>
