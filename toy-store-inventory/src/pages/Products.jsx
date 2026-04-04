@@ -28,8 +28,8 @@ const Products = () => {
     setLoading(true);
     try {
       const [prods, cats] = await Promise.all([
-        // Excluimos 'imageUrl' y 'images' para hacer que la carga sea súper rápida (0 base64 payloads)
-        db.getAllSelected('products', 'id, sku, name, brand, description, ageRange, categoryId, costPrice, sellingPrice, discountPrice, stock, minStock'),
+        // Excluimos la inmensa columna 'images' pero mantenemos 'imageUrl' (imagen de portada)
+        db.getAllSelected('products', 'id, sku, name, brand, description, ageRange, categoryId, costPrice, sellingPrice, discountPrice, stock, minStock, imageUrl'),
         db.getAll('categories'),
       ]);
       setProducts(prods);
