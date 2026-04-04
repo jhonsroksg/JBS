@@ -17,11 +17,13 @@ const CheckoutModal = ({ isOpen, onClose }) => {
   const [couponError, setCouponError] = useState('');
   const [activeCouponsCount, setActiveCouponsCount] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [completedOrderNumber, setCompletedOrderNumber] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
       loadCart();
       setOrderComplete(false);
+      setCompletedOrderNumber(null);
       setCustomerInfo({ name: '', email: '', phone: '', address: '', department: '', municipality: '' });
       setCouponInput('');
       setAppliedCoupon(null);
@@ -133,7 +135,10 @@ const CheckoutModal = ({ isOpen, onClose }) => {
       const tasks = [];
 
       // Task A: Create Order (Priority 1)
-      tasks.push(db.insert('orders', orderData));
+      const newOrder = await db.insert('orders', orderData);
+      if (newOrder && newOrder.order_number) {
+        setCompletedOrderNumber(newOrder.order_number);
+      }
 
       // Task B: Update/Create Customer (Optimized search)
       tasks.push((async () => {
@@ -165,7 +170,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
         })());
       });
 
-      // Execute everything in Parallel for instant speed
+      // Execute background tasks (Customers, Stock) in Parallel
       await Promise.all(tasks);
 
       // 4. Success Routine
@@ -214,7 +219,12 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                 <CheckCircle size={80} />
               </div>
               <h3>¡Pedido completado!</h3>
-              <p>Gracias por tu compra en Joa Baby Shop. Hemos recibido tu pedido y comenzaremos a procesarlo pronto.</p>
+              <p>Gracias por tu compra en Joa Baby Shop. Tu número de pedido es: 
+                <strong style={{ display: 'block', fontSize: '1.5rem', color: 'var(--accent-primary)', marginTop: '10px' }}>
+                  {completedOrderNumber ? `Joab${String(completedOrderNumber).padStart(4, '0')}` : 'Procesando...'}
+                </strong>
+              </p>
+              <p>Hemos recibido tu pedido y comenzaremos a procesarlo pronto.</p>
               <button className="confirm-order-btn" style={{ maxWidth: '200px' }} onClick={onClose}>Cerrar</button>
             </div>
           ) : (

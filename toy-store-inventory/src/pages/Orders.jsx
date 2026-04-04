@@ -111,6 +111,17 @@ const Orders = () => {
     setShippingOrder(null);
   };
 
+  const getDisplayId = (order) => {
+    if (!order) return '';
+    if (order.order_number) {
+      return `Joab${String(order.order_number).padStart(4, '0')}`;
+    }
+    // Fallback para pedidos antiguos que solo tienen UUID
+    return (order.id && typeof order.id === 'string' && order.id.includes('-')) 
+      ? order.id.split('-')[0].toUpperCase() 
+      : (order.id || 'N/A');
+  };
+
   // --- CALCULATION LOGIC ---
   const calculateTotalItems = (items) => {
     if (!items) return 0;
@@ -342,7 +353,7 @@ const Orders = () => {
 
   const generatePDF = (order) => {
     const doc = new jsPDF();
-    const orderId = order.id.split('_')[2] || order.id;
+    const orderId = getDisplayId(order);
     
     doc.setFontSize(22);
     doc.text('Factura de Pedido', 14, 22);
@@ -430,7 +441,7 @@ const Orders = () => {
       phone = '504' + phone;
     }
     
-    const orderId = order.id.split('_')[2] || order.id;
+    const orderId = getDisplayId(order);
     
     let itemsText = '';
     if (order.items && order.items.length > 0) {
@@ -484,7 +495,7 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
   const exportToExcel = () => {
     try {
       const data = displayOrders.map(order => ({
-        'ID Pedido': order.id.split('_')[2] || order.id,
+        'ID Pedido': getDisplayId(order),
         'Cliente': order.customerName || '',
         'Correo': order.customerEmail || 'N/A',
         'Teléfono': order.customerPhone || 'N/A',
@@ -536,7 +547,7 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
       doc.text(`Generado: ${new Date().toLocaleString()}   |   Total: ${displayOrders.length} pedidos`, 14, 26);
 
       const tableData = displayOrders.map(order => [
-        order.id.split('_')[2] || order.id,
+        getDisplayId(order),
         order.customerName || '',
         new Date(order.date).toLocaleDateString(),
         new Date(order.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
@@ -591,7 +602,7 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
             <tbody>
               ${displayOrders.map((order, i) => `
                 <tr style="background-color:${i % 2 === 0 ? '#f9f9f9' : '#ffffff'}">
-                  <td>${order.id.split('_')[2] || order.id}</td>
+                  <td>${getDisplayId(order)}</td>
                   <td>${order.customerName || ''}</td>
                   <td>${order.customerPhone || 'N/A'}</td>
                   <td>${new Date(order.date).toLocaleDateString()}</td>
@@ -747,7 +758,7 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
             <tbody>
               {displayOrders.map(order => (
                 <tr key={order.id} style={{ opacity: order.isDeleted ? 0.7 : 1 }}>
-                  <td data-label="ID Pedido" className="text-secondary" style={{ whiteSpace: 'nowrap' }}>{order.id.split('_')[2] || order.id}</td>
+                  <td data-label="ID Pedido" className="text-secondary" style={{ whiteSpace: 'nowrap', fontWeight: 'bold', color: 'var(--accent-primary)' }}>{getDisplayId(order)}</td>
                   <td data-label="Cliente" style={{color: 'var(--text-primary)'}}>
                     <div style={{fontWeight: 600}}>{order.customerName}</div>
                     {(order.customerEmail || order.customerPhone) && (
