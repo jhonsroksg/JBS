@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../services/db';
-import { ShoppingCart, X, Zap, Search, Filter } from 'lucide-react';
+import { ShoppingCart, X, Zap, Search, Filter, MessageCircle } from 'lucide-react';
 import './Storefront.css';
 
 const Storefront = () => {
@@ -69,6 +69,14 @@ const Storefront = () => {
     handleAddToCart(product);
     // Abre el carrito/checkout directamente
     window.dispatchEvent(new Event('open_cart'));
+  };
+
+  const handleWhatsAppContact = (product) => {
+    const phoneNumber = import.meta.env.VITE_WHATSAPP_NUMBER || '50499113697'; // Fallback por si acaso
+    const message = `Hola JoaBabyShop, me interesa el producto ${product.name} con código ${product.sku || product.id} que vi en la web.`;
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+    window.open(whatsappUrl, '_blank');
   };
 
   return (
@@ -147,12 +155,15 @@ const Storefront = () => {
                   <span className="product-price">L. {Number(product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 )}
               </div>
-              <div className="card-actions">
-                <button className="btn-buy-now" onClick={() => handleBuyNow(product)}>
+              <div className="card-actions" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <button className="btn-buy-now" onClick={() => handleBuyNow(product)} style={{ gridColumn: '1 / -1' }}>
                   <Zap className="icon-sm" /> Comprar ahora
                 </button>
+                <button className="btn-whatsapp" onClick={() => handleWhatsAppContact(product)}>
+                  <MessageCircle className="icon-sm" /> WhatsApp
+                </button>
                 <button className="btn-add-cart" onClick={() => handleAddToCart(product)}>
-                  <ShoppingCart className="icon-sm" /> Añadir al carrito
+                  <ShoppingCart className="icon-sm" /> Carrito
                 </button>
               </div>
             </div>
@@ -202,8 +213,11 @@ const Storefront = () => {
               ) : (
                 <div style={{ margin: '30px 0', fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>L. {Number(selectedProduct.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
               )}
-              <div style={{ marginTop: 'auto', display: 'flex', gap: '10px' }}>
-                <button className="btn-primary" disabled={selectedProduct.stock === 0} style={{ flex: 1, padding: '15px', fontSize: '1.1rem', justifyContent: 'center', opacity: selectedProduct.stock === 0 ? 0.5 : 1 }} onClick={() => { handleAddToCart(selectedProduct); setSelectedProduct(null); }}>
+              <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <button className="btn-whatsapp" style={{ padding: '15px', fontSize: '1.1rem', justifyContent: 'center' }} onClick={() => handleWhatsAppContact(selectedProduct)}>
+                  <MessageCircle className="icon-sm" /> Consultar por WhatsApp
+                </button>
+                <button className="btn-primary" disabled={selectedProduct.stock === 0} style={{ padding: '15px', fontSize: '1.1rem', justifyContent: 'center', opacity: selectedProduct.stock === 0 ? 0.5 : 1 }} onClick={() => { handleAddToCart(selectedProduct); setSelectedProduct(null); }}>
                   <ShoppingCart className="icon-sm" /> Agregar al Carrito
                 </button>
               </div>
