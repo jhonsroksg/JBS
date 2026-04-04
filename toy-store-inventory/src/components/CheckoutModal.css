@@ -84,12 +84,17 @@
   font-size: 1rem;
   font-weight: 700;
   color: #2d3748;
+  margin-right: 12px;
+  flex: 1;
 }
 
 .item-card-price {
   font-size: 0.95rem;
   color: var(--accent-primary);
   font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: 12px;
 }
 
 .item-card-footer {
@@ -133,6 +138,7 @@
   font-weight: 800;
   font-size: 1rem;
   color: #1a202c;
+  white-space: nowrap;
 }
 
 .item-remove-btn {
