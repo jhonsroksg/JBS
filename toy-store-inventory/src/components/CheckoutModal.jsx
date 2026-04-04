@@ -230,7 +230,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                           <div className="item-card-details">
                             <div className="item-card-header">
                               <h4>{item.product.name}</h4>
-                              <span className="item-card-price">L. {Number(item.product.discountPrice || item.product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                              <span className="item-card-price">L. {Number(item.product.discountPrice || item.product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                             <div className="item-card-footer">
                               <div className="item-qty-selector">
@@ -239,7 +239,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                                 <button type="button" onClick={() => updateQuantity(index, 1)}>+</button>
                               </div>
                               <div className="item-card-subtotal">
-                                L. {((item.product.discountPrice || item.product.sellingPrice) * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                L. {((item.product.discountPrice || item.product.sellingPrice) * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </div>
                               <button type="button" className="item-remove-btn" onClick={() => removeItem(index)}>
                                 <Trash2 size={16} />
