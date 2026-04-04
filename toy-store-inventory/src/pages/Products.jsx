@@ -131,6 +131,7 @@ const Products = () => {
       
       await loadData();
       handleCloseModal();
+      alert('¡Producto guardado exitosamente!');
     } catch (error) {
       console.error('Error al guardar producto:', error);
       alert('Error al guardar: ' + (error.message || 'Verifica los datos e intenta de nuevo.'));
@@ -138,16 +139,24 @@ const Products = () => {
   };
 
   const handleDelete = async (id) => {
+    if (!id) {
+      console.error('handleDelete: ID no proporcionado');
+      return;
+    }
+    console.log('handleDelete: Iniciando borrado de ID:', id);
     if (confirm('¿Seguro que deseas eliminar este producto?')) {
       // Optimistic delete
       const originalProducts = [...products];
       setProducts(prev => prev.filter(p => p.id !== id));
       try {
         await db.delete('products', id);
+        console.log('handleDelete: Borrado exitoso en DB');
         // Sync check in background
         loadData();
+        alert('Producto eliminado con éxito.');
       } catch (err) {
-        alert('Error al eliminar el producto. Reintentando...');
+        console.error('handleDelete: Error capturado:', err);
+        alert('Error al eliminar el producto: ' + (err.message || 'Intenta de nuevo.'));
         setProducts(originalProducts);
       }
     }

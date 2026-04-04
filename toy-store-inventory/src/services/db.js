@@ -68,14 +68,22 @@ export const db = {
 
   // ─── Delete ─────────────────────────────────────────────────────────────────
   delete: async (collection, id) => {
-    const { error } = await supabase
+    if (!id) {
+      console.warn(`[db.delete] Error: ID es nulo o indefinido para "${collection}"`);
+      return;
+    }
+    console.log(`[db.delete] Intentando eliminar "${id}" de "${collection}"...`);
+    const { data, error, status } = await supabase
       .from(collection)
       .delete()
       .eq('id', id);
+    
     if (error) {
       console.error(`[db.delete] Error en "${collection}":`, error.message);
       throw error;
     }
+    console.log(`[db.delete] Éxito: Status ${status}`);
+    return true;
   },
 
   // ─── Store Info ─────────────────────────────────────────────────────────────
