@@ -48,6 +48,7 @@ const Settings = () => {
         name: storeInfo.name.trim(),
         phone: storeInfo.phone ? storeInfo.phone.trim() : null,
         welcomeMessage: storeInfo.welcomeMessage ? storeInfo.welcomeMessage.trim() : null,
+        hero_image_url: storeInfo.hero_image_url ? storeInfo.hero_image_url.trim() : null,
         footer_description: storeInfo.footer_description ? storeInfo.footer_description.trim() : null,
         facebook_url: storeInfo.facebook_url ? storeInfo.facebook_url.trim() : null,
         instagram_url: storeInfo.instagram_url ? storeInfo.instagram_url.trim() : null,
@@ -215,46 +216,63 @@ const Settings = () => {
       <div className="glass-panel" style={{ padding: '30px', marginBottom: '24px' }}>
         <h2 style={{ fontSize: '1.4rem', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>Información de la Tienda</h2>
         <form onSubmit={handleSaveStoreInfo} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '16px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Nombre de la Tienda</label>
-              <input type="text" value={storeInfo.name} onChange={e => setStoreInfo({ ...storeInfo, name: e.target.value })} style={inputStyle} placeholder="Ej. Mi Juguetería" required />
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Teléfono de Contacto (WhatsApp)</label>
-              <input type="text" value={storeInfo.phone} onChange={e => setStoreInfo({ ...storeInfo, phone: e.target.value })} style={inputStyle} placeholder="Ej. +504 9999-9999" />
-            </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '8px' }}>
-            <div>
-              <h3 style={{ fontSize: '1.1rem', marginBottom: '16px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>Configuración del Pie de Página</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Misión / Descripción del Footer</label>
-                  <textarea value={storeInfo.footer_description || ''} onChange={e => setStoreInfo({ ...storeInfo, footer_description: e.target.value })} style={{ ...inputStyle, resize: 'vertical', minHeight: '80px' }} placeholder="Ej. Acompañando el crecimiento de tus pequeños..." />
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '24px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <h3 style={{ fontSize: '1.1rem', marginBottom: '4px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>Sección Principal (Hero)</h3>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>URL de Imagen Hero (Fondo)</label>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <input type="text" value={storeInfo.hero_image_url || ''} onChange={e => setStoreInfo({ ...storeInfo, hero_image_url: e.target.value })} style={inputStyle} placeholder="https://images.unsplash.com/..." />
+                  {storeInfo.hero_image_url && (
+                    <div style={{ width: '45px', height: '45px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)', flexShrink: 0 }}>
+                      <img src={storeInfo.hero_image_url} alt="Hero Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => e.target.src = 'https://via.placeholder.com/45?text=Error'} />
+                    </div>
+                  )}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Link de Facebook</label>
-                    <input type="text" value={storeInfo.facebook_url || ''} onChange={e => setStoreInfo({ ...storeInfo, facebook_url: e.target.value })} style={inputStyle} placeholder="https://facebook.com/..." />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Link de Instagram</label>
-                    <input type="text" value={storeInfo.instagram_url || ''} onChange={e => setStoreInfo({ ...storeInfo, instagram_url: e.target.value })} style={inputStyle} placeholder="https://instagram.com/..." />
-                  </div>
-                </div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>Recomendado: Imágenes horizontales de alta calidad (1920x1080).</p>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Título Hero (Nombre)</label>
+                <input type="text" value={storeInfo.name} onChange={e => setStoreInfo({ ...storeInfo, name: e.target.value })} style={inputStyle} placeholder="Ej. Joa Baby Shop" />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Subtítulo Hero (Bienvenida)</label>
+                <input type="text" value={storeInfo.welcomeMessage || ''} onChange={e => setStoreInfo({ ...storeInfo, welcomeMessage: e.target.value })} style={inputStyle} placeholder="Ej. ¡Bienvenido a nuestra tienda!" />
               </div>
             </div>
-            <div>
-              <h3 style={{ fontSize: '1.1rem', marginBottom: '16px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>Información de Contacto Pública</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <h3 style={{ fontSize: '1.1rem', marginBottom: '4px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>Información de Contacto</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '12px' }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Dirección Física</label>
-                  <input type="text" value={storeInfo.store_address || ''} onChange={e => setStoreInfo({ ...storeInfo, store_address: e.target.value })} style={inputStyle} placeholder="Ej. San Pedro Sula, Honduras" />
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>WhatsApp (Ej. 50499009900)</label>
+                  <input type="text" value={storeInfo.phone} onChange={e => setStoreInfo({ ...storeInfo, phone: e.target.value })} style={inputStyle} placeholder="Solo números" />
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Correo Electrónico de la Tienda</label>
-                  <input type="email" value={storeInfo.store_email || ''} onChange={e => setStoreInfo({ ...storeInfo, store_email: e.target.value })} style={inputStyle} placeholder="Ej. info@mi-tienda.com" />
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Correo Electrónico</label>
+                  <input type="email" value={storeInfo.store_email || ''} onChange={e => setStoreInfo({ ...storeInfo, store_email: e.target.value })} style={inputStyle} placeholder="info@tienda.com" />
+                </div>
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Dirección Física</label>
+                <input type="text" value={storeInfo.store_address || ''} onChange={e => setStoreInfo({ ...storeInfo, store_address: e.target.value })} style={inputStyle} placeholder="Ej. San Pedro Sula, Honduras" />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', gridColumn: '1 / -1', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+              <h3 style={{ fontSize: '1.1rem', marginBottom: '4px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>Pie de Página (Footer) e Redes</h3>
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Misión / Descripción</label>
+                <textarea value={storeInfo.footer_description || ''} onChange={e => setStoreInfo({ ...storeInfo, footer_description: e.target.value })} style={{ ...inputStyle, resize: 'vertical', minHeight: '80px' }} placeholder="Ej. Acompañando el crecimiento de tus pequeños..." />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Link de Facebook</label>
+                  <input type="text" value={storeInfo.facebook_url || ''} onChange={e => setStoreInfo({ ...storeInfo, facebook_url: e.target.value })} style={inputStyle} placeholder="https://facebook.com/..." />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Link de Instagram</label>
+                  <input type="text" value={storeInfo.instagram_url || ''} onChange={e => setStoreInfo({ ...storeInfo, instagram_url: e.target.value })} style={inputStyle} placeholder="https://instagram.com/..." />
                 </div>
               </div>
             </div>

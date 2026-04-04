@@ -103,7 +103,12 @@ const Storefront = () => {
         <meta property="og:url" content={window.location.href} />
         <meta property="og:image" content={products[0]?.imageUrl || "/favicon.svg"} />
       </Helmet>
-      <div className="hero-section glass-panel">
+      <div 
+        className="hero-section glass-panel" 
+        style={{ 
+          backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.5), rgba(235, 245, 251, 0.95)), url('${storeInfo.hero_image_url}')` 
+        }}
+      >
         <div className="hero-content">
           <h1>{storeInfo.name}</h1>
           <p>{storeInfo.welcomeMessage}</p>

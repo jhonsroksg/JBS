@@ -110,6 +110,7 @@ export const db = {
         name: 'Joa Baby Shop', 
         phone: '50498927803', 
         welcomeMessage: '¡Bienvenido a nuestra tienda!',
+        hero_image_url: 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
         footer_description: 'Acompañando el crecimiento de tus pequeños con los juguetes más seguros, educativos y divertidos de Honduras.',
         facebook_url: '#',
         instagram_url: '#',
@@ -119,6 +120,7 @@ export const db = {
     }
     return {
       ...data,
+      hero_image_url: data.hero_image_url || 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
       footer_description: data.footer_description || 'Acompañando el crecimiento de tus pequeños con los juguetes más seguros, educativos y divertidos de Honduras.',
       facebook_url: data.facebook_url || '#',
       instagram_url: data.instagram_url || '#',
