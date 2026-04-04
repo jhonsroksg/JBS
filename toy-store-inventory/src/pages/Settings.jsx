@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../services/db';
-import { Plus, Trash2, Edit2, Check, X, Save } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, Save, Image as ImageIcon, Upload } from 'lucide-react';
 
 const Settings = () => {
   const [methods, setMethods] = useState([]);
@@ -56,12 +56,64 @@ const Settings = () => {
         store_email: storeInfo.store_email ? storeInfo.store_email.trim() : null
       };
       await db.updateStoreInfo(infoToSave);
-      alert('✅ Información de la tienda actualizada.');
+      alert('✅ Configuración de la tienda actualizada con éxito.');
       await loadData();
     } catch (error) {
       console.error('Error al guardar info de tienda:', error);
       alert('Error al guardar la información de la tienda.');
     }
+  };
+
+  const resizeHeroImage = (dataUrl) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        // Para Hero usamos formato horizontal (16:9 aprox)
+        const targetWidth = 1920;
+        const targetHeight = 1080;
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext('2d');
+
+        // Cálculo para crop horizontal centrado
+        const imgRatio = img.width / img.height;
+        const targetRatio = targetWidth / targetHeight;
+        
+        let sourceX = 0, sourceY = 0, sourceWidth = img.width, sourceHeight = img.height;
+
+        if (imgRatio > targetRatio) {
+          // La imagen es más ancha que el objetivo
+          sourceWidth = img.height * targetRatio;
+          sourceX = (img.width - sourceWidth) / 2;
+        } else {
+          // La imagen es más alta que el objetivo
+          sourceHeight = img.width / targetRatio;
+          sourceY = (img.height - sourceHeight) / 2;
+        }
+
+        ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetWidth, targetHeight);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.src = dataUrl;
+    });
+  };
+
+  const handleHeroImageFile = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const resized = await resizeHeroImage(event.target.result);
+        setStoreInfo(prev => ({ ...prev, hero_image_url: resized }));
+      } catch (err) {
+        console.error('Error al procesar imagen hero:', err);
+        alert('Error al procesar la imagen. Intenta con otro archivo.');
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   // Payment Methods
@@ -220,16 +272,77 @@ const Settings = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <h3 style={{ fontSize: '1.1rem', marginBottom: '4px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>Sección Principal (Hero)</h3>
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>URL de Imagen Hero (Fondo)</label>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <input type="text" value={storeInfo.hero_image_url || ''} onChange={e => setStoreInfo({ ...storeInfo, hero_image_url: e.target.value })} style={inputStyle} placeholder="https://images.unsplash.com/..." />
-                  {storeInfo.hero_image_url && (
-                    <div style={{ width: '45px', height: '45px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)', flexShrink: 0 }}>
-                      <img src={storeInfo.hero_image_url} alt="Hero Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => e.target.src = 'https://via.placeholder.com/45?text=Error'} />
-                    </div>
-                  )}
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Imagen Hero (Fondo Principal)</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ 
+                    position: 'relative', 
+                    width: '100%', 
+                    height: '220px', 
+                    borderRadius: '16px', 
+                    overflow: 'hidden', 
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--bg-tertiary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    {storeInfo.hero_image_url ? (
+                      <>
+                        <img 
+                          src={storeInfo.hero_image_url} 
+                          alt="Hero Preview" 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                          onError={(e) => e.target.src = 'https://via.placeholder.com/1920x1080?text=Error+en+Imagen'}
+                        />
+                        <div style={{ 
+                          position: 'absolute', 
+                          top: 0, left: 0, right: 0, bottom: 0, 
+                          background: 'linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.6))',
+                          display: 'flex',
+                          alignItems: 'flex-end',
+                          padding: '16px'
+                        }}>
+                          <label className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem', cursor: 'pointer', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', backdropFilter: 'blur(10px)', color: 'white' }}>
+                            <Upload size={14} style={{ marginRight: '6px' }} /> Cambiar Fotografía
+                            <input type="file" accept="image/*" onChange={handleHeroImageFile} style={{ display: 'none' }} />
+                          </label>
+                        </div>
+                      </>
+                    ) : (
+                      <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', cursor: 'pointer', color: 'var(--text-secondary)' }}>
+                        <div style={{ padding: '16px', borderRadius: '50%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+                          <ImageIcon size={32} />
+                        </div>
+                        <span>Subir imagen de fondo (Hero)</span>
+                        <input type="file" accept="image/*" onChange={handleHeroImageFile} style={{ display: 'none' }} />
+                      </label>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <input 
+                      type="text" 
+                      value={storeInfo.hero_image_url || ''} 
+                      onChange={e => setStoreInfo({ ...storeInfo, hero_image_url: e.target.value })} 
+                      style={{ ...inputStyle, fontSize: '0.85rem' }} 
+                      placeholder="O pega una URL: https://images.unsplash.com/..." 
+                    />
+                    {storeInfo.hero_image_url && (
+                      <button 
+                        type="button" 
+                        onClick={() => setStoreInfo({ ...storeInfo, hero_image_url: '' })}
+                        className="btn-icon danger" 
+                        style={{ padding: '10px' }}
+                        title="Eliminar imagen"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>Recomendado: Imágenes horizontales de alta calidad (1920x1080).</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '8px' }}>
+                  <ImageIcon size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                  Recomendado: Imágenes horizontales de alta calidad (1920x1080). Se guardará directamente en la base de datos.
+                </p>
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Título Hero (Nombre)</label>
