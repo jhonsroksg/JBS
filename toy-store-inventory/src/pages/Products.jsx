@@ -28,8 +28,8 @@ const Products = () => {
     setLoading(true);
     try {
       const [prods, cats] = await Promise.all([
-        // Excluimos 'images' para hacer que la carga sea instantánea 
-        db.getAllSelected('products', 'id, sku, name, brand, description, ageRange, categoryId, costPrice, sellingPrice, discountPrice, stock, minStock, imageUrl'),
+        // Excluimos 'imageUrl' y 'images' para hacer que la carga sea súper rápida (0 base64 payloads)
+        db.getAllSelected('products', 'id, sku, name, brand, description, ageRange, categoryId, costPrice, sellingPrice, discountPrice, stock, minStock'),
         db.getAll('categories'),
       ]);
       setProducts(prods);
@@ -358,8 +358,8 @@ const Products = () => {
                   </td>
                   <td data-label="SKU">{product.sku}</td>
                   <td data-label="Categoría"><span className="badge badge-info">{getCategoryName(product.categoryId)}</span></td>
-                  <td data-label="Costo" className="text-secondary">L. {Number(product.costPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                  <td data-label="Precio Venta" className="highlight-price">L. {Number(product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  <td data-label="Costo" className="text-secondary" style={{ whiteSpace: 'nowrap' }}>L. {Number(product.costPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  <td data-label="Precio Venta" className="highlight-price" style={{ whiteSpace: 'nowrap' }}>L. {Number(product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   <td data-label="Stock">
                     <span className={`badge ${product.stock <= product.minStock ? 'badge-danger' : 'badge-success'}`}>{product.stock}</span>
                   </td>
