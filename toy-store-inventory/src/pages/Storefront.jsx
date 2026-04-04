@@ -1,7 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { db } from '../services/db';
 import { ShoppingCart, X, Zap, Search, Filter, MessageCircle } from 'lucide-react';
-import './Storefront.css';
+import { Helmet } from 'react-helmet-async';
 
 const Storefront = () => {
   const [products, setProducts] = useState([]);
@@ -91,6 +89,17 @@ const Storefront = () => {
 
   return (
     <div className="storefront">
+      <Helmet>
+        <title>{activeCategory === 'all' ? `${storeInfo.name} | Tienda de Juguetes` : `${categories.find(c => c.id === activeCategory)?.name} - ${storeInfo.name}`}</title>
+        <meta name="description" content={storeInfo.welcomeMessage || "Encuentra los mejores juguetes para bebés y niños en Joa Baby Shop. Calidad y seguridad garantizadas."} />
+        
+        {/* OpenGraph / Social Media */}
+        <meta property="og:title" content={storeInfo.name} />
+        <meta property="og:description" content={storeInfo.welcomeMessage} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={window.location.href} />
+        <meta property="og:image" content={products[0]?.imageUrl || "/favicon.svg"} />
+      </Helmet>
       <div className="hero-section glass-panel">
         <div className="hero-content">
           <h1>{storeInfo.name}</h1>
@@ -146,7 +155,12 @@ const Storefront = () => {
         {filteredProducts.map(product => (
           <div key={product.id} className="product-card glass-panel" style={{ display: 'flex', flexDirection: 'column' }}>
             <div className="product-image-container" onClick={() => { setSelectedProduct(product); setMainImageIndex(0); }} style={{ cursor: 'pointer' }}>
-              <img src={product.imageUrl || 'https://via.placeholder.com/300'} alt={product.name} className="product-image" />
+              <img 
+                src={product.imageUrl || 'https://via.placeholder.com/300'} 
+                alt={`Juguete ${product.name} - ${product.brand || 'Joa Baby Shop'}`} 
+                className="product-image" 
+                loading="lazy"
+              />
               {product.stock <= 5 && <span className="stock-badge">¡Solo quedan {product.stock}!</span>}
               {product.discountPrice && (
                 <span style={{ position: 'absolute', top: '10px', left: '10px', background: 'var(--danger)', color: 'white', padding: '4px 10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', zIndex: 5, boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>¡OFERTA!</span>
@@ -194,12 +208,21 @@ const Storefront = () => {
           <div className="modal-content glass-panel" style={{ maxWidth: '850px', width: '90%', padding: '0', display: 'flex', flexDirection: 'row', overflow: 'hidden', minHeight: '400px' }} onClick={e => e.stopPropagation()}>
             <div style={{ flex: '1.2', display: 'flex', flexDirection: 'column', background: 'var(--bg-secondary)', borderRight: '1px solid var(--border-color)' }}>
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', minHeight: '300px' }}>
-                <img src={(selectedProduct.images && selectedProduct.images.length > 0) ? selectedProduct.images[mainImageIndex] : (selectedProduct.imageUrl || 'https://via.placeholder.com/400')} alt={selectedProduct.name} style={{ maxWidth: '100%', maxHeight: '450px', objectFit: 'contain' }} />
+                <img 
+                  src={(selectedProduct.images && selectedProduct.images.length > 0) ? selectedProduct.images[mainImageIndex] : (selectedProduct.imageUrl || 'https://via.placeholder.com/400')} 
+                  alt={selectedProduct.name} 
+                  style={{ maxWidth: '100%', maxHeight: '450px', objectFit: 'contain' }} 
+                  loading="lazy"
+                />
               </div>
               {selectedProduct.images && selectedProduct.images.length > 1 && (
                 <div style={{ display: 'flex', gap: '10px', padding: '15px 20px', overflowX: 'auto', background: 'rgba(34, 193, 195, 0.08)', borderTop: '1px solid var(--border-color)' }}>
                   {selectedProduct.images.map((img, idx) => (
-                    <img key={idx} src={img} alt={`Thumbnail ${idx + 1}`} onClick={() => setMainImageIndex(idx)} style={{ width: '60px', height: '60px', objectFit: 'cover', cursor: 'pointer', borderRadius: '6px', border: mainImageIndex === idx ? '2px solid var(--accent-primary)' : '2px solid transparent', opacity: mainImageIndex === idx ? 1 : 0.6, transition: 'all 0.2s ease' }} />
+                    <img 
+                      key={idx} src={img} alt={`${selectedProduct.name} vista ${idx + 1}`} 
+                      onClick={() => setMainImageIndex(idx)} 
+                      style={{ width: '60px', height: '60px', objectFit: 'cover', cursor: 'pointer', borderRadius: '6px', border: mainImageIndex === idx ? '2px solid var(--accent-primary)' : '2px solid transparent', opacity: mainImageIndex === idx ? 1 : 0.6, transition: 'all 0.2s ease' }} 
+                    />
                   ))}
                 </div>
               )}

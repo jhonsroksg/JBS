@@ -1,9 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { Outlet, Link } from 'react-router-dom';
-import { ShoppingCart } from 'lucide-react';
-import CheckoutModal from '../components/CheckoutModal';
-import { db } from '../services/db';
-import './PublicLayout.css';
+import Footer from '../components/Footer';
 
 const PublicLayout = () => {
   const [cartCount, setCartCount] = useState(0);
@@ -17,8 +12,8 @@ const PublicLayout = () => {
     const openCart = () => setIsCartOpen(true);
     window.addEventListener('open_cart', openCart);
     
-    const loadStoreInfo = () => {
-      const info = db.getStoreInfo();
+    const loadStoreInfo = async () => {
+      const info = await db.getStoreInfo();
       setStoreName(info.name || 'Joa Baby Shop');
     };
     loadStoreInfo();
@@ -58,10 +53,7 @@ const PublicLayout = () => {
       <main className="store-main">
         <Outlet />
       </main>
-      <footer className="store-footer">
-        <p>&copy; {new Date().getFullYear()} {storeName}. Todos los derechos reservados.</p>
-        <p><Link to="/admin" style={{color: 'var(--text-secondary)'}}>Panel de Administración</Link></p>
-      </footer>
+      <Footer storeName={storeName} />
       <CheckoutModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </div>
   );

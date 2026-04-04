@@ -224,7 +224,12 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                   cart.map((item, index) => (
                     <div key={item.product.id} className="cart-item">
                       <div className="cart-item-main">
-                        <img src={item.product.imageUrl} alt={item.product.name} className="cart-item-img" />
+                        <img 
+                          src={item.product.imageUrl} 
+                          alt={`Juguete ${item.product.name} en el carrito`} 
+                          className="cart-item-img" 
+                          loading="lazy"
+                        />
                         <div className="cart-item-info">
                           <h4>{item.product.name}</h4>
                           <div className="cart-item-price-display">
