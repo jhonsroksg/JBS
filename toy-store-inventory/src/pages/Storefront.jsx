@@ -72,10 +72,20 @@ const Storefront = () => {
   };
 
   const handleWhatsAppContact = (product) => {
-    const phoneNumber = import.meta.env.VITE_WHATSAPP_NUMBER || '50499113697'; // Fallback por si acaso
+    // Intentamos obtener el número de la configuración de la tienda primero
+    let rawPhone = storeInfo.phone || import.meta.env.VITE_WHATSAPP_NUMBER || '50498927803';
+    
+    // Limpiamos el número de cualquier caracter no numérico (espacios, guiones, etc)
+    let cleanPhone = rawPhone.replace(/\D/g, '');
+    
+    // Si el número tiene 8 dígitos (formato local HN), le anteponemos el código de país 504
+    if (cleanPhone.length === 8) {
+      cleanPhone = '504' + cleanPhone;
+    }
+    
     const message = `Hola JoaBabyShop, me interesa el producto ${product.name} con código ${product.sku || product.id} que vi en la web.`;
     const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank');
   };
 
