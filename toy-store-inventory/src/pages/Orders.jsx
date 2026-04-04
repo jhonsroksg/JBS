@@ -206,15 +206,27 @@ const Orders = () => {
   // --------------------------
 
   const saveShippingInfo = async () => {
-    await db.update('orders', shippingOrder.id, {
-      deliveryMethodId: shippingOrder.deliveryMethodId,
-      shippingCompany: shippingOrder.shippingCompany,
-      trackingNumber: shippingOrder.trackingNumber,
-      status: shippingOrder.status,
-      total: shippingOrder.total
-    });
-    closeShippingModal();
-    await loadData();
+    try {
+      const order = orders.find(o => o.id === shippingOrder.id);
+      if (order && shippingOrder.status === 'Cancelado' && order.status !== 'Cancelado') {
+        const confirmed = confirm(`Al marcar como "Cancelado", los artículos se devolverán automáticamente al inventario. ¿Continuar?`);
+        if (!confirmed) return;
+        await returnItemsToStock(shippingOrder);
+      }
+
+      await db.update('orders', shippingOrder.id, {
+        deliveryMethodId: shippingOrder.deliveryMethodId,
+        shippingCompany: shippingOrder.shippingCompany,
+        trackingNumber: shippingOrder.trackingNumber,
+        status: shippingOrder.status,
+        total: shippingOrder.total
+      });
+      closeShippingModal();
+      await loadData();
+    } catch (err) {
+      console.error('Error saving shipping info:', err);
+      alert('Error al guardar la información de despacho.');
+    }
   };
 
   const saveOrder = async () => {
@@ -246,23 +258,44 @@ const Orders = () => {
     const productList = await Promise.all([...allProductIds].map(id => db.getById('products', id)));
     const productMap = {};
     productList.forEach(p => { if (p) productMap[p.id] = p; });
+    
     const deltas = [];
-    for (const pId of allProductIds) {
-      const delta = (newMap[pId] || 0) - (origMap[pId] || 0);
-      if (delta !== 0) {
-        if (delta > 0) {
-          const product = productMap[pId];
-          if (!product || product.stock < delta) {
-            alert(`Stock insuficiente para "${product ? product.name : pId}". Requerido: ${delta}, Disponible: ${product ? product.stock : 0}`);
-            return;
-          }
-        }
-        deltas.push({ pId, delta });
+    
+    // CASO ESPECIAL: Cambio de estado a/desde Cancelado
+    if (selectedOrder.status !== 'Cancelado' && editedOrder.status === 'Cancelado') {
+      // Estaba activo -> ahora se cancela: Devolvemos stock de TODO lo nuevo
+      for (const pId of Object.keys(newMap)) {
+        deltas.push({ pId, delta: -(newMap[pId] || 0) }); // delta negativo para restar del inventario = devolver
+      }
+      // También debemos restar lo que estaba "de más" en el origen? 
+      // No, simplificamos: Si se cancela, devolvemos lo que se está guardando como items.
+    } else if (selectedOrder.status === 'Cancelado' && editedOrder.status !== 'Cancelado') {
+      // Estaba cancelado -> ahora se activa: Quitamos stock de TODO lo nuevo
+      for (const pId of Object.keys(newMap)) {
+        deltas.push({ pId, delta: (newMap[pId] || 0) }); 
+      }
+    } else {
+      // Flujo normal: Diferencia entre viejo y nuevo
+      for (const pId of allProductIds) {
+        const delta = (newMap[pId] || 0) - (origMap[pId] || 0);
+        if (delta !== 0) deltas.push({ pId, delta });
       }
     }
+
+    // Validar stock antes de aplicar deltas positivos (deducción)
+    for (const { pId, delta } of deltas) {
+      if (delta > 0) {
+        const product = productMap[pId];
+        if (!product || product.stock < delta) {
+          alert(`Stock insuficiente para "${product ? product.name : pId}". Requerido: ${delta}, Disponible: ${product ? product.stock : 0}`);
+          return;
+        }
+      }
+    }
+
     await Promise.all(deltas.map(({ pId, delta }) => {
       const product = productMap[pId];
-      if (product) return db.update('products', pId, { stock: product.stock - delta });
+      if (product) return db.update('products', pId, { stock: Number(product.stock) - Number(delta) });
     }));
     await db.update('orders', editedOrder.id, {
       customerName: editedOrder.customerName,
@@ -284,32 +317,54 @@ const Orders = () => {
     setIsEditing(false);
   };
 
+  const returnItemsToStock = async (order) => {
+    if (!order.items || order.items.length === 0) return;
+    
+    try {
+      const productIds = [...new Set(order.items.filter(i => i.product?.id).map(i => i.product.id))];
+      const productList = await Promise.all(productIds.map(id => db.getById('products', id)));
+      const productMap = {};
+      productList.forEach(p => { if (p) productMap[p.id] = p; });
+
+      await Promise.all(order.items.map(item => {
+        const product = productMap[item.product?.id];
+        if (product) {
+          return db.update('products', product.id, { stock: Number(product.stock) + Number(item.quantity) });
+        }
+      }));
+    } catch (err) {
+      console.error('Error al retornar stock:', err);
+      throw err; // Re-throw to handle in the caller
+    }
+  };
+
   const handleCancelOrder = async (order) => {
     if (order.status === 'Cancelado') { alert('Este pedido ya está cancelado.'); return; }
     if (confirm(`¿Cancelar el pedido de ${order.customerName}?\n\nLos artículos serán devueltos al inventario.`)) {
-      if (order.items && order.items.length > 0) {
-        const productIds = [...new Set(order.items.filter(i => i.product?.id).map(i => i.product.id))];
-        const productList = await Promise.all(productIds.map(id => db.getById('products', id)));
-        const productMap = {};
-        productList.forEach(p => { if (p) productMap[p.id] = p; });
-        await Promise.all(order.items.map(item => {
-          const product = productMap[item.product?.id];
-          if (product) return db.update('products', product.id, { stock: product.stock + item.quantity });
-        }));
+      try {
+        await returnItemsToStock(order);
+        await db.update('orders', order.id, { status: 'Cancelado', cancelledAt: new Date().toISOString() });
+        await loadData();
+      } catch (err) {
+        alert('Error al cancelar el pedido. Reintenta.');
       }
-      await db.update('orders', order.id, { status: 'Cancelado', cancelledAt: new Date().toISOString() });
-      await loadData();
     }
   };
 
   const handleSoftDelete = async (order) => {
-    if (confirm('¿Mover este pedido a la papelera?')) {
+    // REGLA: No se puede eliminar sin antes haber sido Cancelado
+    if (order.status !== 'Cancelado') {
+      alert('⚠️ Para eliminar un pedido del historial, primero debes marcarlo como "Cancelado" para retornar los artículos al inventario.');
+      return;
+    }
+
+    if (confirm('¿Mover este pedido cancelado a la papelera?')) {
       try {
         await db.update('orders', order.id, { isDeleted: true });
         await loadData();
       } catch (err) {
         console.error('Error al mover a papelera:', err);
-        alert('Hubo un error al mover el pedido. Por favor, intenta de nuevo.');
+        alert('Hubo un error al procesar la eliminación. Reintentando...');
       }
     }
   };
@@ -338,13 +393,24 @@ const Orders = () => {
   };
 
   const handleStatusChange = async (id, newStatus) => {
-    // Optimistic Update
-    setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
     try {
+      const order = orders.find(o => o.id === id);
+      if (!order) return;
+
+      // Si se cambia a Cancelado, retornamos stock
+      if (newStatus === 'Cancelado' && order.status !== 'Cancelado') {
+        const confirmed = confirm(`Al marcar como "Cancelado", los artículos se devolverán automáticamente al inventario. ¿Continuar?`);
+        if (!confirmed) return;
+        
+        await returnItemsToStock(order);
+      }
+
+      // Optimistic Update
+      setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
       await db.update('orders', id, { status: newStatus });
-      // Minor sync load after background save
-      loadData();
+      await loadData();
     } catch (err) {
+      console.error('Error al actualizar estado:', err);
       alert('Error al actualizar estado. Reintentando sincronizar...');
       await loadData();
     }

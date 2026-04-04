@@ -96,9 +96,9 @@
 }
 
 .btn-icon {
-  background: rgba(31, 183, 185, 0.1);
-  border: 1px solid rgba(31, 183, 185, 0.15);
-  color: var(--accent-primary);
+  background: rgba(31, 183, 185, 0.1) !important;
+  border: 1px solid rgba(31, 183, 185, 0.15) !important;
+  color: var(--accent-primary) !important;
   border-radius: 10px;
   width: 36px;
   height: 36px;
@@ -115,22 +115,22 @@
 }
 
 .btn-icon:hover {
-  background: var(--accent-primary);
-  color: white;
+  background: var(--accent-primary) !important;
+  color: #ffffff !important;
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(31, 183, 185, 0.3);
 }
 
 .btn-icon.danger {
-  background: rgba(255, 75, 117, 0.1);
-  border: 1px solid rgba(255, 75, 117, 0.15);
-  color: var(--danger);
+  background: rgba(255, 75, 117, 0.1) !important;
+  border: 1px solid rgba(255, 75, 117, 0.15) !important;
+  color: var(--danger) !important;
 }
 
 .btn-icon.danger:hover {
-  background: var(--danger);
-  color: white;
-  border-color: var(--danger);
+  background: var(--danger) !important;
+  color: #ffffff !important;
+  border-color: var(--danger) !important;
   box-shadow: 0 5px 15px rgba(255, 75, 117, 0.3);
 }
 
