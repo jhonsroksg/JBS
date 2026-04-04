@@ -257,8 +257,8 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                 <div className="form-column">
                   <form id="checkout-form-data" className="checkout-form" onSubmit={handleCheckout}>
                     <div className="form-section">
-                      <div className="section-header">
-                        <User size={18} />
+                      <div className="section-header-simple">
+                        <User size={14} />
                         <h4>TU CONTACTO</h4>
                       </div>
                       <div className="form-input-group">
@@ -276,8 +276,8 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                     </div>
 
                     <div className="form-section">
-                      <div className="section-header">
-                        <MapPin size={18} />
+                      <div className="section-header-simple">
+                        <MapPin size={14} />
                         <h4>DETALLES DE ENVÍO</h4>
                       </div>
                       <div className="form-row-nested">
