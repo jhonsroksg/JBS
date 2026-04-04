@@ -47,7 +47,12 @@ const Settings = () => {
       const infoToSave = {
         name: storeInfo.name.trim(),
         phone: storeInfo.phone ? storeInfo.phone.trim() : null,
-        welcomeMessage: storeInfo.welcomeMessage ? storeInfo.welcomeMessage.trim() : null
+        welcomeMessage: storeInfo.welcomeMessage ? storeInfo.welcomeMessage.trim() : null,
+        footer_description: storeInfo.footer_description ? storeInfo.footer_description.trim() : null,
+        facebook_url: storeInfo.facebook_url ? storeInfo.facebook_url.trim() : null,
+        instagram_url: storeInfo.instagram_url ? storeInfo.instagram_url.trim() : null,
+        store_address: storeInfo.store_address ? storeInfo.store_address.trim() : null,
+        store_email: storeInfo.store_email ? storeInfo.store_email.trim() : null
       };
       await db.updateStoreInfo(infoToSave);
       alert('✅ Información de la tienda actualizada.');
@@ -220,13 +225,43 @@ const Settings = () => {
               <input type="text" value={storeInfo.phone} onChange={e => setStoreInfo({ ...storeInfo, phone: e.target.value })} style={inputStyle} placeholder="Ej. +504 9999-9999" />
             </div>
           </div>
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Mensaje de Bienvenida</label>
-            <textarea value={storeInfo.welcomeMessage} onChange={e => setStoreInfo({ ...storeInfo, welcomeMessage: e.target.value })} style={{ ...inputStyle, resize: 'vertical', minHeight: '80px' }} placeholder="Escribe un mensaje corto para tus clientes..." />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '8px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.1rem', marginBottom: '16px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>Configuración del Pie de Página</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Misión / Descripción del Footer</label>
+                  <textarea value={storeInfo.footer_description || ''} onChange={e => setStoreInfo({ ...storeInfo, footer_description: e.target.value })} style={{ ...inputStyle, resize: 'vertical', minHeight: '80px' }} placeholder="Ej. Acompañando el crecimiento de tus pequeños..." />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Link de Facebook</label>
+                    <input type="text" value={storeInfo.facebook_url || ''} onChange={e => setStoreInfo({ ...storeInfo, facebook_url: e.target.value })} style={inputStyle} placeholder="https://facebook.com/..." />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Link de Instagram</label>
+                    <input type="text" value={storeInfo.instagram_url || ''} onChange={e => setStoreInfo({ ...storeInfo, instagram_url: e.target.value })} style={inputStyle} placeholder="https://instagram.com/..." />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h3 style={{ fontSize: '1.1rem', marginBottom: '16px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>Información de Contacto Pública</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Dirección Física</label>
+                  <input type="text" value={storeInfo.store_address || ''} onChange={e => setStoreInfo({ ...storeInfo, store_address: e.target.value })} style={inputStyle} placeholder="Ej. San Pedro Sula, Honduras" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Correo Electrónico de la Tienda</label>
+                  <input type="email" value={storeInfo.store_email || ''} onChange={e => setStoreInfo({ ...storeInfo, store_email: e.target.value })} style={inputStyle} placeholder="Ej. info@mi-tienda.com" />
+                </div>
+              </div>
+            </div>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-            <button type="submit" className="btn-primary" style={{ borderRadius: '12px', padding: '12px 24px' }}>
-              <Save size={20} style={{ marginRight: '8px' }} /> Guardar Información
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+            <button type="submit" className="btn-primary" style={{ borderRadius: '12px', padding: '12px 32px' }}>
+              <Save size={20} style={{ marginRight: '8px' }} /> Guardar Configuración Global
             </button>
           </div>
         </form>

@@ -106,9 +106,25 @@ export const db = {
       .eq('id', 1)
       .single();
     if (error || !data) {
-      return { name: 'Joa Baby Shop', phone: '', welcomeMessage: '¡Bienvenido a nuestra tienda!' };
+      return { 
+        name: 'Joa Baby Shop', 
+        phone: '50498927803', 
+        welcomeMessage: '¡Bienvenido a nuestra tienda!',
+        footer_description: 'Acompañando el crecimiento de tus pequeños con los juguetes más seguros, educativos y divertidos de Honduras.',
+        facebook_url: '#',
+        instagram_url: '#',
+        store_address: 'San Pedro Sula, Honduras',
+        store_email: 'info@joababyshop.com'
+      };
     }
-    return data;
+    return {
+      ...data,
+      footer_description: data.footer_description || 'Acompañando el crecimiento de tus pequeños con los juguetes más seguros, educativos y divertidos de Honduras.',
+      facebook_url: data.facebook_url || '#',
+      instagram_url: data.instagram_url || '#',
+      store_address: data.store_address || 'San Pedro Sula, Honduras',
+      store_email: data.store_email || 'info@joababyshop.com'
+    };
   },
 
   updateStoreInfo: async (info) => {

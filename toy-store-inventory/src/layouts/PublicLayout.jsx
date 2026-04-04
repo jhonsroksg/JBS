@@ -9,7 +9,7 @@ import Footer from '../components/Footer';
 const PublicLayout = () => {
   const [cartCount, setCartCount] = useState(0);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [storeName, setStoreName] = useState('Joa Baby Shop');
+  const [storeInfo, setStoreInfo] = useState({ name: 'Joa Baby Shop' });
 
   useEffect(() => {
     updateCartCount();
@@ -20,7 +20,7 @@ const PublicLayout = () => {
     
     const loadStoreInfo = async () => {
       const info = await db.getStoreInfo();
-      setStoreName(info.name || 'Joa Baby Shop');
+      setStoreInfo(info);
     };
     loadStoreInfo();
     window.addEventListener('store_info_updated', loadStoreInfo);
@@ -43,7 +43,7 @@ const PublicLayout = () => {
       <header className="store-header glass-panel">
         <div className="store-brand">
           <Link to="/">
-            <h2>{storeName}</h2>
+            <h2>{storeInfo.name}</h2>
           </Link>
         </div>
         <nav className="store-nav">
@@ -59,7 +59,7 @@ const PublicLayout = () => {
       <main className="store-main">
         <Outlet />
       </main>
-      <Footer storeName={storeName} />
+      <Footer storeInfo={storeInfo} />
       <CheckoutModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </div>
   );
