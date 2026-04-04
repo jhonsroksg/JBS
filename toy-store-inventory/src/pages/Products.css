@@ -143,6 +143,9 @@
   background: var(--bg-secondary);
   padding: 0;
   overflow: hidden;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
   animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -157,6 +160,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .modal-header h2 {
@@ -166,6 +170,8 @@
 
 .modal-form {
   padding: 24px;
+  overflow-y: auto;
+  flex: 1;
 }
 
 .form-row {
