@@ -1,5 +1,8 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { db } from '../services/db';
 import { ShoppingCart, X, Zap, Search, Filter, MessageCircle } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import './Storefront.css';
 
 const Storefront = () => {
   const [products, setProducts] = useState([]);

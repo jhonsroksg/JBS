@@ -1,3 +1,9 @@
+import React, { useState, useEffect } from 'react';
+import { Outlet, Link } from 'react-router-dom';
+import { ShoppingCart } from 'lucide-react';
+import CheckoutModal from '../components/CheckoutModal';
+import { db } from '../services/db';
+import './PublicLayout.css';
 import Footer from '../components/Footer';
 
 const PublicLayout = () => {
