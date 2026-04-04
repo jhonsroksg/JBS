@@ -13,6 +13,18 @@ export const db = {
     return data || [];
   },
 
+  // ─── Get All Selected (Optimized) ───────────────────────────────────────────
+  getAllSelected: async (collection, columns) => {
+    const { data, error } = await supabase
+      .from(collection)
+      .select(columns);
+    if (error) {
+      console.error(`[db.getAllSelected] Error en "${collection}":`, error.message);
+      return [];
+    }
+    return data || [];
+  },
+
   // ─── Get By ID ──────────────────────────────────────────────────────────────
   getById: async (collection, id) => {
     const { data, error } = await supabase

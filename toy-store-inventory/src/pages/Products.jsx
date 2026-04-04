@@ -28,7 +28,8 @@ const Products = () => {
     setLoading(true);
     try {
       const [prods, cats] = await Promise.all([
-        db.getAll('products'),
+        // Excluimos 'images' para hacer que la carga sea instantánea 
+        db.getAllSelected('products', 'id, sku, name, brand, description, ageRange, categoryId, costPrice, sellingPrice, discountPrice, stock, minStock, imageUrl'),
         db.getAll('categories'),
       ]);
       setProducts(prods);
@@ -57,14 +58,23 @@ const Products = () => {
 
   const getCategoryName = (id) => categories.find(c => c.id === id)?.name || 'Sin Categoría';
 
-  const handleOpenModal = (product = null) => {
+  const handleOpenModal = async (product = null) => {
     if (product) {
-      setFormData({
-        ...product,
-        images: product.images || (product.imageUrl ? [product.imageUrl] : []),
-        discountPrice: product.discountPrice || ''
-      });
-      setEditingId(product.id);
+      setLoading(true); // Show page spinner while loading images
+      try {
+        const fullProduct = await db.getById('products', product.id);
+        const prodData = fullProduct || product; // Fallback just in case
+        setFormData({
+          ...prodData,
+          images: prodData.images || (prodData.imageUrl ? [prodData.imageUrl] : []),
+          discountPrice: prodData.discountPrice || ''
+        });
+        setEditingId(prodData.id);
+      } catch (err) {
+        console.error('Error fetching full product details:', err);
+      } finally {
+        setLoading(false);
+      }
     } else {
       setFormData({ sku: '', name: '', categoryId: categories[0]?.id || '', costPrice: '', sellingPrice: '', discountPrice: '', stock: '', minStock: '', imageUrl: '', images: [], ageRange: '', description: '', brand: '' });
       setEditingId(null);
