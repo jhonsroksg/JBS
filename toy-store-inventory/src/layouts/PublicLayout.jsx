@@ -13,6 +13,9 @@ const PublicLayout = () => {
   useEffect(() => {
     updateCartCount();
     window.addEventListener('cart_updated', updateCartCount);
+
+    const openCart = () => setIsCartOpen(true);
+    window.addEventListener('open_cart', openCart);
     
     const loadStoreInfo = () => {
       const info = db.getStoreInfo();
@@ -23,6 +26,7 @@ const PublicLayout = () => {
     
     return () => {
       window.removeEventListener('cart_updated', updateCartCount);
+      window.removeEventListener('open_cart', openCart);
       window.removeEventListener('store_info_updated', loadStoreInfo);
     };
   }, []);

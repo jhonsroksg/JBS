@@ -134,6 +134,66 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 16px;
+}
+
+/* ── Card action buttons ─────────────────────────────────────── */
+.card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-buy-now,
+.btn-add-cart {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 16px;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  border: none;
+}
+
+/* Comprar ahora — degradado principal */
+.btn-buy-now {
+  background: var(--accent-gradient);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(34, 193, 195, 0.35);
+  letter-spacing: 0.02em;
+}
+
+.btn-buy-now:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(34, 193, 195, 0.50);
+}
+
+.btn-buy-now:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(34, 193, 195, 0.30);
+}
+
+/* Añadir al carrito — contorno elegante */
+.btn-add-cart {
+  background: transparent;
+  color: var(--accent-primary, #22c1c3);
+  border: 2px solid var(--accent-primary, #22c1c3);
+}
+
+.btn-add-cart:hover {
+  background: rgba(34, 193, 195, 0.10);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(34, 193, 195, 0.15);
+}
+
+.btn-add-cart:active {
+  transform: translateY(0);
 }
 
 .product-price {

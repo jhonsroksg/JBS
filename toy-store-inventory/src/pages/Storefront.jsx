@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../services/db';
-import { ShoppingCart, X } from 'lucide-react';
+import { ShoppingCart, X, Zap } from 'lucide-react';
 import './Storefront.css';
 
 const Storefront = () => {
@@ -49,6 +49,12 @@ const Storefront = () => {
     window.dispatchEvent(new Event('cart_updated'));
   };
 
+  const handleBuyNow = (product) => {
+    handleAddToCart(product);
+    // Abre el carrito/checkout directamente
+    window.dispatchEvent(new Event('open_cart'));
+  };
+
   return (
     <div className="storefront">
       <div className="hero-section glass-panel">
@@ -87,8 +93,13 @@ const Storefront = () => {
                 ) : (
                   <span className="product-price">L. {Number(product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 )}
-                <button className="btn-primary" onClick={() => handleAddToCart(product)}>
-                  <ShoppingCart className="icon-sm" /> Agregar
+              </div>
+              <div className="card-actions">
+                <button className="btn-buy-now" onClick={() => handleBuyNow(product)}>
+                  <Zap className="icon-sm" /> Comprar ahora
+                </button>
+                <button className="btn-add-cart" onClick={() => handleAddToCart(product)}>
+                  <ShoppingCart className="icon-sm" /> Añadir al carrito
                 </button>
               </div>
             </div>
