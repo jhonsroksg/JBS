@@ -528,7 +528,7 @@ const Orders = () => {
     if (order.items && order.items.length > 0) {
       itemsText = order.items.map(item => {
         const price = Number(item.product?.discountPrice || item.product?.sellingPrice || 0);
-        return `\u{2705} *${item.product?.name || 'Producto'}*
+        return `*${item.product?.name || 'Producto'}*
   Cant: ${item.quantity} x L. ${price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} = *L. ${(item.quantity * price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}*`;
       }).join('\n\n');
     } else {
@@ -537,17 +537,12 @@ const Orders = () => {
 
     let deliveryText = '';
     if (order.deliveryMethodId) {
-      deliveryText = `\n🚚 Tipo: ${getDeliveryName(order.deliveryMethodId)} (L. ${getDeliveryCost(order.deliveryMethodId).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})})`;
-    }
-
-    let shippingInfo = '';
-    if (order.shippingCompany || order.trackingNumber) {
-      shippingInfo = `\n📦 Transporte: ${order.shippingCompany || 'N/A'}${order.trackingNumber ? ` (Tracking: ${order.trackingNumber})` : ''}`;
+      deliveryText = `\n- Tipo: ${getDeliveryName(order.deliveryMethodId)} (L. ${getDeliveryCost(order.deliveryMethodId).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})})`;
     }
 
     let paymentInfo = '';
     if (order.paymentMethod) {
-      paymentInfo = `\n💳 Pago: ${order.paymentMethod}`;
+      paymentInfo = `\n- Pago: ${order.paymentMethod}`;
     }
 
     const messageText = `*Detalles del Pedido #${orderId}*
@@ -558,13 +553,14 @@ const Orders = () => {
 - ${order.customerPhone || 'N/A'}
 
 *Despacho*
-\u{1F4CD} ${order.customerAddress || 'N/A'}${deliveryText}${shippingInfo}${paymentInfo}
+- ${order.customerAddress || 'N/A'}${deliveryText}${paymentInfo}
 
 *Artículos*
 ${itemsText}
 
 *Subtotal:* L. ${Number(calculateTotalItems(order.items)).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountAmount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}\n` : ''}${order.deliveryMethodId ? `*Envío:* L. ${getDeliveryCost(order.deliveryMethodId).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}\n` : ''}*Total a Pagar:* L. ${Number(order.total).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountAmount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}\n` : ''}*Envío:* L. ${getDeliveryCost(order.deliveryMethodId).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+*Total a Pagar:* L. ${Number(order.total).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
 
 *Estado del Pedido:* ${order.status}`;
 
