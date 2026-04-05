@@ -24,22 +24,33 @@ const Settings = () => {
   const [editingCouponType, setEditingCouponType] = useState('percentage');
   const [editingCouponValue, setEditingCouponValue] = useState('');
 
+  const [orderStatuses, setOrderStatuses] = useState([]);
+  const [newStatusName, setNewStatusName] = useState('');
+  const [newStatusColor, setNewStatusColor] = useState('#3498db');
+  const [editingStatusId, setEditingStatusId] = useState(null);
+  const [editingStatusName, setEditingStatusName] = useState('');
+  const [editingStatusColor, setEditingStatusColor] = useState('');
+
   const [storeInfo, setStoreInfo] = useState({ name: '', phone: '', welcomeMessage: '' });
+
 
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
-    const [pay, del, coup, info] = await Promise.all([
+    const [pay, del, coup, statuses, info] = await Promise.all([
       db.getAll('payment_methods'),
       db.getAll('delivery_methods'),
       db.getAll('coupons'),
+      db.getAll('order_statuses'),
       db.getStoreInfo(),
     ]);
     setMethods(pay);
     setDeliveryMethods(del);
     setCoupons(coup);
+    setOrderStatuses(statuses);
     setStoreInfo(info);
   };
+
 
   const handleSaveStoreInfo = async (e) => {
     e.preventDefault();
@@ -250,6 +261,60 @@ const Settings = () => {
     await db.update('coupons', id, { isActive: !currentStatus });
     await loadData();
   };
+
+  // Order Statuses Handlers
+  const handleAddStatus = async (e) => {
+    e.preventDefault();
+    if (!newStatusName.trim()) return;
+    try {
+      await db.insert('order_statuses', {
+        name: newStatusName.trim(),
+        color: newStatusColor
+      });
+      setNewStatusName('');
+      setNewStatusColor('#3498db');
+      await loadData();
+    } catch (error) {
+      alert('Error al agregar estado del pedido.');
+    }
+  };
+
+  const handleEditStatus = (status) => {
+    setEditingStatusId(status.id);
+    setEditingStatusName(status.name);
+    setEditingStatusColor(status.color);
+  };
+
+  const handleSaveEditStatus = async () => {
+    if (!editingStatusName.trim()) return;
+    try {
+      await db.update('order_statuses', editingStatusId, {
+        name: editingStatusName.trim(),
+        color: editingStatusColor
+      });
+      setEditingStatusId(null);
+      await loadData();
+    } catch (error) {
+      alert('Error al editar estado del pedido.');
+    }
+  };
+
+  const handleDeleteStatus = async (id, name) => {
+    if (['Pendiente', 'Enviado', 'Completado', 'Cancelado'].includes(name)) {
+      alert('⚠️ Este es un estado del sistema y no se recomienda eliminarlo ya que puede afectar la lógica de la aplicación.');
+      if (!confirm(`¿Estás seguro de que deseas eliminar el estado "${name}" de todos modos?`)) return;
+    } else {
+      if (!confirm(`¿Seguro que deseas eliminar el estado "${name}"?`)) return;
+    }
+    
+    try {
+      await db.delete('order_statuses', id);
+      await loadData();
+    } catch (error) {
+      alert('Error al eliminar estado.');
+    }
+  };
+
 
   const inputStyle = {
     padding: '12px', borderRadius: '12px', border: '1px solid var(--border-color)',
@@ -578,7 +643,64 @@ const Settings = () => {
             ))}
           </div>
         </div>
+
+        {/* Order Statuses */}
+        <div className="glass-panel" style={{ padding: '30px', gridColumn: '1 / -1' }}>
+          <h2 style={{ fontSize: '1.4rem', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>Gestión de Estados de Pedido</h2>
+          <form onSubmit={handleAddStatus} style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+            <input type="text" placeholder="Nombre del estado (Ej. En Preparación)" value={newStatusName} onChange={(e) => setNewStatusName(e.target.value)} style={{ flex: 2, ...inputStyle }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+              <input type="color" value={newStatusColor} onChange={(e) => setNewStatusColor(e.target.value)} style={{ width: '45px', height: '45px', padding: '0', border: 'none', borderRadius: '8px', background: 'none', cursor: 'pointer' }} />
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Color etiqueta</span>
+            </div>
+            <button type="submit" className="btn-primary" style={{ borderRadius: '12px', padding: '0 24px' }}><Plus size={20} style={{ marginRight: '8px' }} /> Agregar</button>
+          </form>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
+            {orderStatuses.length === 0 ? (
+              <div style={{ gridColumn: '1 / -1', padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>No hay estados configurados.</div>
+            ) : orderStatuses.map(status => (
+              <div key={status.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'var(--bg-tertiary)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                {editingStatusId === status.id ? (
+                  <div style={{ display: 'flex', gap: '8px', flex: 1, marginRight: '16px', alignItems: 'center' }}>
+                    <input type="text" value={editingStatusName} onChange={e => setEditingStatusName(e.target.value)} style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid var(--accent-primary)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none', fontFamily: 'inherit' }} />
+                    <input type="color" value={editingStatusColor} onChange={e => setEditingStatusColor(e.target.value)} style={{ width: '34px', height: '34px', padding: '0', border: 'none', borderRadius: '4px', background: 'none', cursor: 'pointer' }} />
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ 
+                      display: 'inline-block',
+                      padding: '4px 12px',
+                      borderRadius: '20px',
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      backgroundColor: `${status.color}15`,
+                      color: status.color,
+                      border: `1px solid ${status.color}33`
+                    }}>
+                      {status.name}
+                    </span>
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {editingStatusId === status.id ? (
+                    <>
+                      <button className="btn-icon" onClick={handleSaveEditStatus} style={{ color: 'var(--success)', borderColor: 'var(--success)' }}><Check size={18} /></button>
+                      <button className="btn-icon" onClick={() => setEditingStatusId(null)}><X size={18} /></button>
+                    </>
+                  ) : (
+                    <>
+                      <button className="btn-icon" onClick={() => handleEditStatus(status)}><Edit2 size={18} /></button>
+                      <button className="btn-icon danger" onClick={() => handleDeleteStatus(status.id, status.name)}><Trash2 size={18} /></button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
+
     </div>
   );
 };

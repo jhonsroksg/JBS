@@ -82,18 +82,23 @@ const Dashboard = () => {
   const [allOrders, setAllOrders] = useState([]);
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [orderStatuses, setOrderStatuses] = useState([]);
+
 
   useEffect(() => {
     const loadData = async () => {
-      const [orders, prods, custs] = await Promise.all([
+      const [orders, prods, custs, statuses] = await Promise.all([
         db.getAll('orders'),
         db.getAll('products'),
         db.getAll('customers'),
+        db.getAll('order_statuses'),
       ]);
       setAllOrders(orders);
       setProducts(prods);
       setCustomers(custs);
+      setOrderStatuses(statuses);
     };
+
     loadData();
   }, []);
 
@@ -356,22 +361,39 @@ const Dashboard = () => {
         <div className="dashboard-section glass-panel">
           <div className="section-header"><h2>📦 Estado de Pedidos</h2></div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {[
-              { label: 'Completados', count: completedOrders.length, color: '#27ae60', icon: <CheckCircle size={16} /> },
-              { label: 'Pendientes',  count: pendingOrders.length,   color: '#f39c12', icon: <Clock size={16} /> },
-              { label: 'Cancelados', count: cancelledOrders.length,  color: '#e74c3c', icon: <AlertTriangle size={16} /> },
-              { label: 'Enviados',   count: periodOrders.filter(o => o.status === 'Enviado').length, color: '#3498db', icon: <Package size={16} /> },
-            ].map((s, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', background: 'var(--bg-tertiary)', borderRadius: '10px', border: `1px solid ${s.color}33` }}>
-                <span style={{ color: s.color }}>{s.icon}</span>
-                <span style={{ flex: 1, fontSize: '0.9rem', fontWeight: 500 }}>{s.label}</span>
-                <span style={{ fontWeight: 800, fontSize: '1.1rem', color: s.color }}>{s.count}</span>
-                <div style={{ width: '60px', height: '6px', borderRadius: '3px', background: 'var(--border-color)', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', borderRadius: '3px', background: s.color, width: periodOrders.length > 0 ? `${(s.count / periodOrders.length) * 100}%` : '0%', transition: 'width 0.6s ease' }} />
+            {orderStatuses.length > 0 ? (
+              orderStatuses.map((s, i) => {
+                const count = periodOrders.filter(o => o.status === s.name).length;
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', background: 'var(--bg-tertiary)', borderRadius: '10px', border: `1px solid ${s.color}33` }}>
+                    <span style={{ color: s.color }}><CheckCircle size={16} /></span>
+                    <span style={{ flex: 1, fontSize: '0.9rem', fontWeight: 500 }}>{s.label || s.name}</span>
+                    <span style={{ fontWeight: 800, fontSize: '1.1rem', color: s.color }}>{count}</span>
+                    <div style={{ width: '60px', height: '6px', borderRadius: '3px', background: 'var(--border-color)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', borderRadius: '3px', background: s.color, width: periodOrders.length > 0 ? `${(count / periodOrders.length) * 100}%` : '0%', transition: 'width 0.6s ease' }} />
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              [
+                { label: 'Completados', count: completedOrders.length, color: '#27ae60', icon: <CheckCircle size={16} /> },
+                { label: 'Pendientes',  count: pendingOrders.length,   color: '#f39c12', icon: <Clock size={16} /> },
+                { label: 'Cancelados', count: cancelledOrders.length,  color: '#e74c3c', icon: <AlertTriangle size={16} /> },
+                { label: 'Enviados',   count: periodOrders.filter(o => o.status === 'Enviado').length, color: '#3498db', icon: <Package size={16} /> },
+              ].map((s, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', background: 'var(--bg-tertiary)', borderRadius: '10px', border: `1px solid ${s.color}33` }}>
+                  <span style={{ color: s.color }}>{s.icon}</span>
+                  <span style={{ flex: 1, fontSize: '0.9rem', fontWeight: 500 }}>{s.label}</span>
+                  <span style={{ fontWeight: 800, fontSize: '1.1rem', color: s.color }}>{s.count}</span>
+                  <div style={{ width: '60px', height: '6px', borderRadius: '3px', background: 'var(--border-color)', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', borderRadius: '3px', background: s.color, width: periodOrders.length > 0 ? `${(s.count / periodOrders.length) * 100}%` : '0%', transition: 'width 0.6s ease' }} />
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
+
         </div>
         <div className="dashboard-section glass-panel">
           <div className="section-header"><h2>🕐 Últimos Pedidos</h2></div>

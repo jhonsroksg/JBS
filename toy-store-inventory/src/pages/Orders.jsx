@@ -11,7 +11,9 @@ const Orders = () => {
   const [products, setProducts] = useState([]);
   const [deliveryMethods, setDeliveryMethods] = useState([]);
   const [paymentMethods, setPaymentMethods] = useState([]);
+  const [orderStatuses, setOrderStatuses] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
+
   
   // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -36,18 +38,21 @@ const Orders = () => {
   }, []);
 
   const loadData = async () => {
-    const [data, prods, delMethods, payMethods] = await Promise.all([
+    const [data, prods, delMethods, payMethods, statuses] = await Promise.all([
       db.getAll('orders'),
       db.getAll('products'),
       db.getAll('delivery_methods'),
       db.getAll('payment_methods'),
+      db.getAll('order_statuses'),
     ]);
     data.sort((a, b) => new Date(b.date) - new Date(a.date));
     setOrders(data);
     setProducts(prods);
     setDeliveryMethods(delMethods);
     setPaymentMethods(payMethods);
+    setOrderStatuses(statuses);
   };
+
 
   const allTabOrders    = orders.filter(o => !o.isDeleted);
   const activeOrders    = orders.filter(o => !o.isDeleted && o.status !== 'Enviado' && o.status !== 'Completado' && o.status !== 'Cancelado');
@@ -968,16 +973,22 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
               </div>
 
               <div>
-                <label style={{display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 'bold'}}>Estado del Pedido</label>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Estado Actual</label>
                 <select 
                   value={shippingOrder.status} 
-                  onChange={(e) => setShippingOrder({...shippingOrder, status: e.target.value})}
-                  style={{...inputStyle, fontWeight: 'bold', fontSize: '1.05rem', background: 'rgba(0,0,0,0.3)'}}
+                  onChange={(e) => setShippingOrder({ ...shippingOrder, status: e.target.value })}
+                  style={inputStyle}
                 >
-                  <option value="Pendiente">Pendiente</option>
-                  <option value="Enviado">Enviado</option>
-                  <option value="Completado">Completado</option>
-                  <option value="Cancelado">Cancelado</option>
+                  {orderStatuses.length > 0 ? (
+                    orderStatuses.map(s => <option key={s.id} value={s.name}>{s.name}</option>)
+                  ) : (
+                    <>
+                      <option value="Pendiente">Pendiente</option>
+                      <option value="Enviado">Enviado</option>
+                      <option value="Completado">Completado</option>
+                      <option value="Cancelado">Cancelado</option>
+                    </>
+                  )}
                 </select>
               </div>
               
