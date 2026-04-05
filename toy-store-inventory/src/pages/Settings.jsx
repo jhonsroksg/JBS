@@ -408,9 +408,17 @@ const Settings = () => {
               <input type="color" value={newStatusColor} onChange={e => setNewStatusColor(e.target.value)} style={{ width: '50px', height: '45px', padding: '5px', border: 'none', background: 'none' }} />
               <button type="submit" className="btn-primary" style={{ padding: '0 20px' }}><Plus size={20} /></button>
             </form>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {orderStatuses.map(s => (
-                <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'var(--bg-tertiary)', borderRadius: '12px' }}>
+                <div key={s.id} style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between', 
+                  padding: '16px', 
+                  background: 'var(--bg-tertiary)', 
+                  borderRadius: '12px',
+                  border: '1px solid var(--border-color)'
+                }}>
                   {editingStatusId === s.id ? (
                     <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
                       <input type="text" value={editingStatusName} onChange={e => setEditingStatusName(e.target.value)} style={inputStyle} />
@@ -420,7 +428,7 @@ const Settings = () => {
                   ) : (
                     <>
                       <span style={{ 
-                        padding: '4px 12px', borderRadius: '20px', backgroundColor: `${s.color}20`, color: s.color, fontWeight: 700 
+                        padding: '6px 16px', borderRadius: '20px', backgroundColor: `${s.color}20`, color: s.color, fontWeight: 700, fontSize: '0.9rem'
                       }}>{s.name}</span>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button onClick={() => handleEditStatus(s)} className="btn-icon"><Edit2 size={16} /></button>
