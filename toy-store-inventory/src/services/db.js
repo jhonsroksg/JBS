@@ -3,9 +3,33 @@ import { supabase } from '../lib/supabaseClient';
 export const db = {
   // ─── Get All ────────────────────────────────────────────────────────────────
   getAll: async (collection) => {
-    const { data, error } = await supabase
-      .from(collection)
-      .select('*');
+    let query = supabase.from(collection).select('*');
+    
+    // Aplicar ordenamiento específico por colección si es necesario
+    if (collection === 'order_statuses') {
+      // Definimos el orden deseado
+      const { data, error } = await query;
+      if (error) {
+        console.error(`[db.getAll] Error en "${collection}":`, error.message);
+        return [];
+      }
+      
+      const statusOrder = ['Pendiente', 'Control de Calidad', 'Enviado', 'Completado', 'Cancelado'];
+      return (data || []).sort((a, b) => {
+        const indexA = statusOrder.indexOf(a.name);
+        const indexB = statusOrder.indexOf(b.name);
+        
+        // Si ambos están en la lista, usar el índice del array
+        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+        // Si solo uno está, ese va primero (o al final, según prefieras, aquí lo ponemos después de los conocidos)
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        // Si ninguno está, orden alfabético
+        return a.name.localeCompare(b.name);
+      });
+    }
+
+    const { data, error } = await query;
     if (error) {
       console.error(`[db.getAll] Error en "${collection}":`, error.message);
       return [];
