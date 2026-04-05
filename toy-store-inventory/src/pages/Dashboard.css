@@ -12,8 +12,19 @@
 
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.dashboard-main-grid,
+.dashboard-secondary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 24px;
+}
+
+.dashboard-secondary-grid {
+  grid-template-columns: 1fr 1fr 1fr;
 }
 
 .metric-card {
@@ -63,7 +74,8 @@
 }
 
 @media (max-width: 1024px) {
-  .dashboard-content {
+  .dashboard-main-grid,
+  .dashboard-secondary-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -84,23 +96,8 @@
     gap: 12px;
   }
 
-  .metric-icon-wrapper {
-    width: 44px;
-    height: 44px;
-  }
-
-  .metric-icon {
-    width: 22px;
-    height: 22px;
-  }
-
-  .dashboard-page > div[style*="grid-template-columns: 1fr 1fr 1fr"],
-  .dashboard-page > div[style*="grid-template-columns: 1fr 1fr"] {
-    grid-template-columns: 1fr !important;
-  }
-  
   .metrics-grid {
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: 1fr 1fr;
   }
 }
 

@@ -37,7 +37,7 @@
 }
 
 .cart-sidebar-header {
-  padding: 24px;
+  padding: calc(24px + var(--safe-top)) 24px 24px;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
@@ -180,7 +180,7 @@
 }
 
 .cart-sidebar-footer {
-  padding: 24px;
+  padding: 24px 24px calc(24px + var(--safe-bottom));
   background: var(--bg-secondary);
   border-top: 1px solid var(--border-color);
   gap: 16px;

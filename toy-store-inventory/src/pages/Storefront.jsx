@@ -133,7 +133,21 @@ const Storefront = () => {
           {/* Opciones de Categoría */}
           <div style={{ flex: '1 1 300px' }}>
             <h3 style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold' }}><Filter size={14}/> Categoría</h3>
-            <div className="category-filters" style={{ margin: 0, padding: 0, border: 'none', background: 'transparent' }}>
+            
+            {/* Selector para Móvil (Dropdown) */}
+            <select 
+              className="category-select-mobile"
+              value={activeCategory} 
+              onChange={(e) => setActiveCategory(e.target.value)}
+            >
+              <option value="all">Todas las categorías</option>
+              {categories.map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+
+            {/* Botones para Escritorio */}
+            <div className="category-filters-desktop" style={{ margin: 0, padding: 0, border: 'none', background: 'transparent' }}>
               <button className={`filter-btn ${activeCategory === 'all' ? 'active' : ''}`} onClick={() => setActiveCategory('all')}>Todas</button>
               {categories.map(cat => (
                 <button key={cat.id} className={`filter-btn ${activeCategory === cat.id ? 'active' : ''}`} onClick={() => setActiveCategory(cat.id)}>{cat.name}</button>

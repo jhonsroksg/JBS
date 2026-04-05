@@ -25,6 +25,13 @@
   /* Layout */
   --sidebar-width: 260px;
   --topbar-height: 70px;
+  --container-max: 1200px;
+  
+  /* Safe Areas */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
   
   /* Animations */
   --transition-fast: 0.15s ease-in-out;
@@ -219,7 +226,8 @@ h1, h2, h3, h4, h5, h6 {
 /* Page Content Styles */
 .page-content {
   padding: 32px;
-  max-width: 1200px;
+  padding-bottom: calc(32px + var(--safe-bottom));
+  max-width: var(--container-max);
   margin: 0 auto;
   width: 100%;
 }
@@ -441,9 +449,11 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 700;
     text-align: left;
     color: var(--text-secondary);
-    font-size: 0.8rem;
+    font-size: 0.72rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    margin-right: 12px;
+    flex-shrink: 0;
   }
 
   .actions-cell {
@@ -452,6 +462,7 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: 12px;
     margin-top: 12px;
     padding: 8px !important;
+    gap: 16px !important;
   }
 }
 

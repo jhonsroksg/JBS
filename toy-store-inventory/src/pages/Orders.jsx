@@ -117,7 +117,6 @@ const Orders = () => {
     if (order.order_number) {
       return `Joab${String(order.order_number).padStart(4, '0')}`;
     }
-    // Fallback para pedidos antiguos que solo tienen UUID
     return (order.id && typeof order.id === 'string' && order.id.includes('-')) 
       ? order.id.split('-')[0].toUpperCase() 
       : (order.id || 'N/A');
@@ -703,20 +702,17 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
       a.click();
       setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
     } catch(err) {
-      console.error('Error exportando Word:', err);
-      alert('Error al exportar Word: ' + err.message);
     }
-
   };
 
   return (
     <div className="products-page">
-      <div className="page-header" style={{marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+      <div className="page-header">
         <div>
           <h1>Pedidos</h1>
           <p>Supervisa y actualiza el estado de las ventas.</p>
         </div>
-        <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
+        <div className="tab-container-scroll">
           <button 
             className="btn-secondary"
             onClick={() => setActiveTab('all')}
@@ -767,7 +763,7 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
       </div>
 
       {/* Date filter bar */}
-      <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', padding: '12px 16px', background: 'var(--bg-secondary)', borderRadius: '14px', border: '1px solid var(--border-color)'}}>
+      <div className="filter-row-responsive">
         <Calendar size={16} style={{color: 'var(--text-secondary)'}} />
         <span style={{fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600, marginRight: '4px'}}>Filtrar por fecha:</span>
         {[{v:'all',l:'Todos'},{v:'week',l:'Esta semana'},{v:'biweek',l:'Quincena'},{v:'month',l:'Este mes'},{v:'custom',l:'📅 Rango'}].map(f => (
@@ -805,7 +801,7 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
         </span>
       </div>
 
-      <div style={{display: 'flex', justifyContent: 'flex-end', marginBottom: '16px', gap: '8px', padding: '0 4px'}}>
+      <div className="export-row">
         <span style={{alignSelf: 'center', fontSize: '0.9rem', color: 'var(--text-secondary)', marginRight: '8px', fontWeight: 600}}>Exportar Lista:</span>
         <button className="btn-secondary" style={{fontSize: '0.9rem', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px', color: '#e74c3c', borderColor: 'rgba(231, 76, 60, 0.3)'}} onClick={exportToPDFReport}>
           📄 PDF

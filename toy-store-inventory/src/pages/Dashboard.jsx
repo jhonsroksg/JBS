@@ -266,7 +266,7 @@ const Dashboard = () => {
         </div>
       )}
 
-      <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+      <div className="metrics-grid">
         <div className="metric-card glass-panel" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
             <div className="metric-icon-wrapper" style={{ background: 'rgba(34,193,195,0.12)', color: '#22C1C3' }}><DollarSign className="metric-icon" /></div>
@@ -321,7 +321,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+      <div className="dashboard-main-grid">
         <div className="dashboard-section glass-panel">
           <div className="section-header"><h2>📈 Ventas por período</h2><span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Ingresos (L.)</span></div>
           {chartData.every(d => d.value === 0) ? <div className="empty-state" style={{ padding: '32px 0' }}>Sin ventas en este período.</div> : <BarChart data={chartData} color="#22C1C3" label="L." />}
@@ -335,7 +335,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px' }}>
+      <div className="dashboard-secondary-grid">
         <div className="dashboard-section glass-panel">
           <div className="section-header"><h2>🏆 Top Productos</h2><span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Más vendidos</span></div>
           {topProducts.length === 0 ? <div className="empty-state">Sin datos de ventas.</div> : (
