@@ -9,14 +9,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 40px;
-  height: 80px;
+  padding: var(--safe-top) 40px 0;
+  height: calc(80px + var(--safe-top));
   position: sticky;
   top: 0;
   z-index: 50;
-  border-radius: 0 0 16px 16px;
+  border-radius: 0 0 24px 24px;
   border-top: none;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .store-brand h2 {
@@ -93,11 +93,18 @@
   padding: 0 24px;
 }
 
-.store-footer {
-  text-align: center;
-  padding: 40px 24px;
-  margin-top: 60px;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  border-top: 1px solid var(--border-color);
+@media (max-width: 768px) {
+  .store-header {
+    padding: var(--safe-top) 20px 0;
+    height: calc(70px + var(--safe-top));
+    border-radius: 0 0 16px 16px;
+  }
+
+  .store-brand h2 {
+    font-size: 1.2rem;
+  }
+
+  .store-main {
+    padding: 0 16px;
+  }
 }
