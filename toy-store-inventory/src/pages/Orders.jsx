@@ -1026,11 +1026,11 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
           >
             {/* FIXED HEADER */}
             <div className="modal-header" style={{ padding: '24px 24px 16px', borderBottom: '1px solid var(--border-color)', margin: 0, flexShrink: 0 }}>
-              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                <h2 style={{margin: 0}}>
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'}}>
+                <h2 style={{margin: 0, flex: 1}}>
                   {isEditing ? 'Editar Pedido' : 'Detalles del Pedido'} <span style={{fontSize: '1rem', color: 'var(--text-secondary)'}}>#{ (editedOrder || selectedOrder).id.split('_')[2] || (editedOrder || selectedOrder).id }</span>
                 </h2>
-                <button className="btn-icon" onClick={closeModal}><X /></button>
+                <button className="btn-icon" onClick={closeModal} style={{ marginLeft: '16px' }}><X /></button>
               </div>
             </div>
             
