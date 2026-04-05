@@ -42,8 +42,9 @@ const PublicLayout = () => {
   };
 
   return (
-    <div className="store-container">
+    <div className={`store-container ${isSidebarOpen ? 'cart-open' : ''}`}>
       <header className="store-header glass-panel">
+
         <div className="store-brand">
           <Link to="/">
             <h2>{storeInfo.name}</h2>

@@ -66,10 +66,13 @@ const Products = () => {
         const prodData = fullProduct || product; // Fallback just in case
         setFormData({
           ...prodData,
+          costPrice: prodData.costPrice ? Number(prodData.costPrice).toFixed(2) : '',
+          sellingPrice: prodData.sellingPrice ? Number(prodData.sellingPrice).toFixed(2) : '',
+          discountPrice: prodData.discountPrice ? Number(prodData.discountPrice).toFixed(2) : '',
           images: prodData.images || (prodData.imageUrl ? [prodData.imageUrl] : []),
-          discountPrice: prodData.discountPrice || ''
         });
         setEditingId(prodData.id);
+
       } catch (err) {
         console.error('Error fetching full product details:', err);
       } finally {
@@ -86,8 +89,18 @@ const Products = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: name.includes('Price') || name.includes('Stock') ? Number(value) : value });
+    if (name.includes('Price')) {
+      // Permitir solo números y un punto decimal
+      if (/^[0-9]*\.?[0-9]*$/.test(value) || value === '') {
+        setFormData({ ...formData, [name]: value });
+      }
+    } else if (name.includes('Stock')) {
+      setFormData({ ...formData, [name]: value === '' ? '' : Number(value) });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
+
 
   const handleRemoveImage = (index) => {
     setFormData(prev => ({ ...prev, images: (prev.images || []).filter((_, i) => i !== index) }));
@@ -439,16 +452,17 @@ const Products = () => {
               <div className="form-row">
                 <div className="form-group">
                   <label>Precio Costo (L.)</label>
-                  <input type="number" step="0.01" name="costPrice" value={formData.costPrice} onChange={handleChange} required />
+                  <input type="text" name="costPrice" value={formData.costPrice} onChange={handleChange} required placeholder="0.00" />
                 </div>
                 <div className="form-group">
                   <label>Precio de Venta Base (L.)</label>
-                  <input type="number" step="0.01" name="sellingPrice" value={formData.sellingPrice} onChange={handleChange} required />
+                  <input type="text" name="sellingPrice" value={formData.sellingPrice} onChange={handleChange} required placeholder="0.00" />
                 </div>
                 <div className="form-group">
                   <label style={{ color: 'var(--danger)' }}>Precio Oferta (L.) Opcional</label>
-                  <input type="number" step="0.01" name="discountPrice" value={formData.discountPrice || ''} onChange={handleChange} placeholder="Ej. rebaja" />
+                  <input type="text" name="discountPrice" value={formData.discountPrice || ''} onChange={handleChange} placeholder="Ej. 0.00" />
                 </div>
+
               </div>
               <div className="form-row">
                 <div className="form-group">

@@ -8,7 +8,10 @@ const CartSidebar = ({ isOpen, onClose, onCheckout }) => {
   useEffect(() => {
     if (isOpen) {
       loadCart();
-      document.body.style.overflow = 'hidden';
+      // Solo bloquear scroll en móviles (< 1024px)
+      if (window.innerWidth < 1024) {
+        document.body.style.overflow = 'hidden';
+      }
     } else {
       document.body.style.overflow = 'unset';
     }
@@ -16,11 +19,13 @@ const CartSidebar = ({ isOpen, onClose, onCheckout }) => {
     const handleCartUpdate = () => loadCart();
     window.addEventListener('cart_updated', handleCartUpdate);
     
+    // Al cerrar, siempre restaurar scroll
     return () => {
       window.removeEventListener('cart_updated', handleCartUpdate);
       document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
+
 
   const loadCart = () => {
     const savedCart = JSON.parse(localStorage.getItem('toy_store_cart') || '[]');
@@ -93,8 +98,9 @@ const CartSidebar = ({ isOpen, onClose, onCheckout }) => {
           <div className="cart-sidebar-footer">
             <div className="sidebar-subtotal">
               <span>Subtotal:</span>
-              <span>L. {subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+              <span>L. {subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
+
             <button className="btn-checkout-sidebar" onClick={() => { onCheckout(); onClose(); }}>
               Finalizar Compra <ArrowRight size={20} />
             </button>

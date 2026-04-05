@@ -117,7 +117,7 @@ const Dashboard = () => {
 
   const revenue = useMemo(() => periodOrders.reduce((a, o) => a + Number(o.total || 0), 0), [periodOrders]);
   const prevRevenue = useMemo(() => prevPeriodOrders.reduce((a, o) => a + Number(o.total || 0), 0), [prevPeriodOrders]);
-  const revenueChange = prevRevenue === 0 ? null : ((revenue - prevRevenue) / prevRevenue * 100).toFixed(1);
+  const revenueChange = prevRevenue === 0 ? null : ((revenue - prevRevenue) / prevRevenue * 100).toFixed(2);
 
   const completedOrders = periodOrders.filter(o => o.status === 'Completado');
   const pendingOrders   = periodOrders.filter(o => o.status === 'Pendiente');
@@ -316,9 +316,10 @@ const Dashboard = () => {
           <div>
             <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '2px' }}>Pedidos cancelados</div>
             <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{cancelledOrders.length}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>Tasa de cancelación: {periodOrders.length > 0 ? ((cancelledOrders.length / periodOrders.length) * 100).toFixed(1) : 0}%</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>Tasa de cancelación: {periodOrders.length > 0 ? ((cancelledOrders.length / periodOrders.length) * 100).toFixed(2) : 0}%</div>
           </div>
         </div>
+
       </div>
 
       <div className="dashboard-main-grid">

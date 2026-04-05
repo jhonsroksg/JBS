@@ -170,8 +170,9 @@ const Settings = () => {
   const handleEditDelivery = (method) => {
     setEditingDeliveryId(method.id);
     setEditingDeliveryName(method.name);
-    setEditingDeliveryCost(method.cost);
+    setEditingDeliveryCost(method.cost ? Number(method.cost).toFixed(2) : '0.00');
   };
+
 
   const handleSaveEditDelivery = async () => {
     if (!editingDeliveryName.trim()) return;
@@ -219,8 +220,9 @@ const Settings = () => {
     setEditingCouponId(coupon.id);
     setEditingCouponCode(coupon.code);
     setEditingCouponType(coupon.discountType);
-    setEditingCouponValue(coupon.discountValue);
+    setEditingCouponValue(coupon.discountValue ? Number(coupon.discountValue).toFixed(2) : '0.00');
   };
+
 
   const handleSaveEditCoupon = async () => {
     if (!editingCouponCode.trim()) return;
@@ -439,9 +441,20 @@ const Settings = () => {
           <h2 style={{ fontSize: '1.4rem', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>Tipos de Envío</h2>
           <form onSubmit={handleAddDelivery} style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
             <input type="text" placeholder="Nombre (Ej. Pick Up)" value={newDeliveryName} onChange={(e) => setNewDeliveryName(e.target.value)} style={{ flex: 2, ...inputStyle }} />
-            <input type="number" placeholder="Costo (L.)" value={newDeliveryCost} onChange={(e) => setNewDeliveryCost(e.target.value)} style={{ flex: 1, ...inputStyle }} min="0" step="0.01" />
+            <input 
+              type="text" 
+              placeholder="Costo (L.)" 
+              value={newDeliveryCost} 
+              onChange={(e) => {
+                if (/^[0-9]*\.?[0-9]*$/.test(e.target.value) || e.target.value === '') {
+                  setNewDeliveryCost(e.target.value);
+                }
+              }} 
+              style={{ flex: 1, ...inputStyle }} 
+            />
             <button type="submit" className="btn-primary" style={{ borderRadius: '12px', padding: '0 16px' }}><Plus size={20} /></button>
           </form>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {deliveryMethods.length === 0 ? (
               <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>No hay tipos de envío.</div>
@@ -450,8 +463,19 @@ const Settings = () => {
                 {editingDeliveryId === method.id ? (
                   <div style={{ display: 'flex', gap: '8px', flex: 1, marginRight: '16px' }}>
                     <input type="text" value={editingDeliveryName} onChange={e => setEditingDeliveryName(e.target.value)} placeholder="Nombre" style={{ flex: 2, padding: '8px', borderRadius: '8px', border: '1px solid var(--accent-primary)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none', fontFamily: 'inherit' }} />
-                    <input type="number" value={editingDeliveryCost} onChange={e => setEditingDeliveryCost(e.target.value)} placeholder="Costo" min="0" step="0.01" style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid var(--accent-primary)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none', fontFamily: 'inherit' }} />
+                    <input 
+                      type="text" 
+                      value={editingDeliveryCost} 
+                      onChange={e => {
+                        if (/^[0-9]*\.?[0-9]*$/.test(e.target.value) || e.target.value === '') {
+                          setEditingDeliveryCost(e.target.value);
+                        }
+                      }} 
+                      placeholder="Costo" 
+                      style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid var(--accent-primary)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none', fontFamily: 'inherit' }} 
+                    />
                   </div>
+
                 ) : (
                   <div style={{ display: 'flex', justifyContent: 'space-between', flex: 1, paddingRight: '16px' }}>
                     <span style={{ fontWeight: 500 }}>{method.name}</span>
@@ -485,8 +509,19 @@ const Settings = () => {
               <option value="percentage">Porcentaje (%)</option>
               <option value="fixed">Monto Fijo (L.)</option>
             </select>
-            <input type="number" placeholder="Valor" value={newCouponValue} onChange={(e) => setNewCouponValue(e.target.value)} style={{ flex: 1, ...inputStyle }} min="1" step={newCouponType === 'percentage' ? '1' : '0.01'} />
+            <input 
+              type="text" 
+              placeholder="Valor" 
+              value={newCouponValue} 
+              onChange={(e) => {
+                if (/^[0-9]*\.?[0-9]*$/.test(e.target.value) || e.target.value === '') {
+                  setNewCouponValue(e.target.value);
+                }
+              }} 
+              style={{ flex: 1, ...inputStyle }} 
+            />
             <button type="submit" className="btn-primary" style={{ borderRadius: '12px', padding: '0 16px' }}><Plus size={20} /></button>
+
           </form>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {coupons.length === 0 ? (
@@ -500,8 +535,18 @@ const Settings = () => {
                       <option value="percentage">Porcentaje (%)</option>
                       <option value="fixed">Monto Fijo (L.)</option>
                     </select>
-                    <input type="number" value={editingCouponValue} onChange={e => setEditingCouponValue(e.target.value)} min="1" style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid var(--accent-primary)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none', fontFamily: 'inherit' }} />
+                    <input 
+                      type="text" 
+                      value={editingCouponValue} 
+                      onChange={e => {
+                        if (/^[0-9]*\.?[0-9]*$/.test(e.target.value) || e.target.value === '') {
+                          setEditingCouponValue(e.target.value);
+                        }
+                      }} 
+                      style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid var(--accent-primary)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none', fontFamily: 'inherit' }} 
+                    />
                   </div>
+
                 ) : (
                   <div style={{ display: 'flex', justifyContent: 'space-between', flex: 1, paddingRight: '16px', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

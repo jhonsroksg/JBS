@@ -3,7 +3,15 @@
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
+  transition: padding-right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+@media (min-width: 1024px) {
+  .store-container.cart-open {
+    padding-right: 420px;
+  }
+}
+
 
 .store-header {
   display: flex;
@@ -17,7 +25,10 @@
   border-radius: 0 0 24px 24px;
   border-top: none;
   margin-bottom: 24px;
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(12px) !important;
 }
+
 
 .store-brand h2 {
   font-size: 1.5rem;

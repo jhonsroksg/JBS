@@ -243,6 +243,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                             <div className="item-card-header">
                               <h4>{item.product.name}</h4>
                               <span className="item-card-price">L. {Number(item.product.discountPrice || item.product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+
                             </div>
                             <div className="item-card-footer">
                               <div className="item-qty-selector">
@@ -252,6 +253,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                               </div>
                               <div className="item-card-subtotal">
                                 L. {((item.product.discountPrice || item.product.sellingPrice) * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+
                               </div>
                               <button type="button" className="item-remove-btn" onClick={() => removeItem(index)}>
                                 <Trash2 size={16} />
@@ -323,10 +325,11 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                           <option value="" disabled>Método de entrega...</option>
                           {filteredDeliveryMethods.map(m => (
                             <option key={m.id} value={m.id}>
-                              {m.name} {Number(m.cost) > 0 ? `(+ L. ${Number(m.cost).toLocaleString('en-US', { minimumFractionDigits: 2 })})` : '(Gratis)'}
+                              {m.name} {Number(m.cost) > 0 ? `(+ L. ${Number(m.cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})` : '(Gratis)'}
                             </option>
                           ))}
                         </select>
+
                       </div>
 
                       <div className="form-input-group">
@@ -342,24 +345,25 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                       <h3>Resumen</h3>
                       <div className="summary-line">
                         <span>Subtotal</span>
-                        <span>L. {cartSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                        <span>L. {cartSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
                       {appliedCoupon && (
                         <div className="summary-line discount">
                           <span>Cupón ({appliedCoupon.code})</span>
-                          <span>- L. {cartDiscountAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                          <span>- L. {cartDiscountAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                       )}
                       {selectedDelivery && (
                         <div className="summary-line">
                           <span>Envío</span>
-                          <span>{deliveryCostUI > 0 ? `L. ${deliveryCostUI.toLocaleString('en-US', { minimumFractionDigits: 2 })}` : 'Gratis'}</span>
+                          <span>{deliveryCostUI > 0 ? `L. ${deliveryCostUI.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Gratis'}</span>
                         </div>
                       )}
                       <div className="summary-line total-line">
                         <span>Total de Compra</span>
-                        <span>L. {cartTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                        <span>L. {cartTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
+
                       
                       <button type="submit" className="confirm-order-btn" disabled={isSubmitting}>
                         {isSubmitting ? 'Procesando...' : `Confirmar Pedido`}

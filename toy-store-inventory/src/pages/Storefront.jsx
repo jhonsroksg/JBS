@@ -197,9 +197,11 @@ const Storefront = () => {
                   <div className="product-price" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                     <span style={{ textDecoration: 'line-through', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 'normal' }}>L. {Number(product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     <span style={{ color: 'var(--danger)' }}>L. {Number(product.discountPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+
                   </div>
                 ) : (
                   <span className="product-price">L. {Number(product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+
                 )}
               </div>
               <div className="card-actions" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
@@ -265,9 +267,11 @@ const Storefront = () => {
                 <div style={{ margin: '30px 0', fontSize: '2.5rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
                   <span style={{ textDecoration: 'line-through', color: 'var(--text-secondary)', fontSize: '1.5rem' }}>L. {Number(selectedProduct.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   <span style={{ color: 'var(--danger)' }}>L. {Number(selectedProduct.discountPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+
                 </div>
               ) : (
                 <div style={{ margin: '30px 0', fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>L. {Number(selectedProduct.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+
               )}
               <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <button className="btn-whatsapp" style={{ padding: '15px', fontSize: '1.1rem', justifyContent: 'center' }} onClick={() => handleWhatsAppContact(selectedProduct)}>
