@@ -31,8 +31,18 @@ const Settings = () => {
   const [editingStatusName, setEditingStatusName] = useState('');
   const [editingStatusColor, setEditingStatusColor] = useState('');
 
-  const [storeInfo, setStoreInfo] = useState({ name: '', phone: '', welcomeMessage: '' });
-
+  const [storeInfo, setStoreInfo] = useState({ 
+    name: '', 
+    phone: '', 
+    welcomeMessage: '',
+    hero_image_url: null,
+    footer_description: '',
+    facebook_url: '',
+    instagram_url: '',
+    store_address: '',
+    store_email: ''
+  });
+  const [activeTab, setActiveTab] = useState('general');
 
   useEffect(() => { loadData(); }, []);
 
@@ -48,9 +58,8 @@ const Settings = () => {
     setDeliveryMethods(del);
     setCoupons(coup);
     setOrderStatuses(statuses);
-    setStoreInfo(info);
+    if (info) setStoreInfo(info);
   };
-
 
   const handleSaveStoreInfo = async (e) => {
     e.preventDefault();
@@ -80,29 +89,21 @@ const Settings = () => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        // Para Hero usamos formato horizontal (16:9 aprox)
         const targetWidth = 1920;
         const targetHeight = 1080;
         canvas.width = targetWidth;
         canvas.height = targetHeight;
         const ctx = canvas.getContext('2d');
-
-        // Cálculo para crop horizontal centrado
         const imgRatio = img.width / img.height;
         const targetRatio = targetWidth / targetHeight;
-        
         let sourceX = 0, sourceY = 0, sourceWidth = img.width, sourceHeight = img.height;
-
         if (imgRatio > targetRatio) {
-          // La imagen es más ancha que el objetivo
           sourceWidth = img.height * targetRatio;
           sourceX = (img.width - sourceWidth) / 2;
         } else {
-          // La imagen es más alta que el objetivo
           sourceHeight = img.width / targetRatio;
           sourceY = (img.height - sourceHeight) / 2;
         }
-
         ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetWidth, targetHeight);
         resolve(canvas.toDataURL('image/jpeg', 0.8));
       };
@@ -113,7 +114,6 @@ const Settings = () => {
   const handleHeroImageFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
@@ -121,13 +121,13 @@ const Settings = () => {
         setStoreInfo(prev => ({ ...prev, hero_image_url: resized }));
       } catch (err) {
         console.error('Error al procesar imagen hero:', err);
-        alert('Error al procesar la imagen. Intenta con otro archivo.');
+        alert('Error al procesar la imagen.');
       }
     };
     reader.readAsDataURL(file);
   };
 
-  // Payment Methods
+  // Payment Methods CRUD
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!newMethod.trim()) return;
@@ -135,13 +135,9 @@ const Settings = () => {
       await db.insert('payment_methods', { name: newMethod.trim() });
       setNewMethod('');
       await loadData();
-    } catch (error) {
-      alert('Error al agregar forma de pago.');
-    }
+    } catch (error) { alert('Error al agregar forma de pago.'); }
   };
-
   const handleEdit = (method) => { setEditingId(method.id); setEditingName(method.name); };
-
   const handleSaveEdit = async () => {
     if (!editingName.trim()) return;
     try {
@@ -149,11 +145,8 @@ const Settings = () => {
       setEditingId(null);
       setEditingName('');
       await loadData();
-    } catch (error) {
-      alert('Error al editar forma de pago.');
-    }
+    } catch (error) { alert('Error al editar forma de pago.'); }
   };
-
   const handleDelete = async (id) => {
     if (confirm('¿Seguro que deseas eliminar esta forma de pago?')) {
       await db.delete('payment_methods', id);
@@ -161,7 +154,7 @@ const Settings = () => {
     }
   };
 
-  // Delivery Methods
+  // Delivery Methods CRUD
   const handleAddDelivery = async (e) => {
     e.preventDefault();
     if (!newDeliveryName.trim()) return;
@@ -170,21 +163,15 @@ const Settings = () => {
         name: newDeliveryName.trim(),
         cost: parseFloat(newDeliveryCost) || 0
       });
-      setNewDeliveryName('');
-      setNewDeliveryCost('');
+      setNewDeliveryName(''); setNewDeliveryCost('');
       await loadData();
-    } catch (error) {
-      alert('Error al agregar método de envío.');
-    }
+    } catch (error) { alert('Error al agregar método de envío.'); }
   };
-
   const handleEditDelivery = (method) => {
     setEditingDeliveryId(method.id);
     setEditingDeliveryName(method.name);
     setEditingDeliveryCost(method.cost ? Number(method.cost).toFixed(2) : '0.00');
   };
-
-
   const handleSaveEditDelivery = async () => {
     if (!editingDeliveryName.trim()) return;
     try {
@@ -193,14 +180,9 @@ const Settings = () => {
         cost: parseFloat(editingDeliveryCost) || 0
       });
       setEditingDeliveryId(null);
-      setEditingDeliveryName('');
-      setEditingDeliveryCost('');
       await loadData();
-    } catch (error) {
-      alert('Error al editar método de envío.');
-    }
+    } catch (error) { alert('Error al editar método de envío.'); }
   };
-
   const handleDeleteDelivery = async (id) => {
     if (confirm('¿Seguro que deseas eliminar este tipo de envío?')) {
       await db.delete('delivery_methods', id);
@@ -208,7 +190,7 @@ const Settings = () => {
     }
   };
 
-  // Coupons
+  // Coupons CRUD
   const handleAddCoupon = async (e) => {
     e.preventDefault();
     if (!newCouponCode.trim() || !newCouponValue) return;
@@ -219,22 +201,16 @@ const Settings = () => {
         discountValue: parseFloat(newCouponValue) || 0,
         isActive: true
       });
-      setNewCouponCode('');
-      setNewCouponValue('');
+      setNewCouponCode(''); setNewCouponValue('');
       await loadData();
-    } catch (error) {
-      alert('Error al crear cupón. Puede que el código ya exista.');
-    }
+    } catch (error) { alert('Error al crear cupón.'); }
   };
-
   const handleEditCoupon = (coupon) => {
     setEditingCouponId(coupon.id);
     setEditingCouponCode(coupon.code);
     setEditingCouponType(coupon.discountType);
     setEditingCouponValue(coupon.discountValue ? Number(coupon.discountValue).toFixed(2) : '0.00');
   };
-
-
   const handleSaveEditCoupon = async () => {
     if (!editingCouponCode.trim()) return;
     try {
@@ -245,24 +221,20 @@ const Settings = () => {
       });
       setEditingCouponId(null);
       await loadData();
-    } catch (error) {
-      alert('Error al actualizar cupón.');
-    }
+    } catch (error) { alert('Error al actualizar cupón.'); }
   };
-
   const handleDeleteCoupon = async (id) => {
     if (confirm('¿Seguro que deseas eliminar este cupón?')) {
       await db.delete('coupons', id);
       await loadData();
     }
   };
-
   const handleToggleCoupon = async (id, currentStatus) => {
     await db.update('coupons', id, { isActive: !currentStatus });
     await loadData();
   };
 
-  // Order Statuses Handlers
+  // Order Statuses CRUD
   const handleAddStatus = async (e) => {
     e.preventDefault();
     if (!newStatusName.trim()) return;
@@ -271,20 +243,15 @@ const Settings = () => {
         name: newStatusName.trim(),
         color: newStatusColor
       });
-      setNewStatusName('');
-      setNewStatusColor('#3498db');
+      setNewStatusName(''); setNewStatusColor('#3498db');
       await loadData();
-    } catch (error) {
-      alert('Error al agregar estado del pedido.');
-    }
+    } catch (error) { alert('Error al agregar estado del pedido.'); }
   };
-
   const handleEditStatus = (status) => {
     setEditingStatusId(status.id);
     setEditingStatusName(status.name);
     setEditingStatusColor(status.color);
   };
-
   const handleSaveEditStatus = async () => {
     if (!editingStatusName.trim()) return;
     try {
@@ -294,27 +261,19 @@ const Settings = () => {
       });
       setEditingStatusId(null);
       await loadData();
-    } catch (error) {
-      alert('Error al editar estado del pedido.');
-    }
+    } catch (error) { alert('Error al editar estado del pedido.'); }
   };
-
   const handleDeleteStatus = async (id, name) => {
     if (['Pendiente', 'Enviado', 'Completado', 'Cancelado'].includes(name)) {
-      alert('⚠️ Este es un estado del sistema y no se recomienda eliminarlo ya que puede afectar la lógica de la aplicación.');
-      if (!confirm(`¿Estás seguro de que deseas eliminar el estado "${name}" de todos modos?`)) return;
+      if (!confirm(`⚠️ "${name}" es un estado del sistema. ¿Deseas eliminarlo de todos modos?`)) return;
     } else {
-      if (!confirm(`¿Seguro que deseas eliminar el estado "${name}"?`)) return;
+      if (!confirm(`¿Eliminar estado "${name}"?`)) return;
     }
-    
     try {
       await db.delete('order_statuses', id);
       await loadData();
-    } catch (error) {
-      alert('Error al eliminar estado.');
-    }
+    } catch (error) { alert('Error al eliminar estado.'); }
   };
-
 
   const inputStyle = {
     padding: '12px', borderRadius: '12px', border: '1px solid var(--border-color)',
@@ -331,376 +290,220 @@ const Settings = () => {
         </div>
       </div>
 
-      {/* Store Info */}
-      <div className="glass-panel" style={{ padding: '30px', marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '1.4rem', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>Información de la Tienda</h2>
-        <form onSubmit={handleSaveStoreInfo} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '24px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <h3 style={{ fontSize: '1.1rem', marginBottom: '4px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>Sección Principal (Hero)</h3>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Imagen Hero (Fondo Principal)</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {/* Tabs Navigation */}
+      <div style={{ 
+        display: 'flex', gap: '8px', marginBottom: '24px', overflowX: 'auto', 
+        paddingBottom: '8px', scrollbarWidth: 'none', msOverflowStyle: 'none'
+      }}>
+        {[
+          { id: 'general', label: 'General', icon: '⚙️' },
+          { id: 'logistica', label: 'Logística', icon: '🚚' },
+          { id: 'pagos', label: 'Pagos', icon: '💳' },
+          { id: 'promociones', label: 'Promociones', icon: '🏷️' }
+        ].map(tab => (
+          <button 
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={{
+              padding: '12px 20px', borderRadius: '12px', border: 'none',
+              background: activeTab === tab.id ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+              color: activeTab === tab.id ? 'white' : 'var(--text-secondary)',
+              fontWeight: 600, fontSize: '0.95rem', cursor: 'pointer', whiteSpace: 'nowrap',
+              display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s ease',
+              boxShadow: activeTab === tab.id ? '0 4px 12px rgba(52, 152, 219, 0.3)' : 'none'
+            }}
+          >
+            <span>{tab.icon}</span> {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* General Tab */}
+      {activeTab === 'general' && (
+        <div className="glass-panel" style={{ padding: '30px' }}>
+          <h2 style={{ fontSize: '1.4rem', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>Información de la Tienda y Contacto</h2>
+          <form onSubmit={handleSaveStoreInfo} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <h3 style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>Visualización Principal (Hero)</h3>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Imagen de Fondo</label>
                   <div style={{ 
-                    position: 'relative', 
-                    width: '100%', 
-                    height: '220px', 
-                    borderRadius: '16px', 
-                    overflow: 'hidden', 
-                    border: '1px solid var(--border-color)',
-                    background: 'var(--bg-tertiary)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
+                    position: 'relative', width: '100%', height: '180px', borderRadius: '12px', 
+                    overflow: 'hidden', border: '1px solid var(--border-color)', background: 'var(--bg-tertiary)'
                   }}>
                     {storeInfo.hero_image_url ? (
-                      <>
-                        <img 
-                          src={storeInfo.hero_image_url} 
-                          alt="Hero Preview" 
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                          onError={(e) => e.target.src = 'https://via.placeholder.com/1920x1080?text=Error+en+Imagen'}
-                        />
-                        <div style={{ 
-                          position: 'absolute', 
-                          top: 0, left: 0, right: 0, bottom: 0, 
-                          background: 'linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.6))',
-                          display: 'flex',
-                          alignItems: 'flex-end',
-                          padding: '16px'
-                        }}>
-                          <label className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem', cursor: 'pointer', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', backdropFilter: 'blur(10px)', color: 'white' }}>
-                            <Upload size={14} style={{ marginRight: '6px' }} /> Cambiar Fotografía
-                            <input type="file" accept="image/*" onChange={handleHeroImageFile} style={{ display: 'none' }} />
-                          </label>
-                        </div>
-                      </>
+                      <img src={storeInfo.hero_image_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Hero" />
                     ) : (
-                      <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', cursor: 'pointer', color: 'var(--text-secondary)' }}>
-                        <div style={{ padding: '16px', borderRadius: '50%', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
-                          <ImageIcon size={32} />
-                        </div>
-                        <span>Subir imagen de fondo (Hero)</span>
-                        <input type="file" accept="image/*" onChange={handleHeroImageFile} style={{ display: 'none' }} />
-                      </label>
+                      <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>Sin Imagen</div>
                     )}
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <input 
-                      type="text" 
-                      value={storeInfo.hero_image_url || ''} 
-                      onChange={e => setStoreInfo({ ...storeInfo, hero_image_url: e.target.value })} 
-                      style={{ ...inputStyle, fontSize: '0.85rem' }} 
-                      placeholder="O pega una URL: https://images.unsplash.com/..." 
-                    />
-                    {storeInfo.hero_image_url && (
-                      <button 
-                        type="button" 
-                        onClick={() => setStoreInfo({ ...storeInfo, hero_image_url: '' })}
-                        className="btn-icon danger" 
-                        style={{ padding: '10px' }}
-                        title="Eliminar imagen"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    )}
+                    <label style={{ 
+                      position: 'absolute', bottom: '12px', right: '12px', padding: '8px 12px', 
+                      background: 'rgba(0,0,0,0.5)', borderRadius: '8px', color: 'white', cursor: 'pointer' 
+                    }}>
+                      <Upload size={14} /> Cambiar
+                      <input type="file" hidden accept="image/*" onChange={handleHeroImageFile} />
+                    </label>
                   </div>
                 </div>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '8px' }}>
-                  <ImageIcon size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
-                  Recomendado: Imágenes horizontales de alta calidad (1920x1080). Se guardará directamente en la base de datos.
-                </p>
+                <input type="text" placeholder="Nombre de la Tienda" value={storeInfo.name} onChange={e => setStoreInfo({ ...storeInfo, name: e.target.value })} style={inputStyle} />
+                <input type="text" placeholder="Mensaje de Bienvenida" value={storeInfo.welcomeMessage} onChange={e => setStoreInfo({ ...storeInfo, welcomeMessage: e.target.value })} style={inputStyle} />
               </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Título Hero (Nombre)</label>
-                <input type="text" value={storeInfo.name} onChange={e => setStoreInfo({ ...storeInfo, name: e.target.value })} style={inputStyle} placeholder="Ej. Joa Baby Shop" />
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Subtítulo Hero (Bienvenida)</label>
-                <input type="text" value={storeInfo.welcomeMessage || ''} onChange={e => setStoreInfo({ ...storeInfo, welcomeMessage: e.target.value })} style={inputStyle} placeholder="Ej. ¡Bienvenido a nuestra tienda!" />
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <h3 style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>Contacto y Redes</h3>
+                <input type="text" placeholder="WhatsApp" value={storeInfo.phone} onChange={e => setStoreInfo({ ...storeInfo, phone: e.target.value })} style={inputStyle} />
+                <input type="email" placeholder="Email" value={storeInfo.store_email} onChange={e => setStoreInfo({ ...storeInfo, store_email: e.target.value })} style={inputStyle} />
+                <input type="text" placeholder="Dirección" value={storeInfo.store_address} onChange={e => setStoreInfo({ ...storeInfo, store_address: e.target.value })} style={inputStyle} />
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <input type="text" placeholder="Facebook URL" value={storeInfo.facebook_url} onChange={e => setStoreInfo({ ...storeInfo, facebook_url: e.target.value })} style={inputStyle} />
+                  <input type="text" placeholder="Instagram URL" value={storeInfo.instagram_url} onChange={e => setStoreInfo({ ...storeInfo, instagram_url: e.target.value })} style={inputStyle} />
+                </div>
+                <textarea placeholder="Descripción Footer" value={storeInfo.footer_description} onChange={e => setStoreInfo({ ...storeInfo, footer_description: e.target.value })} style={{ ...inputStyle, minHeight: '100px' }} />
               </div>
             </div>
+            <button type="submit" className="btn-primary" style={{ alignSelf: 'flex-end', padding: '12px 32px' }}><Save size={18} style={{ marginRight: '8px' }} /> Guardar Cambios</button>
+          </form>
+        </div>
+      )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <h3 style={{ fontSize: '1.1rem', marginBottom: '4px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>Información de Contacto</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>WhatsApp (Ej. 50499009900)</label>
-                  <input type="text" value={storeInfo.phone} onChange={e => setStoreInfo({ ...storeInfo, phone: e.target.value })} style={inputStyle} placeholder="Solo números" />
+      {/* Logistics Tab */}
+      {activeTab === 'logistica' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div className="glass-panel" style={{ padding: '30px' }}>
+            <h2 style={{ fontSize: '1.4rem', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>Tipos de Envío</h2>
+            <form onSubmit={handleAddDelivery} style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+              <input type="text" placeholder="Nombre del Envío" value={newDeliveryName} onChange={e => setNewDeliveryName(e.target.value)} style={inputStyle} />
+              <input type="text" placeholder="Costo L." value={newDeliveryCost} onChange={e => setNewDeliveryCost(e.target.value)} style={{ ...inputStyle, width: '120px' }} />
+              <button type="submit" className="btn-primary" style={{ padding: '0 20px' }}><Plus size={20} /></button>
+            </form>
+            <div style={{ display: 'grid', gap: '12px' }}>
+              {deliveryMethods.map(m => (
+                <div key={m.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'var(--bg-tertiary)', borderRadius: '12px' }}>
+                  {editingDeliveryId === m.id ? (
+                    <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
+                      <input type="text" value={editingDeliveryName} onChange={e => setEditingDeliveryName(e.target.value)} style={inputStyle} />
+                      <input type="text" value={editingDeliveryCost} onChange={e => setEditingDeliveryCost(e.target.value)} style={{ ...inputStyle, width: '100px' }} />
+                      <button onClick={handleSaveEditDelivery} className="btn-icon" style={{ color: 'var(--success)' }}><Check /></button>
+                      <button onClick={() => setEditingDeliveryId(null)} className="btn-icon"><X /></button>
+                    </div>
+                  ) : (
+                    <>
+                      <span>{m.name} - <strong>L. {Number(m.cost).toFixed(2)}</strong></span>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button onClick={() => handleEditDelivery(m)} className="btn-icon"><Edit2 size={16} /></button>
+                        <button onClick={() => handleDeleteDelivery(m.id)} className="btn-icon danger"><Trash2 size={16} /></button>
+                      </div>
+                    </>
+                  )}
                 </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Correo Electrónico</label>
-                  <input type="email" value={storeInfo.store_email || ''} onChange={e => setStoreInfo({ ...storeInfo, store_email: e.target.value })} style={inputStyle} placeholder="info@tienda.com" />
-                </div>
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Dirección Física</label>
-                <input type="text" value={storeInfo.store_address || ''} onChange={e => setStoreInfo({ ...storeInfo, store_address: e.target.value })} style={inputStyle} placeholder="Ej. San Pedro Sula, Honduras" />
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', gridColumn: '1 / -1', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
-              <h3 style={{ fontSize: '1.1rem', marginBottom: '4px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>Pie de Página (Footer) e Redes</h3>
-              <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Misión / Descripción</label>
-                <textarea value={storeInfo.footer_description || ''} onChange={e => setStoreInfo({ ...storeInfo, footer_description: e.target.value })} style={{ ...inputStyle, resize: 'vertical', minHeight: '80px' }} placeholder="Ej. Acompañando el crecimiento de tus pequeños..." />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Link de Facebook</label>
-                  <input type="text" value={storeInfo.facebook_url || ''} onChange={e => setStoreInfo({ ...storeInfo, facebook_url: e.target.value })} style={inputStyle} placeholder="https://facebook.com/..." />
-                </div>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>Link de Instagram</label>
-                  <input type="text" value={storeInfo.instagram_url || ''} onChange={e => setStoreInfo({ ...storeInfo, instagram_url: e.target.value })} style={inputStyle} placeholder="https://instagram.com/..." />
-                </div>
-              </div>
+              ))}
             </div>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
-            <button type="submit" className="btn-primary" style={{ borderRadius: '12px', padding: '12px 32px' }}>
-              <Save size={20} style={{ marginRight: '8px' }} /> Guardar Configuración Global
-            </button>
-          </div>
-        </form>
-      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-        {/* Payment Methods */}
+          <div className="glass-panel" style={{ padding: '30px' }}>
+            <h2 style={{ fontSize: '1.4rem', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>Estados de Pedido</h2>
+            <form onSubmit={handleAddStatus} style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+              <input type="text" placeholder="Nuevo Estado" value={newStatusName} onChange={e => setNewStatusName(e.target.value)} style={inputStyle} />
+              <input type="color" value={newStatusColor} onChange={e => setNewStatusColor(e.target.value)} style={{ width: '50px', height: '45px', padding: '5px', border: 'none', background: 'none' }} />
+              <button type="submit" className="btn-primary" style={{ padding: '0 20px' }}><Plus size={20} /></button>
+            </form>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '12px' }}>
+              {orderStatuses.map(s => (
+                <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'var(--bg-tertiary)', borderRadius: '12px' }}>
+                  {editingStatusId === s.id ? (
+                    <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
+                      <input type="text" value={editingStatusName} onChange={e => setEditingStatusName(e.target.value)} style={inputStyle} />
+                      <input type="color" value={editingStatusColor} onChange={e => setEditingStatusColor(e.target.value)} style={{ width: '40px', border: 'none', background: 'none' }} />
+                      <button onClick={handleSaveEditStatus} className="btn-icon" style={{ color: 'var(--success)' }}><Check /></button>
+                    </div>
+                  ) : (
+                    <>
+                      <span style={{ 
+                        padding: '4px 12px', borderRadius: '20px', backgroundColor: `${s.color}20`, color: s.color, fontWeight: 700 
+                      }}>{s.name}</span>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button onClick={() => handleEditStatus(s)} className="btn-icon"><Edit2 size={16} /></button>
+                        <button onClick={() => handleDeleteStatus(s.id, s.name)} className="btn-icon danger"><Trash2 size={16} /></button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payments Tab */}
+      {activeTab === 'pagos' && (
         <div className="glass-panel" style={{ padding: '30px' }}>
           <h2 style={{ fontSize: '1.4rem', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>Formas de Pago</h2>
-          <form onSubmit={handleAdd} style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-            <input type="text" placeholder="Añadir pago (Ej. Zelle...)" value={newMethod} onChange={(e) => setNewMethod(e.target.value)} style={{ flex: 1, ...inputStyle }} />
-            <button type="submit" className="btn-primary" style={{ borderRadius: '12px', padding: '0 16px' }}><Plus size={20} /></button>
+          <form onSubmit={handleAdd} style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+            <input type="text" placeholder="Ej. Zelle, Transferencia..." value={newMethod} onChange={e => setNewMethod(e.target.value)} style={inputStyle} />
+            <button type="submit" className="btn-primary" style={{ padding: '0 20px' }}><Plus size={20} /></button>
           </form>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {methods.length === 0 ? (
-              <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>No hay formas de pago.</div>
-            ) : methods.map(method => (
-              <div key={method.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'var(--bg-tertiary)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                {editingId === method.id ? (
-                  <input type="text" value={editingName} onChange={e => setEditingName(e.target.value)} autoFocus onKeyDown={e => e.key === 'Enter' && handleSaveEdit()} style={{ flex: 1, marginRight: '16px', padding: '8px', borderRadius: '8px', border: '1px solid var(--accent-primary)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none', fontFamily: 'inherit' }} />
+          <div style={{ display: 'grid', gap: '12px' }}>
+            {methods.map(m => (
+              <div key={m.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'var(--bg-tertiary)', borderRadius: '12px' }}>
+                {editingId === m.id ? (
+                  <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
+                    <input type="text" value={editingName} onChange={e => setEditingName(e.target.value)} style={inputStyle} />
+                    <button onClick={handleSaveEdit} className="btn-icon" style={{ color: 'var(--success)' }}><Check /></button>
+                  </div>
                 ) : (
-                  <div style={{ fontWeight: 500 }}>{method.name}</div>
+                  <>
+                    <span>{m.name}</span>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button onClick={() => handleEdit(m)} className="btn-icon"><Edit2 size={16} /></button>
+                      <button onClick={() => handleDelete(m.id)} className="btn-icon danger"><Trash2 size={16} /></button>
+                    </div>
+                  </>
                 )}
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  {editingId === method.id ? (
-                    <>
-                      <button className="btn-icon" onClick={handleSaveEdit} style={{ color: 'var(--success)', borderColor: 'var(--success)' }}><Check size={18} /></button>
-                      <button className="btn-icon" onClick={() => setEditingId(null)}><X size={18} /></button>
-                    </>
-                  ) : (
-                    <>
-                      <button className="btn-icon" onClick={() => handleEdit(method)}><Edit2 size={18} /></button>
-                      <button className="btn-icon danger" onClick={() => handleDelete(method.id)}><Trash2 size={18} /></button>
-                    </>
-                  )}
-                </div>
               </div>
             ))}
           </div>
         </div>
+      )}
 
-        {/* Delivery Methods */}
+      {/* Promotions Tab */}
+      {activeTab === 'promociones' && (
         <div className="glass-panel" style={{ padding: '30px' }}>
-          <h2 style={{ fontSize: '1.4rem', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>Tipos de Envío</h2>
-          <form onSubmit={handleAddDelivery} style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
-            <input type="text" placeholder="Nombre (Ej. Pick Up)" value={newDeliveryName} onChange={(e) => setNewDeliveryName(e.target.value)} style={{ flex: 2, ...inputStyle }} />
-            <input 
-              type="text" 
-              placeholder="Costo (L.)" 
-              value={newDeliveryCost} 
-              onChange={(e) => {
-                if (/^[0-9]*\.?[0-9]*$/.test(e.target.value) || e.target.value === '') {
-                  setNewDeliveryCost(e.target.value);
-                }
-              }} 
-              style={{ flex: 1, ...inputStyle }} 
-            />
-            <button type="submit" className="btn-primary" style={{ borderRadius: '12px', padding: '0 16px' }}><Plus size={20} /></button>
-          </form>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {deliveryMethods.length === 0 ? (
-              <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>No hay tipos de envío.</div>
-            ) : deliveryMethods.map(method => (
-              <div key={method.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'var(--bg-tertiary)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                {editingDeliveryId === method.id ? (
-                  <div style={{ display: 'flex', gap: '8px', flex: 1, marginRight: '16px' }}>
-                    <input type="text" value={editingDeliveryName} onChange={e => setEditingDeliveryName(e.target.value)} placeholder="Nombre" style={{ flex: 2, padding: '8px', borderRadius: '8px', border: '1px solid var(--accent-primary)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none', fontFamily: 'inherit' }} />
-                    <input 
-                      type="text" 
-                      value={editingDeliveryCost} 
-                      onChange={e => {
-                        if (/^[0-9]*\.?[0-9]*$/.test(e.target.value) || e.target.value === '') {
-                          setEditingDeliveryCost(e.target.value);
-                        }
-                      }} 
-                      placeholder="Costo" 
-                      style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid var(--accent-primary)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none', fontFamily: 'inherit' }} 
-                    />
-                  </div>
-
-                ) : (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', flex: 1, paddingRight: '16px' }}>
-                    <span style={{ fontWeight: 500 }}>{method.name}</span>
-                    <span style={{ color: 'var(--accent-primary)' }}>L. {Number(method.cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                )}
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  {editingDeliveryId === method.id ? (
-                    <>
-                      <button className="btn-icon" onClick={handleSaveEditDelivery} style={{ color: 'var(--success)', borderColor: 'var(--success)' }}><Check size={18} /></button>
-                      <button className="btn-icon" onClick={() => setEditingDeliveryId(null)}><X size={18} /></button>
-                    </>
-                  ) : (
-                    <>
-                      <button className="btn-icon" onClick={() => handleEditDelivery(method)}><Edit2 size={18} /></button>
-                      <button className="btn-icon danger" onClick={() => handleDeleteDelivery(method.id)}><Trash2 size={18} /></button>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Coupons */}
-        <div className="glass-panel" style={{ padding: '30px', gridColumn: '1 / -1' }}>
-          <h2 style={{ fontSize: '1.4rem', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>Códigos de Promoción (Cupones)</h2>
-          <form onSubmit={handleAddCoupon} style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
-            <input type="text" placeholder="Código (Ej. BLACKFRIDAY)" value={newCouponCode} onChange={(e) => setNewCouponCode(e.target.value.toUpperCase())} style={{ flex: 2, ...inputStyle }} />
-            <select value={newCouponType} onChange={(e) => setNewCouponType(e.target.value)} style={{ flex: 1, ...inputStyle }}>
-              <option value="percentage">Porcentaje (%)</option>
+          <h2 style={{ fontSize: '1.4rem', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>Cupones de Descuento</h2>
+          <form onSubmit={handleAddCoupon} style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+            <input type="text" placeholder="CÓDIGO" value={newCouponCode} onChange={e => setNewCouponCode(e.target.value)} style={{ ...inputStyle, width: '200px' }} />
+            <select value={newCouponType} onChange={e => setNewCouponType(e.target.value)} style={{ ...inputStyle, width: '150px' }}>
+              <option value="percentage">% Porcentaje</option>
               <option value="fixed">Monto Fijo (L.)</option>
             </select>
-            <input 
-              type="text" 
-              placeholder="Valor" 
-              value={newCouponValue} 
-              onChange={(e) => {
-                if (/^[0-9]*\.?[0-9]*$/.test(e.target.value) || e.target.value === '') {
-                  setNewCouponValue(e.target.value);
-                }
-              }} 
-              style={{ flex: 1, ...inputStyle }} 
-            />
-            <button type="submit" className="btn-primary" style={{ borderRadius: '12px', padding: '0 16px' }}><Plus size={20} /></button>
-
+            <input type="text" placeholder="Valor" value={newCouponValue} onChange={e => setNewCouponValue(e.target.value)} style={{ ...inputStyle, width: '100px' }} />
+            <button type="submit" className="btn-primary" style={{ padding: '0 20px' }}><Plus size={20} /></button>
           </form>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {coupons.length === 0 ? (
-              <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>No hay cupones activos.</div>
-            ) : coupons.map(coupon => (
-              <div key={coupon.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'var(--bg-tertiary)', borderRadius: '12px', border: '1px solid var(--border-color)', opacity: coupon.isActive ? 1 : 0.6 }}>
-                {editingCouponId === coupon.id ? (
-                  <div style={{ display: 'flex', gap: '8px', flex: 1, marginRight: '16px' }}>
-                    <input type="text" value={editingCouponCode} onChange={e => setEditingCouponCode(e.target.value.toUpperCase())} style={{ flex: 2, padding: '8px', borderRadius: '8px', border: '1px solid var(--accent-primary)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none', fontFamily: 'inherit' }} />
-                    <select value={editingCouponType} onChange={(e) => setEditingCouponType(e.target.value)} style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid var(--accent-primary)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none', fontFamily: 'inherit' }}>
-                      <option value="percentage">Porcentaje (%)</option>
-                      <option value="fixed">Monto Fijo (L.)</option>
-                    </select>
-                    <input 
-                      type="text" 
-                      value={editingCouponValue} 
-                      onChange={e => {
-                        if (/^[0-9]*\.?[0-9]*$/.test(e.target.value) || e.target.value === '') {
-                          setEditingCouponValue(e.target.value);
-                        }
-                      }} 
-                      style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid var(--accent-primary)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none', fontFamily: 'inherit' }} 
-                    />
-                  </div>
-
-                ) : (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', flex: 1, paddingRight: '16px', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <span style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--text-primary)', background: 'var(--bg-secondary)', padding: '4px 12px', borderRadius: '6px', border: '1px dashed var(--border-color)' }}>{coupon.code}</span>
-                      {!coupon.isActive && <span className="badge badge-danger">Inactivo</span>}
-                    </div>
-                    <span style={{ color: 'var(--success)', fontWeight: 'bold', fontSize: '1.1rem' }}>
-                      - {coupon.discountType === 'percentage' ? `${coupon.discountValue}%` : `L. ${Number(coupon.discountValue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                    </span>
-                  </div>
-                )}
+          <div style={{ display: 'grid', gap: '12px' }}>
+            {coupons.map(c => (
+              <div key={c.id} style={{ 
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+                padding: '16px', background: 'var(--bg-tertiary)', borderRadius: '12px',
+                opacity: c.isActive ? 1 : 0.6
+              }}>
+                <div>
+                  <strong style={{ fontSize: '1.1rem' }}>{c.code}</strong>
+                  <span style={{ marginLeft: '12px', color: 'var(--success)' }}>
+                    {c.discountType === 'percentage' ? `${c.discountValue}%` : `L. ${Number(c.discountValue).toFixed(2)}`}
+                  </span>
+                </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  {editingCouponId === coupon.id ? (
-                    <>
-                      <button className="btn-icon" onClick={handleSaveEditCoupon} style={{ color: 'var(--success)', borderColor: 'var(--success)' }}><Check size={18} /></button>
-                      <button className="btn-icon" onClick={() => setEditingCouponId(null)}><X size={18} /></button>
-                    </>
-                  ) : (
-                    <>
-                      <button className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.85rem' }} onClick={() => handleToggleCoupon(coupon.id, coupon.isActive)}>
-                        {coupon.isActive ? 'Desactivar' : 'Activar'}
-                      </button>
-                      <button className="btn-icon" onClick={() => handleEditCoupon(coupon)}><Edit2 size={18} /></button>
-                      <button className="btn-icon danger" onClick={() => handleDeleteCoupon(coupon.id)}><Trash2 size={18} /></button>
-                    </>
-                  )}
+                  <button onClick={() => handleToggleCoupon(c.id, c.isActive)} className="btn-secondary" style={{ fontSize: '0.8rem' }}>
+                    {c.isActive ? 'Desactivar' : 'Activar'}
+                  </button>
+                  <button onClick={() => handleEditCoupon(c)} className="btn-icon"><Edit2 size={16} /></button>
+                  <button onClick={() => handleDeleteCoupon(c.id)} className="btn-icon danger"><Trash2 size={16} /></button>
                 </div>
               </div>
             ))}
           </div>
         </div>
-
-        {/* Order Statuses */}
-        <div className="glass-panel" style={{ padding: '30px', gridColumn: '1 / -1' }}>
-          <h2 style={{ fontSize: '1.4rem', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>Gestión de Estados de Pedido</h2>
-          <form onSubmit={handleAddStatus} style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
-            <input type="text" placeholder="Nombre del estado (Ej. En Preparación)" value={newStatusName} onChange={(e) => setNewStatusName(e.target.value)} style={{ flex: 2, ...inputStyle }} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-              <input type="color" value={newStatusColor} onChange={(e) => setNewStatusColor(e.target.value)} style={{ width: '45px', height: '45px', padding: '0', border: 'none', borderRadius: '8px', background: 'none', cursor: 'pointer' }} />
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Color etiqueta</span>
-            </div>
-            <button type="submit" className="btn-primary" style={{ borderRadius: '12px', padding: '0 24px' }}><Plus size={20} style={{ marginRight: '8px' }} /> Agregar</button>
-          </form>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
-            {orderStatuses.length === 0 ? (
-              <div style={{ gridColumn: '1 / -1', padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>No hay estados configurados.</div>
-            ) : orderStatuses.map(status => (
-              <div key={status.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'var(--bg-tertiary)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                {editingStatusId === status.id ? (
-                  <div style={{ display: 'flex', gap: '8px', flex: 1, marginRight: '16px', alignItems: 'center' }}>
-                    <input type="text" value={editingStatusName} onChange={e => setEditingStatusName(e.target.value)} style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid var(--accent-primary)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none', fontFamily: 'inherit' }} />
-                    <input type="color" value={editingStatusColor} onChange={e => setEditingStatusColor(e.target.value)} style={{ width: '34px', height: '34px', padding: '0', border: 'none', borderRadius: '4px', background: 'none', cursor: 'pointer' }} />
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <span style={{ 
-                      display: 'inline-block',
-                      padding: '4px 12px',
-                      borderRadius: '20px',
-                      fontSize: '0.85rem',
-                      fontWeight: 700,
-                      backgroundColor: `${status.color}15`,
-                      color: status.color,
-                      border: `1px solid ${status.color}33`
-                    }}>
-                      {status.name}
-                    </span>
-                  </div>
-                )}
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  {editingStatusId === status.id ? (
-                    <>
-                      <button className="btn-icon" onClick={handleSaveEditStatus} style={{ color: 'var(--success)', borderColor: 'var(--success)' }}><Check size={18} /></button>
-                      <button className="btn-icon" onClick={() => setEditingStatusId(null)}><X size={18} /></button>
-                    </>
-                  ) : (
-                    <>
-                      <button className="btn-icon" onClick={() => handleEditStatus(status)}><Edit2 size={18} /></button>
-                      <button className="btn-icon danger" onClick={() => handleDeleteStatus(status.id, status.name)}><Trash2 size={18} /></button>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
+      )}
     </div>
   );
 };
