@@ -64,6 +64,7 @@ const Storefront = () => {
     }
     localStorage.setItem('toy_store_cart', JSON.stringify(currentCart));
     window.dispatchEvent(new Event('cart_updated'));
+    window.dispatchEvent(new Event('open_cart'));
   };
 
   const handleBuyNow = (product) => {

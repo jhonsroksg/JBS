@@ -5,18 +5,21 @@ import CheckoutModal from '../components/CheckoutModal';
 import { db } from '../services/db';
 import './PublicLayout.css';
 import Footer from '../components/Footer';
+import CartSidebar from '../components/CartSidebar';
 
 const PublicLayout = () => {
   const [cartCount, setCartCount] = useState(0);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [storeInfo, setStoreInfo] = useState({ name: 'Joa Baby Shop' });
 
   useEffect(() => {
     updateCartCount();
     window.addEventListener('cart_updated', updateCartCount);
-
-    const openCart = () => setIsCartOpen(true);
-    window.addEventListener('open_cart', openCart);
+    
+    // Al añadir un producto o abrir el carrito, mostramos la barra lateral
+    const openSidebar = () => setIsSidebarOpen(true);
+    window.addEventListener('open_cart', openSidebar);
     
     const loadStoreInfo = async () => {
       const info = await db.getStoreInfo();
@@ -27,7 +30,7 @@ const PublicLayout = () => {
     
     return () => {
       window.removeEventListener('cart_updated', updateCartCount);
-      window.removeEventListener('open_cart', openCart);
+      window.removeEventListener('open_cart', openSidebar);
       window.removeEventListener('store_info_updated', loadStoreInfo);
     };
   }, []);
@@ -50,7 +53,7 @@ const PublicLayout = () => {
           <Link to="/" className="store-link">Tienda</Link>
         </nav>
         <div className="store-actions">
-          <button className="cart-btn" id="open-cart-btn" onClick={() => setIsCartOpen(true)}>
+          <button className="cart-btn" id="open-cart-btn" onClick={() => setIsSidebarOpen(true)}>
             <ShoppingCart className="cart-icon" />
             {cartCount > 0 && <span className="cart-badge" id="cart-badge-count">{cartCount}</span>}
           </button>
@@ -60,6 +63,11 @@ const PublicLayout = () => {
         <Outlet />
       </main>
       <Footer storeInfo={storeInfo} />
+      <CartSidebar 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+        onCheckout={() => setIsCartOpen(true)} 
+      />
       <CheckoutModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </div>
   );
