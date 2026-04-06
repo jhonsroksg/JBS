@@ -191,11 +191,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 13px 16px;
-  border-radius: 12px;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
   font-family: inherit;
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -208,10 +208,6 @@
 .btn-add-cart svg, 
 .btn-whatsapp svg,
 .btn-buy-now svg {
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
   flex-shrink: 0;
 }
 
