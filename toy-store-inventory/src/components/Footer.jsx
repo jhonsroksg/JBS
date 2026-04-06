@@ -39,7 +39,6 @@ const Footer = ({ storeInfo }) => {
             <li><Link to="/" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Nuestra Tienda</Link></li>
             <li><Link to="/" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Novedades</Link></li>
             <li><Link to="/" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Ofertas Especiales</Link></li>
-            <li><Link to="/admin" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Acceso Admin</Link></li>
           </ul>
         </div>
 
