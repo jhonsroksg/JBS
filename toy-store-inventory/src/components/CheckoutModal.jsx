@@ -265,34 +265,69 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                   {cart.length === 0 ? (
                     <p className="empty-state">Tu carrito está vacío.</p>
                   ) : (
-                    <div className="cart-items-list">
-                      {cart.map((item, index) => (
-                        <div key={item.product.id} className="cart-item-card">
-                          <img src={item.product.imageUrl} alt={item.product.name} className="item-card-img" />
-                          <div className="item-card-details">
-                            <div className="item-card-header">
-                              <h4>{item.product.name}</h4>
-                              <span className="item-card-price">L. {Number(item.product.discountPrice || item.product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-
-                            </div>
-                            <div className="item-card-footer">
-                              <div className="item-qty-selector">
-                                <button type="button" onClick={() => updateQuantity(index, -1)} disabled={item.quantity <= 1}>-</button>
-                                <span>{item.quantity}</span>
-                                <button type="button" onClick={() => updateQuantity(index, 1)}>+</button>
+                    <>
+                      <div className="cart-items-scroll">
+                        <div className="cart-items-list">
+                          {cart.map((item, index) => (
+                            <div key={item.product.id} className="cart-item-card">
+                              <img src={item.product.imageUrl} alt={item.product.name} className="item-card-img" />
+                              <div className="item-card-details">
+                                <div className="item-card-header">
+                                  <h4>{item.product.name}</h4>
+                                  <span className="item-card-price">L. {Number(item.product.discountPrice || item.product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                </div>
+                                <div className="item-card-footer">
+                                  <div className="item-qty-selector">
+                                    <button type="button" onClick={() => updateQuantity(index, -1)} disabled={item.quantity <= 1}>-</button>
+                                    <span>{item.quantity}</span>
+                                    <button type="button" onClick={() => updateQuantity(index, 1)}>+</button>
+                                  </div>
+                                  <div className="item-card-subtotal">
+                                    L. {((item.product.discountPrice || item.product.sellingPrice) * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </div>
+                                  <button type="button" className="item-remove-btn" onClick={() => removeItem(index)}>
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
                               </div>
-                              <div className="item-card-subtotal">
-                                L. {((item.product.discountPrice || item.product.sellingPrice) * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-
-                              </div>
-                              <button type="button" className="item-remove-btn" onClick={() => removeItem(index)}>
-                                <Trash2 size={16} />
-                              </button>
                             </div>
-                          </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      </div>
+
+                      <div className="summary-section">
+                        <h3>Resumen</h3>
+                        <div className="summary-line">
+                          <span>Subtotal</span>
+                          <span>L. {cartSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
+                        {appliedCoupon && (
+                          <div className="summary-line discount">
+                            <span>Cupón ({appliedCoupon.code})</span>
+                            <span>- L. {cartDiscountAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          </div>
+                        )}
+                        {selectedDelivery && (
+                          <div className="summary-line">
+                            <span>Envío</span>
+                            <span>{deliveryCostUI > 0 ? `L. ${deliveryCostUI.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Gratis'}</span>
+                          </div>
+                        )}
+                        <div className="summary-line total-line">
+                          <span>Total de Compra</span>
+                          <span>L. {cartTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
+
+                        <button 
+                          type="submit" 
+                          form="checkout-form-data" 
+                          className="confirm-order-btn" 
+                          disabled={isSubmitting}
+                        >
+                          {isSubmitting ? 'Procesando...' : 'Confirmar Pedido'}
+                        </button>
+                      </div>
+                    </>
                   )}
                 </div>
 
@@ -359,7 +394,6 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                             </option>
                           ))}
                         </select>
-
                       </div>
 
                       <div className="form-input-group">
@@ -369,35 +403,6 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                           {availableMethods.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
                         </select>
                       </div>
-                    </div>
-
-                    <div className="summary-section">
-                      <h3>Resumen</h3>
-                      <div className="summary-line">
-                        <span>Subtotal</span>
-                        <span>L. {cartSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                      </div>
-                      {appliedCoupon && (
-                        <div className="summary-line discount">
-                          <span>Cupón ({appliedCoupon.code})</span>
-                          <span>- L. {cartDiscountAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                        </div>
-                      )}
-                      {selectedDelivery && (
-                        <div className="summary-line">
-                          <span>Envío</span>
-                          <span>{deliveryCostUI > 0 ? `L. ${deliveryCostUI.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Gratis'}</span>
-                        </div>
-                      )}
-                      <div className="summary-line total-line">
-                        <span>Total de Compra</span>
-                        <span>L. {cartTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                      </div>
-
-                      
-                      <button type="submit" className="confirm-order-btn" disabled={isSubmitting}>
-                        {isSubmitting ? 'Procesando...' : `Confirmar Pedido`}
-                      </button>
                     </div>
                   </form>
                 </div>
