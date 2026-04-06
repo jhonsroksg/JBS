@@ -62,7 +62,7 @@ const Footer = ({ storeInfo }) => {
               <span>{store_address || 'Honduras'}</span>
             </li>
             <li style={{ display: 'flex', gap: '10px', color: 'var(--text-secondary)' }}>
-              <MessageCircle size={20} style={{ color: '#25D366', flexShrink: 0 }} />
+              <Phone size={20} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
               <span>{phone || '+504 9892-7803'}</span>
             </li>
             <li style={{ display: 'flex', gap: '10px', color: 'var(--text-secondary)' }}>
