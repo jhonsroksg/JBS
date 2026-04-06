@@ -7,14 +7,15 @@
 -- Esto es crítico para que el Checkout funcione correctamente.
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 
--- Permitir que cualquier usuario (anon) inserte pedidos
+-- Borrar políticas existentes si es necesario para evitar errores de duplicidad
+DROP POLICY IF EXISTS "Permitir inserción pública de pedidos" ON orders;
+DROP POLICY IF EXISTS "Permitir lectura pública de pedidos" ON orders;
+
 CREATE POLICY "Permitir inserción pública de pedidos" 
 ON orders FOR INSERT 
 TO anon 
 WITH CHECK (true);
 
--- Permitir que usuarios anónimos lean pedidos (necesario para confirmar orden_number en el frontend)
--- NOTA: En producción, podrías querer restringir esto más por privacidad.
 CREATE POLICY "Permitir lectura pública de pedidos" 
 ON orders FOR SELECT 
 TO anon 
@@ -22,6 +23,10 @@ USING (true);
 
 -- 3. Políticas para la tabla 'customers'
 ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Permitir inserción/búsqueda de clientes" ON customers;
+DROP POLICY IF EXISTS "Permitir lectura de clientes" ON customers;
+DROP POLICY IF EXISTS "Permitir actualización de clientes" ON customers;
 
 CREATE POLICY "Permitir inserción/búsqueda de clientes" 
 ON customers FOR INSERT 
@@ -41,6 +46,9 @@ USING (true);
 -- 4. Políticas para la tabla 'products' (Permitir actualizar stock desde el checkout)
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Permitir lectura de productos" ON products;
+DROP POLICY IF EXISTS "Permitir actualización de stock" ON products;
+
 CREATE POLICY "Permitir lectura de productos" 
 ON products FOR SELECT 
 TO anon 
@@ -52,17 +60,23 @@ TO anon
 USING (true);
 
 -- 5. Otras tablas (Lectura pública necesaria para el Storefront)
-ALTER TABLE category ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Lectura pública de categorías" ON category FOR SELECT TO anon USING (true);
+-- CORRECCIÓN: 'categories' en lugar de 'category'
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Lectura pública de categorías" ON categories;
+CREATE POLICY "Lectura pública de categorías" ON categories FOR SELECT TO anon USING (true);
 
 ALTER TABLE delivery_methods ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Lectura pública de envíos" ON delivery_methods;
 CREATE POLICY "Lectura pública de envíos" ON delivery_methods FOR SELECT TO anon USING (true);
 
 ALTER TABLE payment_methods ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Lectura pública de pagos" ON payment_methods;
 CREATE POLICY "Lectura pública de pagos" ON payment_methods FOR SELECT TO anon USING (true);
 
 ALTER TABLE coupons ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Lectura pública de cupones" ON coupons;
 CREATE POLICY "Lectura pública de cupones" ON coupons FOR SELECT TO anon USING (true);
 
 ALTER TABLE store_info ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Lectura pública de info tienda" ON store_info;
 CREATE POLICY "Lectura pública de info tienda" ON store_info FOR SELECT TO anon USING (true);
