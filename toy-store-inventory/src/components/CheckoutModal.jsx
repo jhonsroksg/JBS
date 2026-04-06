@@ -296,7 +296,6 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                       </div>
 
                       <div className="summary-section">
-                        <h3>Resumen</h3>
                         <div className="summary-line">
                           <span>Subtotal</span>
                           <span>L. {cartSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
