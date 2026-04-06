@@ -147,56 +147,61 @@ const CheckoutModal = ({ isOpen, onClose }) => {
         throw insertErr; // Re-throw to show alert
       }
 
-      // 4. Background Tasks (Secondary priority)
-      // We wrap these in a separate try-catch so if they fail (e.g. stock or customer update roles),
-      // the user still sees the order as completed since the 'orders' insert worked.
-      try {
-        const bgTasks = [];
+      // 4. Trigger Background Tasks (Secondary priority - NON-BLOCKING)
+      // We fire and forget these tasks (except for logging failure) 
+      // so the user doesn't have to wait for multiple DB roundtrips.
+      const runBackgroundWork = async () => {
+        try {
+          const bgTasks = [];
 
-        // Task B: Update/Create Customer
-        bgTasks.push((async () => {
-          try {
-            const existingCust = await db.getByFilter('customers', 'email', customerInfo.email);
-            if (existingCust) {
-              return db.update('customers', existingCust.id, {
-                totalOrders: (existingCust.totalOrders || 0) + 1,
-                phone: customerInfo.phone || existingCust.phone,
-                address: orderData.customerAddress
-              });
-            } else {
-              return db.insert('customers', {
-                name: customerInfo.name,
-                email: customerInfo.email,
-                phone: customerInfo.phone,
-                address: orderData.customerAddress,
-                totalOrders: 1
-              });
-            }
-          } catch (custErr) {
-            console.warn('Tarea de cliente falló (no crítica):', custErr.message);
-          }
-        })());
-
-        // Task C: Stock Update
-        sanitizedCart.forEach(item => {
+          // Task B: Update/Create Customer
           bgTasks.push((async () => {
             try {
-              const dbProduct = await db.getById('products', item.product.id);
-              if (dbProduct) {
-                return db.update('products', dbProduct.id, { stock: Math.max(0, dbProduct.stock - item.quantity) });
+              const existingCust = await db.getByFilter('customers', 'email', customerInfo.email);
+              if (existingCust) {
+                return db.update('customers', existingCust.id, {
+                  totalOrders: (existingCust.totalOrders || 0) + 1,
+                  phone: customerInfo.phone || existingCust.phone,
+                  address: orderData.customerAddress
+                });
+              } else {
+                return db.insert('customers', {
+                  name: customerInfo.name,
+                  email: customerInfo.email,
+                  phone: customerInfo.phone,
+                  address: orderData.customerAddress,
+                  totalOrders: 1
+                });
               }
-            } catch (stockErr) {
-              console.warn(`Actualización de stock para producto ${item.product.name} falló (no crítica):`, stockErr.message);
+            } catch (custErr) {
+              console.warn('Tarea de cliente falló (no crítica):', custErr.message);
             }
           })());
-        });
 
-        await Promise.all(bgTasks);
-      } catch (bgErr) {
-        console.warn('Algunas tareas de fondo fallaron, pero el pedido principal fue creado:', bgErr);
-      }
+          // Task C: Stock Update
+          sanitizedCart.forEach(item => {
+            bgTasks.push((async () => {
+              try {
+                const dbProduct = await db.getById('products', item.product.id);
+                if (dbProduct) {
+                  return db.update('products', dbProduct.id, { stock: Math.max(0, dbProduct.stock - item.quantity) });
+                }
+              } catch (stockErr) {
+                console.warn(`Actualización de stock para producto ${item.product.name} falló (no crítica):`, stockErr.message);
+              }
+            })());
+          });
 
-      // 5. Success Routine
+          await Promise.all(bgTasks);
+        } catch (bgErr) {
+          console.warn('Algunas tareas de fondo fallaron:', bgErr);
+        }
+      };
+
+      // Firing background work without await
+      runBackgroundWork();
+
+      // 5. Success Routine (INSTANT UX)
       localStorage.removeItem('toy_store_cart');
       setCart([]);
       window.dispatchEvent(new Event('cart_updated'));
