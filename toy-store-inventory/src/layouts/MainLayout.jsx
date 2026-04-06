@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { db } from '../services/db';
-import { Package, LayoutDashboard, Tags, ShoppingCart, Users, Store, Settings as SettingsIcon, Menu, X } from 'lucide-react';
+import { Package, LayoutDashboard, Tags, ShoppingCart, Users, Store, Settings as SettingsIcon, Menu, X, LogOut } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 const MainLayout = () => {
+  const { signOut } = useAuth();
   const [storeName, setStoreName] = useState('ToyStore Admin');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+
+  const handleLogout = async () => {
+    await signOut();
+  };
 
   useEffect(() => {
     const loadStoreInfo = async () => {
@@ -57,10 +63,26 @@ const MainLayout = () => {
             <SettingsIcon className="nav-icon" /> Configuración
           </Link>
         </nav>
-        <div style={{ marginTop: 'auto', padding: '24px 16px' }}>
-          <Link to="/" className="nav-link" style={{ background: 'var(--accent-gradient)', color: 'white' }}>
+        <div style={{ marginTop: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <Link to="/" className="nav-link" style={{ background: 'var(--accent-gradient)', color: 'white', marginBottom: '0' }}>
             <Store className="nav-icon" style={{ color: 'white' }} /> Ir a la Tienda
           </Link>
+          <button 
+            onClick={handleLogout} 
+            className="nav-link logout-btn" 
+            style={{ 
+              background: 'rgba(239, 68, 68, 0.08)', 
+              color: '#dc2626',
+              border: '1px solid rgba(239, 68, 68, 0.1)',
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              cursor: 'pointer',
+              fontWeight: '600'
+            }}
+          >
+            <LogOut className="nav-icon" /> Cerrar Sesión
+          </button>
         </div>
       </aside>
 
