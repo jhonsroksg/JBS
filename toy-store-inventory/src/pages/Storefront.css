@@ -202,6 +202,17 @@
   border: none;
   position: relative;
   overflow: hidden;
+  text-align: center;
+}
+
+.btn-add-cart svg, 
+.btn-whatsapp svg,
+.btn-buy-now svg {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  flex-shrink: 0;
 }
 
 .btn-buy-now:active,
