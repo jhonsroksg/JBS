@@ -86,7 +86,7 @@
 /* Cart Column Improvements */
 .cart-column {
   flex: 1.2;
-  padding: 40px;
+  padding: 32px;
   background: #fbfdff;
   border-right: 1px solid #edf2f7;
   display: flex;
@@ -96,9 +96,9 @@
 
 .cart-items-scroll {
   flex: 1;
-  max-height: 420px;
+  max-height: 360px;
   overflow-y: auto;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   padding-right: 12px;
   scrollbar-width: thin;
   scrollbar-color: var(--accent-primary) #f1f5f9;
@@ -142,7 +142,7 @@
 .cart-items-list {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   padding-bottom: 8px;
 }
 
@@ -365,9 +365,9 @@
 
 /* Summary Card Premium */
 .summary-section {
-  padding: 28px;
+  padding: 20px;
   background: linear-gradient(135deg, #f8faff 0%, #f1f5f9 100%);
-  border-radius: 24px;
+  border-radius: 20px;
   border: 1px solid #e2e8f0;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
   z-index: 20;
