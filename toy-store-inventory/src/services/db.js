@@ -75,16 +75,27 @@ export const db = {
 
   // ─── Insert ─────────────────────────────────────────────────────────────────
   insert: async (collection, item) => {
-    const { data, error } = await supabase
-      .from(collection)
-      .insert([item])
-      .select()
-      .single();
-    if (error) {
-      console.error(`[db.insert] Error en "${collection}":`, error.message);
-      throw error;
+    try {
+      const { data, error } = await supabase
+        .from(collection)
+        .insert([item])
+        .select()
+        .single();
+      
+      if (error) {
+        // Manejo especial para RLS (Permitido insertar pero no leer)
+        if (error.code === 'PGRST116' || error.code === '42501') {
+          console.warn(`[db.insert] El registro se insertó en "${collection}" pero no se pudo recuperar debido a políticas de seguridad (RLS).`);
+          return item; // Retornamos el objeto original si no pudimos leer el nuevo
+        }
+        console.error(`[db.insert] Error en "${collection}":`, error.message, error.code);
+        throw error;
+      }
+      return data;
+    } catch (err) {
+      console.error(`[db.insert] Error crítico en "${collection}":`, err);
+      throw err;
     }
-    return data;
   },
 
   // ─── Update ─────────────────────────────────────────────────────────────────

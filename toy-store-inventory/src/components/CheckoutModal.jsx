@@ -116,7 +116,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
         customerName: customerInfo.name,
         customerEmail: customerInfo.email,
         customerPhone: customerInfo.phone,
-        customerAddress: `${customerInfo.address}, ${customerInfo.municipality}, ${customerInfo.department}`,
+        customerAddress: isPickUp ? `RECOJO EN TIENDA - ${customerInfo.municipality}, ${customerInfo.department}` : `${customerInfo.address}, ${customerInfo.municipality}, ${customerInfo.department}`,
         department: customerInfo.department,
         municipality: customerInfo.municipality,
         paymentMethod,
@@ -131,56 +131,81 @@ const CheckoutModal = ({ isOpen, onClose }) => {
         date: new Date().toISOString()
       };
 
-      // 3. Parallel Background Tasks
-      const tasks = [];
-
-      // Task A: Create Order (Priority 1)
-      const newOrder = await db.insert('orders', orderData);
-      if (newOrder && newOrder.order_number) {
-        setCompletedOrderNumber(newOrder.order_number);
+      // 3. Create Order (Priority 1)
+      let newOrder;
+      try {
+        newOrder = await db.insert('orders', orderData);
+        if (newOrder && newOrder.order_number) {
+          setCompletedOrderNumber(newOrder.order_number);
+        }
+      } catch (insertErr) {
+        console.error('CRITICAL: Error al insertar el pedido en Supabase:', insertErr);
+        // Special diagnostic for common Supabase issues
+        if (insertErr.message?.includes('RLS') || insertErr.code === '42501') {
+          console.warn('Posible problema de permisos RLS en la tabla "orders".');
+        }
+        throw insertErr; // Re-throw to show alert
       }
 
-      // Task B: Update/Create Customer (Optimized search)
-      tasks.push((async () => {
-        const existingCust = await db.getByFilter('customers', 'email', customerInfo.email);
-        if (existingCust) {
-          return db.update('customers', existingCust.id, {
-            totalOrders: (existingCust.totalOrders || 0) + 1,
-            phone: customerInfo.phone || existingCust.phone,
-            address: `${customerInfo.address}, ${customerInfo.municipality}, ${customerInfo.department}` || existingCust.address
-          });
-        } else {
-          return db.insert('customers', {
-            name: customerInfo.name,
-            email: customerInfo.email,
-            phone: customerInfo.phone,
-            address: `${customerInfo.address}, ${customerInfo.municipality}, ${customerInfo.department}`,
-            totalOrders: 1
-          });
-        }
-      })());
+      // 4. Background Tasks (Secondary priority)
+      // We wrap these in a separate try-catch so if they fail (e.g. stock or customer update roles),
+      // the user still sees the order as completed since the 'orders' insert worked.
+      try {
+        const bgTasks = [];
 
-      // Task C: Batch Stock Update
-      sanitizedCart.forEach(item => {
-        tasks.push((async () => {
-          const dbProduct = await db.getById('products', item.product.id);
-          if (dbProduct) {
-            return db.update('products', dbProduct.id, { stock: Math.max(0, dbProduct.stock - item.quantity) });
+        // Task B: Update/Create Customer
+        bgTasks.push((async () => {
+          try {
+            const existingCust = await db.getByFilter('customers', 'email', customerInfo.email);
+            if (existingCust) {
+              return db.update('customers', existingCust.id, {
+                totalOrders: (existingCust.totalOrders || 0) + 1,
+                phone: customerInfo.phone || existingCust.phone,
+                address: orderData.customerAddress
+              });
+            } else {
+              return db.insert('customers', {
+                name: customerInfo.name,
+                email: customerInfo.email,
+                phone: customerInfo.phone,
+                address: orderData.customerAddress,
+                totalOrders: 1
+              });
+            }
+          } catch (custErr) {
+            console.warn('Tarea de cliente falló (no crítica):', custErr.message);
           }
         })());
-      });
 
-      // Execute background tasks (Customers, Stock) in Parallel
-      await Promise.all(tasks);
+        // Task C: Stock Update
+        sanitizedCart.forEach(item => {
+          bgTasks.push((async () => {
+            try {
+              const dbProduct = await db.getById('products', item.product.id);
+              if (dbProduct) {
+                return db.update('products', dbProduct.id, { stock: Math.max(0, dbProduct.stock - item.quantity) });
+              }
+            } catch (stockErr) {
+              console.warn(`Actualización de stock para producto ${item.product.name} falló (no crítica):`, stockErr.message);
+            }
+          })());
+        });
 
-      // 4. Success Routine
+        await Promise.all(bgTasks);
+      } catch (bgErr) {
+        console.warn('Algunas tareas de fondo fallaron, pero el pedido principal fue creado:', bgErr);
+      }
+
+      // 5. Success Routine
       localStorage.removeItem('toy_store_cart');
       setCart([]);
       window.dispatchEvent(new Event('cart_updated'));
       setOrderComplete(true);
     } catch (err) {
-      console.error('Error al crear el pedido:', err);
-      alert('Hubo un error al procesar tu pedido. Por favor intenta de nuevo.');
+      console.error('Error detallado al procesar pedido:', err);
+      // More user-friendly error details if possible
+      const errorMsg = err.message || 'Error desconocido';
+      alert(`Hubo un error al procesar tu pedido.\n\nDetalle: ${errorMsg}\n\nPor favor intenta de nuevo o contacta por WhatsApp.`);
     } finally {
       setIsSubmitting(false);
     }
