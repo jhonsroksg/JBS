@@ -151,17 +151,26 @@ const Orders = () => {
     return method ? method.name : '';
   };
 
-  const calculateTotal = (items, methodId, coupon = null) => {
+  const calculateTotal = (items, methodId, coupon = null, adminDiscVal = 0, adminDiscType = 'fixed') => {
     const sub = calculateTotalItems(items);
-    let discount = 0;
+    let couponDiscount = 0;
     if (coupon) {
-      if (coupon.discountType === 'percentage') discount = sub * (coupon.discountValue / 100);
-      else discount = coupon.discountValue;
+      if (coupon.discountType === 'percentage') couponDiscount = sub * (coupon.discountValue / 100);
+      else couponDiscount = coupon.discountValue;
     }
+
+    let adminDiscount = 0;
+    const val = Number(adminDiscVal || 0);
+    if (adminDiscType === 'percentage') adminDiscount = sub * (val / 100);
+    else adminDiscount = val;
+
+    const totalDiscount = couponDiscount + adminDiscount;
+
     return {
       subtotal: sub,
-      discountAmount: discount,
-      total: Math.max(0, sub - discount) + getDeliveryCost(methodId)
+      discountAmount: couponDiscount,
+      adminDiscountAmount: adminDiscount,
+      total: Math.max(0, sub - totalDiscount) + getDeliveryCost(methodId)
     };
   };
 
@@ -171,16 +180,16 @@ const Orders = () => {
     const newItems = [...editedOrder.items];
     newItems[idx].quantity = parseInt(newQuantity);
     
-    const calc = calculateTotal(newItems, editedOrder.deliveryMethodId, editedOrder.coupon);
-    setEditedOrder({ ...editedOrder, items: newItems, subtotal: calc.subtotal, discountAmount: calc.discountAmount, total: calc.total });
+    const calc = calculateTotal(newItems, editedOrder.deliveryMethodId, editedOrder.coupon, editedOrder.adminDiscountValue, editedOrder.adminDiscountType);
+    setEditedOrder({ ...editedOrder, items: newItems, subtotal: calc.subtotal, discountAmount: calc.discountAmount, adminDiscountAmount: calc.adminDiscountAmount, total: calc.total });
   };
 
   const handleRemoveItem = (idx) => {
     const newItems = [...editedOrder.items];
     newItems.splice(idx, 1);
     
-    const calc = calculateTotal(newItems, editedOrder.deliveryMethodId, editedOrder.coupon);
-    setEditedOrder({ ...editedOrder, items: newItems, subtotal: calc.subtotal, discountAmount: calc.discountAmount, total: calc.total });
+    const calc = calculateTotal(newItems, editedOrder.deliveryMethodId, editedOrder.coupon, editedOrder.adminDiscountValue, editedOrder.adminDiscountType);
+    setEditedOrder({ ...editedOrder, items: newItems, subtotal: calc.subtotal, discountAmount: calc.discountAmount, adminDiscountAmount: calc.adminDiscountAmount, total: calc.total });
   };
 
   const handleAddItem = () => {
@@ -198,14 +207,14 @@ const Orders = () => {
       newItems.push({ product: product, quantity: 1 });
     }
     
-    const calc = calculateTotal(newItems, editedOrder.deliveryMethodId, editedOrder.coupon);
+    const calc = calculateTotal(newItems, editedOrder.deliveryMethodId, editedOrder.coupon, editedOrder.adminDiscountValue, editedOrder.adminDiscountType);
     
-    setEditedOrder({ ...editedOrder, items: newItems, subtotal: calc.subtotal, discountAmount: calc.discountAmount, total: calc.total });
+    setEditedOrder({ ...editedOrder, items: newItems, subtotal: calc.subtotal, discountAmount: calc.discountAmount, adminDiscountAmount: calc.adminDiscountAmount, total: calc.total });
     setProductToAdd('');
   };
 
   const handleDeliveryChange = (methodId) => {
-    const calc = calculateTotal(editedOrder.items, methodId, editedOrder.coupon);
+    const calc = calculateTotal(editedOrder.items, methodId, editedOrder.coupon, editedOrder.adminDiscountValue, editedOrder.adminDiscountType);
     setEditedOrder({ ...editedOrder, deliveryMethodId: methodId, total: calc.total });
   };
 
@@ -320,6 +329,8 @@ const Orders = () => {
       items: editedOrder.items,
       subtotal: editedOrder.subtotal,
       discountAmount: editedOrder.discountAmount,
+      adminDiscountValue: editedOrder.adminDiscountValue,
+      adminDiscountType: editedOrder.adminDiscountType,
       total: editedOrder.total
     });
     await loadData();
@@ -490,6 +501,11 @@ const Orders = () => {
     if (order.coupon) {
       footData.push(['', '', `Cupón (${order.coupon.code}):`, `- L. ${Number(order.discountAmount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`]);
     }
+
+    if (order.adminDiscountValue > 0) {
+      const adminDisc = calculateTotal(order.items, order.deliveryMethodId, order.coupon, order.adminDiscountValue, order.adminDiscountType).adminDiscountAmount;
+      footData.push(['', '', `Descuento Admin${order.adminDiscountType === 'percentage' ? ` (${order.adminDiscountValue}%)` : ''}:`, `- L. ${Number(adminDisc || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`]);
+    }
     
     if (order.deliveryMethodId) {
       footData.push(['', '', `Envío (${getDeliveryName(order.deliveryMethodId)}):`, `L. ${Number(getDeliveryCost(order.deliveryMethodId)).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`]);
@@ -565,7 +581,7 @@ const Orders = () => {
 ${itemsText}
 
 *Subtotal:* L. ${Number(calculateTotalItems(order.items)).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountAmount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}\n` : ''}*Envío:* L. ${getDeliveryCost(order.deliveryMethodId).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountAmount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}\n` : ''}${order.adminDiscountValue > 0 ? `*Descuento Admin:* - L. ${calculateTotal(order.items, order.deliveryMethodId, order.coupon, order.adminDiscountValue, order.adminDiscountType).adminDiscountAmount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}\n` : ''}*Envío:* L. ${getDeliveryCost(order.deliveryMethodId).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
 *Total a Pagar:* L. ${Number(order.total).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
 
 *Estado del Pedido:* ${order.status}`;
@@ -589,7 +605,9 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
         'Pago': order.paymentMethod || 'N/A',
         'Subtotal (L.)': Number(order.subtotal || calculateTotalItems(order.items) || 0).toFixed(2),
         'Cupón': order.coupon ? order.coupon.code : 'N/A',
-        'Descuento (L.)': order.discountAmount ? Number(order.discountAmount).toFixed(2) : '0.00',
+        'Descuento Cupón (L.)': order.discountAmount ? Number(order.discountAmount).toFixed(2) : '0.00',
+        'Descuento Admin (%)': order.adminDiscountType === 'percentage' ? order.adminDiscountValue : '0',
+        'Descuento Admin (L.)': calculateTotal(order.items, order.deliveryMethodId, order.coupon, order.adminDiscountValue, order.adminDiscountType).adminDiscountAmount.toFixed(2),
         'Total (L.)': Number(order.total || 0).toFixed(2)
       }));
 
@@ -598,7 +616,7 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
       const worksheet = XLSX.utils.json_to_sheet(data);
       worksheet['!cols'] = [
         {wch:10},{wch:24},{wch:26},{wch:14},{wch:12},{wch:8},
-        {wch:12},{wch:16},{wch:22},{wch:14},{wch:10},{wch:12},{wch:14}
+        {wch:12},{wch:16},{wch:22},{wch:14},{wch:10},{wch:18},{wch:18},{wch:18},{wch:14}
       ];
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Pedidos');
@@ -1202,6 +1220,57 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
                       <span style={{fontWeight: 500}}>- L. {Number((isEditing ? editedOrder : selectedOrder).discountAmount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                     </div>
                   )}
+
+                  {/* Manual Administrative Discount UI (Only in Edit Mode) */}
+                  {isEditing ? (
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '10px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', border: '1px dashed var(--border-color)'}}>
+                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                        <span style={{fontSize: '0.95rem', fontWeight: 600}}>Descuento Admin</span>
+                        <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+                          <input 
+                            type="number" 
+                            step="0.01"
+                            value={editedOrder.adminDiscountValue || 0}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              const calc = calculateTotal(editedOrder.items, editedOrder.deliveryMethodId, editedOrder.coupon, val, editedOrder.adminDiscountType);
+                              setEditedOrder({ ...editedOrder, adminDiscountValue: val, adminDiscountAmount: calc.adminDiscountAmount, total: calc.total });
+                            }}
+                            style={{...inputStyle, width: '80px', padding: '6px 8px'}}
+                          />
+                          <div style={{display: 'flex', background: 'rgba(0,0,0,0.2)', borderRadius: '6px', overflow: 'hidden', border: '1px solid var(--border-color)'}}>
+                             <button 
+                               onClick={() => {
+                                 const calc = calculateTotal(editedOrder.items, editedOrder.deliveryMethodId, editedOrder.coupon, editedOrder.adminDiscountValue, 'fixed');
+                                 setEditedOrder({ ...editedOrder, adminDiscountType: 'fixed', adminDiscountAmount: calc.adminDiscountAmount, total: calc.total });
+                               }}
+                               style={{padding: '6px 12px', border: 'none', background: editedOrder.adminDiscountType === 'fixed' ? 'var(--accent-primary)' : 'transparent', color: 'white', cursor: 'pointer', fontSize: '0.85rem'}}
+                             >L.</button>
+                             <button 
+                               onClick={() => {
+                                 const calc = calculateTotal(editedOrder.items, editedOrder.deliveryMethodId, editedOrder.coupon, editedOrder.adminDiscountValue, 'percentage');
+                                 setEditedOrder({ ...editedOrder, adminDiscountType: 'percentage', adminDiscountAmount: calc.adminDiscountAmount, total: calc.total });
+                               }}
+                               style={{padding: '6px 12px', border: 'none', background: editedOrder.adminDiscountType === 'percentage' ? 'var(--accent-primary)' : 'transparent', color: 'white', cursor: 'pointer', fontSize: '0.85rem'}}
+                             >%</button>
+                          </div>
+                        </div>
+                      </div>
+                      {(editedOrder.adminDiscountValue > 0) && (
+                        <div style={{textAlign: 'right', color: 'var(--danger)', fontSize: '0.9rem', fontWeight: 600}}>
+                          - L. {Number(calculateTotal(editedOrder.items, editedOrder.deliveryMethodId, editedOrder.coupon, editedOrder.adminDiscountValue, editedOrder.adminDiscountType).adminDiscountAmount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    (selectedOrder.adminDiscountValue > 0) && (
+                      <div style={{display: 'flex', justifyContent: 'space-between', color: 'var(--danger)', fontSize: '1.05rem'}}>
+                        <span>Descuento Especial {selectedOrder.adminDiscountType === 'percentage' ? `(${selectedOrder.adminDiscountValue}%)` : ''}</span>
+                        <span style={{fontWeight: 500}}>- L. {Number(calculateTotal(selectedOrder.items, selectedOrder.deliveryMethodId, selectedOrder.coupon, selectedOrder.adminDiscountValue, selectedOrder.adminDiscountType).adminDiscountAmount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                      </div>
+                    )
+                  )}
+
                   {((isEditing ? editedOrder : selectedOrder).deliveryMethodId) && (
                     <div style={{display: 'flex', justifyContent: 'space-between', color: 'var(--accent-primary)', fontSize: '1.05rem'}}>
                       <span>Costo de Envío ({getDeliveryName((isEditing ? editedOrder : selectedOrder).deliveryMethodId)})</span>
