@@ -136,7 +136,15 @@ const CheckoutModal = ({ isOpen, onClose }) => {
       try {
         newOrder = await db.insert('orders', orderData);
         if (newOrder && newOrder.order_number) {
-          setCompletedOrderNumber(newOrder.order_number);
+          // Generar el nuevo ID personalizado (ej. 07ABR26PED0001)
+          const customId = db.formatOrderId(newOrder.order_number, orderData.date);
+          setCompletedOrderNumber(customId);
+          
+          // Guardar el ID personalizado en la base de datos (Columna order_id_custom)
+          // Lo hacemos en segundo plano para no bloquear el éxito del usuario
+          db.update('orders', newOrder.id, { order_id_custom: customId }).catch(e => 
+            console.error('Error al guardar el ID personalizado en DB:', e)
+          );
         }
       } catch (insertErr) {
         console.error('CRITICAL: Error al insertar el pedido en Supabase:', insertErr);
@@ -251,7 +259,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
               <h3>¡Pedido completado!</h3>
               <p>Gracias por tu compra en Joa Baby Shop. Tu número de pedido es: 
                 <strong style={{ display: 'block', fontSize: '1.5rem', color: 'var(--accent-primary)', marginTop: '10px' }}>
-                  {completedOrderNumber ? `Joab${String(completedOrderNumber).padStart(4, '0')}` : 'Procesando...'}
+                  {completedOrderNumber || 'Procesando...'}
                 </strong>
               </p>
               <p>Hemos recibido tu pedido y comenzaremos a procesarlo pronto.</p>

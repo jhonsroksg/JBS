@@ -119,9 +119,15 @@ const Orders = () => {
 
   const getDisplayId = (order) => {
     if (!order) return '';
+    // Prioridad 1: Usar el ID ya guardado en la columna personalizada
+    if (order.order_id_custom) return order.order_id_custom;
+    
+    // Prioridad 2: Si tiene order_number, formatearlo al vuelo con el nuevo estándar (Retrocompatibilidad visual)
     if (order.order_number) {
-      return `Joab${String(order.order_number).padStart(4, '0')}`;
+      return db.formatOrderId(order.order_number, order.date);
     }
+    
+    // Fallback: Si no hay nada, mostrar los primeros caracteres del ID único o N/A
     return (order.id && typeof order.id === 'string' && order.id.includes('-')) 
       ? order.id.split('-')[0].toUpperCase() 
       : (order.id || 'N/A');

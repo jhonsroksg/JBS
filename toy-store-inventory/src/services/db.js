@@ -192,5 +192,17 @@ export const db = {
       console.error(`[db.uploadFile] Error en bucket "${bucket}":`, err.message);
       throw err;
     }
+  },
+
+  // ─── Format Order ID ────────────────────────────────────────────────────────
+  formatOrderId: (orderNumber, dateStr) => {
+    if (!orderNumber) return 'PROCESANDO...';
+    const date = dateStr ? new Date(dateStr) : new Date();
+    const day = String(date.getDate()).padStart(2, '0');
+    const months = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+    const month = months[date.getMonth()];
+    const year = String(date.getFullYear()).slice(-2);
+    const counter = String(orderNumber).padStart(4, '0');
+    return `${day}${month}${year}PED${counter}`;
   }
 };
