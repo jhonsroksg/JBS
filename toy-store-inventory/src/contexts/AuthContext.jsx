@@ -11,11 +11,23 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Escuchar cambios en la sesión
     const setData = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) throw error;
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.warn('Supabase session recovery ignored:', error.message);
+          setSession(null);
+          setUser(null);
+        } else {
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
+      } catch (err) {
+        console.warn('Silent auth failure handled');
+        setSession(null);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
     };
 
     const { data: { listener } } = supabase.auth.onAuthStateChange((_event, session) => {

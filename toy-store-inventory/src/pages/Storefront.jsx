@@ -2,11 +2,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../services/db';
 import { ShoppingCart, X, Zap, Search, Filter, MessageCircle } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import { SkeletonGrid } from '../components/SkeletonLoader';
 import './Storefront.css';
 
 const Storefront = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeAgeRange, setActiveAgeRange] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,14 +18,21 @@ const Storefront = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      const [info, allProducts, cats] = await Promise.all([
-        db.getStoreInfo(),
-        db.getAll('products'),
-        db.getAll('categories'),
-      ]);
-      setStoreInfo(info);
-      setProducts(allProducts.filter(p => p.stock > 0));
-      setCategories(cats);
+      setIsLoading(true);
+      try {
+        const [info, allProducts, cats] = await Promise.all([
+          db.getStoreInfo(),
+          db.getAll('products'),
+          db.getAll('categories'),
+        ]);
+        setStoreInfo(info);
+        setProducts(allProducts.filter(p => !p.deleted && p.stock > 0));
+        setCategories(cats);
+      } catch (error) {
+        console.error('Error loading storefront data:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
     loadData();
 
@@ -175,56 +184,62 @@ const Storefront = () => {
       </div>
 
       <div className="products-grid">
-        {filteredProducts.map(product => (
-          <div key={product.id} className="product-card glass-panel" style={{ display: 'flex', flexDirection: 'column' }}>
-            <div className="product-image-container" onClick={() => { setSelectedProduct(product); setMainImageIndex(0); }} style={{ cursor: 'pointer' }}>
-              <img 
-                src={product.imageUrl || 'https://via.placeholder.com/300'} 
-                alt={`Juguete ${product.name} - ${product.brand || 'Joa Baby Shop'}`} 
-                className="product-image" 
-                loading="lazy"
-              />
-              {product.stock <= 5 && <span className="stock-badge">¡Solo quedan {product.stock}!</span>}
-              {product.discountPrice && (
-                <span style={{ position: 'absolute', top: '10px', left: '10px', background: 'var(--danger)', color: 'white', padding: '4px 10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', zIndex: 5, boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>¡OFERTA!</span>
-              )}
-            </div>
-            <div className="product-info">
-              <h3 className="product-title">{product.name}</h3>
-              <p className="product-category text-secondary">{categories.find(c => c.id === product.categoryId)?.name || 'Sin Categoría'}</p>
-              <div className="product-footer">
-                {product.discountPrice ? (
-                  <div className="product-price" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <span style={{ textDecoration: 'line-through', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 'normal' }}>L. {Number(product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    <span style={{ color: 'var(--danger)' }}>L. {Number(product.discountPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        {isLoading ? (
+          <SkeletonGrid count={8} />
+        ) : (
+          <>
+            {filteredProducts.map(product => (
+              <div key={product.id} className="product-card glass-panel" style={{ display: 'flex', flexDirection: 'column' }}>
+                <div className="product-image-container" onClick={() => { setSelectedProduct(product); setMainImageIndex(0); }} style={{ cursor: 'pointer' }}>
+                  <img 
+                    src={product.imageUrl || 'https://via.placeholder.com/300'} 
+                    alt={`Juguete ${product.name} - ${product.brand || 'Joa Baby Shop'}`} 
+                    className="product-image" 
+                    loading="lazy"
+                  />
+                  {product.stock <= 5 && <span className="stock-badge">¡Solo quedan {product.stock}!</span>}
+                  {product.discountPrice && (
+                    <span style={{ position: 'absolute', top: '10px', left: '10px', background: 'var(--danger)', color: 'white', padding: '4px 10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', zIndex: 5, boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>¡OFERTA!</span>
+                  )}
+                </div>
+                <div className="product-info">
+                  <h3 className="product-title">{product.name}</h3>
+                  <p className="product-category text-secondary">{categories.find(c => c.id === product.categoryId)?.name || 'Sin Categoría'}</p>
+                  <div className="product-footer">
+                    {product.discountPrice ? (
+                      <div className="product-price" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <span style={{ textDecoration: 'line-through', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 'normal' }}>L. {Number(product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span style={{ color: 'var(--danger)' }}>L. {Number(product.discountPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
 
+                      </div>
+                    ) : (
+                      <span className="product-price">L. {Number(product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+
+                    )}
                   </div>
-                ) : (
-                  <span className="product-price">L. {Number(product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-
-                )}
+                  <div className="card-actions" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <button className="btn-buy-now" onClick={() => handleBuyNow(product)} style={{ gridColumn: '1 / -1' }}>
+                      <Zap size={18} strokeWidth={2.5} /> Comprar ahora
+                    </button>
+                    <button className="btn-whatsapp" onClick={() => handleWhatsAppContact(product)}>
+                      <MessageCircle size={18} strokeWidth={2} /> WhatsApp
+                    </button>
+                    <button className="btn-add-cart" onClick={() => handleAddToCart(product)}>
+                      <ShoppingCart size={18} strokeWidth={2.5} /> Carrito
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div className="card-actions" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                <button className="btn-buy-now" onClick={() => handleBuyNow(product)} style={{ gridColumn: '1 / -1' }}>
-                  <Zap size={18} strokeWidth={2.5} /> Comprar ahora
-                </button>
-                <button className="btn-whatsapp" onClick={() => handleWhatsAppContact(product)}>
-                  <MessageCircle size={18} strokeWidth={2} /> WhatsApp
-                </button>
-                <button className="btn-add-cart" onClick={() => handleAddToCart(product)}>
-                  <ShoppingCart size={18} strokeWidth={2.5} /> Carrito
-                </button>
+            ))}
+            {filteredProducts.length === 0 && (
+              <div className="empty-state glass-panel" style={{ gridColumn: '1 / -1', padding: '60px 20px', textAlign: 'center', borderRadius: '24px' }}>
+                <div style={{ fontSize: '4rem', marginBottom: '16px' }}>😕</div>
+                <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', marginBottom: '8px' }}>No hay resultados</h2>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>Intenta ajustando tus filtros de categoría, edad, o revisa cómo has escrito tu búsqueda.</p>
+                <button className="btn-secondary" style={{ marginTop: '20px' }} onClick={() => { setActiveCategory('all'); setActiveAgeRange('all'); setSearchTerm(''); }}>Limpiar Filtros</button>
               </div>
-            </div>
-          </div>
-        ))}
-        {filteredProducts.length === 0 && (
-          <div className="empty-state glass-panel" style={{ gridColumn: '1 / -1', padding: '60px 20px', textAlign: 'center', borderRadius: '24px' }}>
-            <div style={{ fontSize: '4rem', marginBottom: '16px' }}>😕</div>
-            <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', marginBottom: '8px' }}>No hay resultados</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>Intenta ajustando tus filtros de categoría, edad, o revisa cómo has escrito tu búsqueda.</p>
-            <button className="btn-secondary" style={{ marginTop: '20px' }} onClick={() => { setActiveCategory('all'); setActiveAgeRange('all'); setSearchTerm(''); }}>Limpiar Filtros</button>
-          </div>
+            )}
+          </>
         )}
       </div>
 

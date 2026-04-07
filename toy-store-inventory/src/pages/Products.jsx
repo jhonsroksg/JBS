@@ -17,7 +17,8 @@ const Products = () => {
   const [editingId, setEditingId] = useState(null);
 
   const [formData, setFormData] = useState({
-    sku: '', name: '', categoryId: '', costPrice: '', sellingPrice: '', discountPrice: '', stock: '', minStock: '', imageUrl: '', images: [], ageRange: '', description: '', brand: ''
+    sku: '', name: '', categoryId: '', costPrice: '', sellingPrice: '', discountPrice: '', stock: '', minStock: '', imageUrl: '', images: [], ageRange: '', description: '', brand: '',
+    newImageFiles: []
   });
 
   useEffect(() => {
@@ -70,6 +71,7 @@ const Products = () => {
           sellingPrice: prodData.sellingPrice ? Number(prodData.sellingPrice).toFixed(2) : '',
           discountPrice: prodData.discountPrice ? Number(prodData.discountPrice).toFixed(2) : '',
           images: prodData.images || (prodData.imageUrl ? [prodData.imageUrl] : []),
+          newImageFiles: [] // Reset nuevos archivos al abrir
         });
         setEditingId(prodData.id);
 
@@ -79,7 +81,7 @@ const Products = () => {
         setLoading(false);
       }
     } else {
-      setFormData({ sku: '', name: '', categoryId: categories[0]?.id || '', costPrice: '', sellingPrice: '', discountPrice: '', stock: '', minStock: '', imageUrl: '', images: [], ageRange: '', description: '', brand: '' });
+      setFormData({ sku: '', name: '', categoryId: categories[0]?.id || '', costPrice: '', sellingPrice: '', discountPrice: '', stock: '', minStock: '', imageUrl: '', images: [], ageRange: '', description: '', brand: '', newImageFiles: [] });
       setEditingId(null);
     }
     setIsModalOpen(true);
@@ -103,7 +105,17 @@ const Products = () => {
 
 
   const handleRemoveImage = (index) => {
-    setFormData(prev => ({ ...prev, images: (prev.images || []).filter((_, i) => i !== index) }));
+    const isNew = index >= (formData.images.length - formData.newImageFiles.length);
+    if (isNew) {
+      const newFileIndex = index - (formData.images.length - formData.newImageFiles.length);
+      setFormData(prev => ({
+        ...prev,
+        images: prev.images.filter((_, i) => i !== index),
+        newImageFiles: prev.newImageFiles.filter((_, i) => i !== newFileIndex)
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }));
+    }
   };
 
   const resizeImage = (dataUrl) => {
@@ -142,7 +154,12 @@ const Products = () => {
       reader.onload = async (event) => {
         try {
           const resized = await resizeImage(event.target.result);
-          resolve(resized);
+          // Convertimos el DataURL redimensionado a un Blob para subirlo como archivo real
+          const response = await fetch(resized);
+          const blob = await response.blob();
+          const optimizedFile = new File([blob], file.name, { type: 'image/jpeg' });
+          
+          resolve({ preview: resized, file: optimizedFile });
         } catch (err) {
           reject(err);
         }
@@ -151,18 +168,44 @@ const Products = () => {
       reader.readAsDataURL(file);
     }));
 
-    Promise.all(readers).then(base64Images => {
-      setFormData(prev => ({ ...prev, images: [...(prev.images || []), ...base64Images] }));
+    Promise.all(readers).then(results => {
+      const previews = results.map(r => r.preview);
+      const optimizedFiles = results.map(r => r.file);
+      setFormData(prev => ({ 
+        ...prev, 
+        images: [...(prev.images || []), ...previews],
+        newImageFiles: [...(prev.newImageFiles || []), ...optimizedFiles]
+      }));
     }).catch(err => {
       console.error('Error al procesar imágenes:', err);
-      alert('Ocurrió un error al procesar las imágenes. Por favor intenta de nuevo.');
+      alert('Ocurrió un error al procesar las imágenes.');
     });
   };
 
   const handleSave = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
-      // Limpiamos los datos para Supabase
+      // 1. Subir nuevos archivos a Storage si existen
+      let finalImages = [...(formData.images || [])];
+      
+      if (formData.newImageFiles && formData.newImageFiles.length > 0) {
+        // Encontramos qué imágenes en 'images' son las Base64 que corresponden a newImageFiles
+        // Por simplificación, asumimos que las últimas N son las nuevas
+        const existingCount = formData.images.length - formData.newImageFiles.length;
+        const baseImages = formData.images.slice(0, existingCount);
+        
+        const uploadPromises = formData.newImageFiles.map((file, idx) => {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${formData.sku || 'prod'}_${Date.now()}_${idx}.${fileExt}`;
+          return db.uploadFile('product-images', fileName, file);
+        });
+        
+        const uploadedUrls = await Promise.all(uploadPromises);
+        finalImages = [...baseImages, ...uploadedUrls];
+      }
+
+      // 2. Preparar datos para BD
       const dataToSave = {
         sku: formData.sku,
         name: formData.name,
@@ -177,8 +220,8 @@ const Products = () => {
           : null,
         stock: parseInt(formData.stock) || 0,
         minStock: parseInt(formData.minStock) || 0,
-        imageUrl: (formData.images && formData.images.length > 0) ? formData.images[0] : (formData.imageUrl || ''),
-        images: formData.images || []
+        imageUrl: (finalImages && finalImages.length > 0) ? finalImages[0] : '',
+        images: finalImages || []
       };
 
       if (editingId) {
@@ -193,6 +236,8 @@ const Products = () => {
     } catch (error) {
       console.error('Error al guardar producto:', error);
       alert('Error al guardar: ' + (error.message || 'Verifica los datos e intenta de nuevo.'));
+    } finally {
+      setLoading(false);
     }
   };
 

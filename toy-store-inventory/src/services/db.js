@@ -163,7 +163,6 @@ export const db = {
       store_email: data.store_email || 'info@joababyshop.com'
     };
   },
-
   updateStoreInfo: async (info) => {
     const { error } = await supabase
       .from('store_info')
@@ -174,4 +173,24 @@ export const db = {
     }
     window.dispatchEvent(new Event('store_info_updated'));
   },
+
+  // ─── Storage Helpers ────────────────────────────────────────────────────────
+  uploadFile: async (bucket, path, file) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(path, file, { cacheControl: '3600', upsert: true });
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(data.path);
+
+      return publicUrl;
+    } catch (err) {
+      console.error(`[db.uploadFile] Error en bucket "${bucket}":`, err.message);
+      throw err;
+    }
+  }
 };
