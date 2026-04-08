@@ -17,17 +17,41 @@ serve(async (req) => {
     console.log('[Email Function] Payload recibido:', JSON.stringify(body, null, 2))
 
     // Detectar si viene de un Webhook de Supabase (campo 'record') o manual (campo 'orderData')
+    const type = body.type // INSERT, UPDATE, etc
     const record = body.record || body.orderData
+    const old_record = body.old_record
     
     // Si no hay datos, algo salió mal
     if (!record) {
       throw new Error('No se encontraron datos del pedido en el payload (record/orderData missing)')
     }
 
-    // Mapeo de campos (Webhook usa nombres de tabla, Manual usa nombres de objeto)
-    const order_id_custom = record.order_id_custom || 'PENDIENTE'
-    const customerName = record.customerName || 'Cliente'
+    const order_id_custom = record.order_id_custom
     const customerEmail = record.customerEmail
+
+    // --- LÓGICA DE VALIDACIÓN (MEJORADA) ---
+    
+    // 1. Validamos que tengamos un ID de pedido real
+    if (!order_id_custom || order_id_custom === 'PENDIENTE' || order_id_custom === 'GENERANDO...') {
+      console.log(`[Email Function] SKIPPED: El pedido aún no tiene un ID personalizado válido (${order_id_custom})`)
+      return new Response(JSON.stringify({ message: 'Skipped: Order ID is not ready' }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      })
+    }
+
+    // 2. Si es un UPDATE, evitamos duplicados si el ID ya existía antes
+    if (type === 'UPDATE' && old_record) {
+      const old_id = old_record.order_id_custom
+      if (old_id && old_id !== 'PENDIENTE' && old_id !== 'GENERANDO...') {
+        console.log(`[Email Function] SKIPPED: El pedido ${order_id_custom} ya tenía un ID válido desde antes.`)
+        return new Response(JSON.stringify({ message: 'Skipped: Already processed' }), { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        })
+      }
+    }
+
+    // Mapeo de campos
+    const customerName = record.customerName || 'Cliente'
     const items = record.items || []
     const subtotal = Number(record.subtotal || 0)
     const discountAmount = Number(record.discountAmount || 0)
@@ -124,7 +148,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'Joa Baby Shop <onboarding@resend.dev>',
+        from: 'Joa Baby Shop <ventas@joababyshophn.com>',
         to: [customerEmail],
         bcc: ['joababyshop@gmail.com'],
         subject: `Confirmación de Pedido - #${order_id_custom}`,

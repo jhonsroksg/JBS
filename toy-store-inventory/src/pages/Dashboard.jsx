@@ -235,18 +235,12 @@ const Dashboard = () => {
           <h1>🍼 Joa Baby Shop</h1>
           <p>Panel de ventas e indicadores clave del negocio.</p>
         </div>
-        <div style={{ display: 'flex', gap: '6px', background: 'var(--bg-secondary)', padding: '6px', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
+        <div className="period-filters-container">
           {PERIODS.map(p => (
             <button
               key={p.value}
               onClick={() => setPeriod(p.value)}
-              style={{
-                padding: '8px 14px', borderRadius: '10px', border: 'none',
-                fontFamily: 'inherit', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600,
-                background: period === p.value ? 'var(--accent-gradient)' : 'transparent',
-                color: period === p.value ? 'white' : 'var(--text-secondary)',
-                transition: 'all 0.2s ease',
-              }}
+              className={`period-filter-btn ${period === p.value ? 'active' : ''}`}
             >
               {p.label}
             </button>
@@ -255,18 +249,20 @@ const Dashboard = () => {
       </div>
 
       {period === 'custom' && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', marginTop: '-16px', background: 'var(--bg-secondary)', borderRadius: '14px', border: '1px solid var(--border-color)', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Rango personalizado:</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <label style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Desde</label>
-            <input type="date" value={customStart} max={customEnd} onChange={e => setCustomStart(e.target.value)} style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: '0.85rem', outline: 'none' }} />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <label style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Hasta</label>
-            <input type="date" value={customEnd} min={customStart} max={new Date().toISOString().split('T')[0]} onChange={e => setCustomEnd(e.target.value)} style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontFamily: 'inherit', fontSize: '0.85rem', outline: 'none' }} />
-          </div>
-          <div style={{ fontSize: '0.82rem', color: 'var(--accent-primary)', fontWeight: 600 }}>
-            {Math.ceil((new Date(customEnd + 'T23:59:59') - new Date(customStart + 'T00:00:00')) / 86400000) + 1} días seleccionados
+        <div className="custom-range-picker glass-panel">
+          <span className="picker-title">Rango personalizado:</span>
+          <div className="picker-controls">
+            <div className="picker-group">
+              <label>Desde</label>
+              <input type="date" value={customStart} max={customEnd} onChange={e => setCustomStart(e.target.value)} />
+            </div>
+            <div className="picker-group">
+              <label>Hasta</label>
+              <input type="date" value={customEnd} min={customStart} max={new Date().toISOString().split('T')[0]} onChange={e => setCustomEnd(e.target.value)} />
+            </div>
+            <div className="picker-days">
+              {Math.ceil((new Date(customEnd + 'T23:59:59') - new Date(customStart + 'T00:00:00')) / 86400000) + 1} días seleccionados
+            </div>
           </div>
         </div>
       )}
@@ -282,46 +278,46 @@ const Dashboard = () => {
             )}
           </div>
           <div>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '2px' }}>Ingresos del período</div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{fmt(revenue)}</div>
+            <div className="metric-label">Ingresos del período</div>
+            <div className="metric-value">{fmt(revenue)}</div>
           </div>
         </div>
         <div className="metric-card glass-panel" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
           <div className="metric-icon-wrapper" style={{ background: 'rgba(243,156,18,0.12)', color: '#f39c12' }}><ShoppingBag className="metric-icon" /></div>
           <div>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '2px' }}>Pedidos totales</div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{periodOrders.length}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>✅ {completedOrders.length} completados · ⏳ {pendingOrders.length} pendientes</div>
+            <div className="metric-label">Pedidos totales</div>
+            <div className="metric-value">{periodOrders.length}</div>
+            <div className="metric-status">✅ {completedOrders.length} completados · ⏳ {pendingOrders.length} pendientes</div>
           </div>
         </div>
         <div className="metric-card glass-panel" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
           <div className="metric-icon-wrapper" style={{ background: 'rgba(155,89,182,0.12)', color: '#9b59b6' }}><Award className="metric-icon" /></div>
           <div>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '2px' }}>Ticket promedio</div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{fmt(avgTicket)}</div>
+            <div className="metric-label">Ticket promedio</div>
+            <div className="metric-value">{fmt(avgTicket)}</div>
           </div>
         </div>
         <div className="metric-card glass-panel" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
           <div className="metric-icon-wrapper" style={{ background: 'rgba(52,152,219,0.12)', color: '#3498db' }}><Users className="metric-icon" /></div>
           <div>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '2px' }}>Clientes registrados</div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{customers.length}</div>
+            <div className="metric-label">Clientes registrados</div>
+            <div className="metric-value">{customers.length}</div>
           </div>
         </div>
         <div className="metric-card glass-panel" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
           <div className="metric-icon-wrapper" style={{ background: 'rgba(39,174,96,0.12)', color: '#27ae60' }}><Package className="metric-icon" /></div>
           <div>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '2px' }}>Productos activos</div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{products.length}</div>
-            {lowStock.length > 0 && <div style={{ fontSize: '0.75rem', color: '#e74c3c', marginTop: '4px' }}>⚠️ {lowStock.length} con stock crítico</div>}
+            <div className="metric-label">Productos activos</div>
+            <div className="metric-value">{products.length}</div>
+            {lowStock.length > 0 && <div className="metric-status" style={{ color: '#e74c3c' }}>⚠️ {lowStock.length} con stock crítico</div>}
           </div>
         </div>
         <div className="metric-card glass-panel" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
           <div className="metric-icon-wrapper" style={{ background: 'rgba(231,76,60,0.12)', color: '#e74c3c' }}><AlertTriangle className="metric-icon" /></div>
           <div>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '2px' }}>Pedidos cancelados</div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{cancelledOrders.length}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>Tasa de cancelación: {periodOrders.length > 0 ? ((cancelledOrders.length / periodOrders.length) * 100).toFixed(2) : 0}%</div>
+            <div className="metric-label">Pedidos cancelados</div>
+            <div className="metric-value">{cancelledOrders.length}</div>
+            <div className="metric-status">Tasa de cancelación: {periodOrders.length > 0 ? ((cancelledOrders.length / periodOrders.length) * 100).toFixed(2) : 0}%</div>
           </div>
         </div>
 

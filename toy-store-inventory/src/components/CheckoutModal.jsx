@@ -112,6 +112,9 @@ const CheckoutModal = ({ isOpen, onClose }) => {
         }
       }));
 
+      const selectedDelivery = availableDeliveryMethods.find(m => m.id === deliveryMethodId);
+      const deliveryMethodName = selectedDelivery ? selectedDelivery.name : 'Envío estándar';
+
       // 2. Prepare Order Object
       const orderData = {
         customerName: customerInfo.name,
@@ -122,6 +125,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
         municipality: customerInfo.municipality,
         paymentMethod,
         deliveryMethodId,
+        deliveryMethodName,
         items: sanitizedCart, // Using LIGHTWEIGHT items
         subtotal: currentSubtotal,
         coupon: appliedCoupon,
@@ -129,7 +133,8 @@ const CheckoutModal = ({ isOpen, onClose }) => {
         deliveryCost,
         total: finalTotal,
         status: 'Pendiente',
-        date: new Date().toISOString()
+        date: new Date().toISOString(),
+        order_id_custom: 'GENERANDO...' // Será sobreescrito por el trigger en la DB
       };
 
       // 3. Create Order (Priority 1)
@@ -138,15 +143,11 @@ const CheckoutModal = ({ isOpen, onClose }) => {
 
       try {
         newOrder = await db.insert('orders', orderData);
-        if (newOrder && newOrder.order_number) {
-          // Generar el nuevo ID personalizado (ej. 07ABR26PED0001)
-          customId = db.formatOrderId(newOrder.order_number, orderData.date);
-          setCompletedOrderNumber(customId);
-          
-          // Guardar el ID personalizado en la base de datos (Columna order_id_custom)
-          db.update('orders', newOrder.id, { order_id_custom: customId }).catch(e => 
-            console.error('Error al guardar el ID personalizado en DB:', e)
-          );
+        if (newOrder && newOrder.order_id_custom) {
+          setCompletedOrderNumber(newOrder.order_id_custom);
+        } else {
+          // Fallback por si el trigger no ha terminado o RLS bloquea lectura
+          setCompletedOrderNumber('PROCESANDO...');
         }
       } catch (insertErr) {
         console.error('CRITICAL: Error al insertar el pedido en Supabase:', insertErr);

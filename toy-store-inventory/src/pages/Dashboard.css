@@ -105,6 +105,24 @@
   .metrics-grid {
     grid-template-columns: 1fr !important;
   }
+
+  .metric-card {
+    padding: 12px !important;
+    gap: 10px !important;
+  }
+
+  .metric-value {
+    font-size: 1.4rem !important;
+  }
+
+  .metric-label {
+    font-size: 0.75rem !important;
+  }
+
+  .metric-status {
+    font-size: 0.68rem !important;
+    white-space: normal !important;
+  }
 }
 
 .dashboard-section {
@@ -201,4 +219,100 @@
 .order-amount {
   font-weight: 600;
   font-size: 1.05rem;
+}
+
+/* Period Filters - Instagram style scroll */
+.period-filters-container {
+  display: flex;
+  gap: 8px;
+  background: var(--bg-secondary);
+  padding: 6px;
+  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+.period-filters-container::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.period-filter-btn {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: none;
+  font-family: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-weight: 600;
+  background: transparent;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.period-filter-btn.active {
+  background: var(--accent-gradient);
+  color: white;
+}
+
+/* Custom Range Picker */
+.custom-range-picker {
+  margin-top: -16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.picker-title {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.picker-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.picker-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.picker-group label {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.picker-group input {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.picker-days {
+  font-size: 0.82rem;
+  color: var(--accent-primary);
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .picker-controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
