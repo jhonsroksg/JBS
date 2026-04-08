@@ -103,7 +103,7 @@ serve(async (req) => {
       body: JSON.stringify({
         from: 'Joa Baby Shop <onboarding@resend.dev>',
         to: [customerEmail],
-        bcc: ['info@joababyshop.com'],
+        bcc: ['joababyshop@gmail.com'],
         subject: `Confirmación de Pedido - #${order_id_custom}`,
         html: emailHtml,
       }),
