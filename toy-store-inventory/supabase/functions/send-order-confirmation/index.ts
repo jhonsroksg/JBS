@@ -13,22 +13,43 @@ serve(async (req) => {
   }
 
   try {
-    const { orderData } = await req.json()
-    
-    const { 
-      order_id_custom, customerName, customerEmail, 
-      items, subtotal, discountAmount, adminDiscountAmount, total,
-      deliveryMethodName, deliveryCost, paymentMethod 
-    } = orderData
+    const body = await req.json()
+    console.log('[Email Function] Payload recibido:', JSON.stringify(body, null, 2))
 
+    // Detectar si viene de un Webhook de Supabase (campo 'record') o manual (campo 'orderData')
+    const record = body.record || body.orderData
+    
+    // Si no hay datos, algo salió mal
+    if (!record) {
+      throw new Error('No se encontraron datos del pedido en el payload (record/orderData missing)')
+    }
+
+    // Mapeo de campos (Webhook usa nombres de tabla, Manual usa nombres de objeto)
+    const order_id_custom = record.order_id_custom || 'PENDIENTE'
+    const customerName = record.customerName || 'Cliente'
+    const customerEmail = record.customerEmail
+    const items = record.items || []
+    const subtotal = Number(record.subtotal || 0)
+    const discountAmount = Number(record.discountAmount || 0)
+    const adminDiscountAmount = Number(record.adminDiscountValue || record.adminDiscountAmount || 0)
+    const total = Number(record.total || 0)
+    const deliveryMethodName = record.deliveryMethodName || 'Envío estándar'
+    const deliveryCost = Number(record.deliveryCost || 0)
+    const paymentMethod = record.paymentMethod || 'Pago contra entrega'
+
+    if (!customerEmail) {
+      throw new Error('El correo del cliente es obligatorio')
+    }
+
+    // Generar HTML de productos
     const itemsHtml = items.map((item: any) => `
       <tr>
         <td style="padding: 12px 0; border-bottom: 1px solid #eee;">
-          <div style="font-weight: 600; color: #333;">${item.product.name}</div>
+          <div style="font-weight: 600; color: #333;">${item.product?.name || 'Producto'}</div>
           <div style="font-size: 14px; color: #666;">Cantidad: ${item.quantity}</div>
         </td>
         <td style="padding: 12px 0; text-align: right; border-bottom: 1px solid #eee; vertical-align: top;">
-          L. ${(item.quantity * (item.product.discountPrice || item.product.sellingPrice)).toLocaleString('en-US', {minimumFractionDigits: 2})}
+          L. ${(item.quantity * (item.product?.discountPrice || item.product?.sellingPrice || 0)).toLocaleString('en-US', {minimumFractionDigits: 2})}
         </td>
       </tr>
     `).join('')
@@ -94,6 +115,8 @@ serve(async (req) => {
       </html>
     `
 
+    console.log(`[Email Function] Enviando correo a ${customerEmail} para pedido ${order_id_custom}`)
+
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -110,9 +133,12 @@ serve(async (req) => {
     })
 
     const result = await res.json()
+    console.log('[Email Function] Respuesta de Resend:', JSON.stringify(result))
+
     return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
   } catch (error) {
+    console.error('[Email Function] ERROR:', error.message)
     return new Response(JSON.stringify({ error: error.message }), { 
       status: 400, 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

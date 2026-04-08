@@ -202,33 +202,8 @@ const CheckoutModal = ({ isOpen, onClose }) => {
             })());
           });
 
-          // Tarea D: Correo de Confirmación (Invocación a Edge Function)
-          bgTasks.push((async () => {
-            try {
-              console.log(`[Email] Iniciando envío para pedido: ${customId}...`);
-              const { data, error } = await supabase.functions.invoke('send-order-confirmation', {
-                body: { 
-                  orderData: {
-                    order_id_custom: customId,
-                    customerName: customerInfo.name,
-                    customerEmail: customerInfo.email,
-                    items: orderData.items,
-                    subtotal: orderData.subtotal,
-                    discountAmount: orderData.discountAmount || 0,
-                    adminDiscountAmount: 0,
-                    total: orderData.total,
-                    deliveryMethodName: availableDeliveryMethods.find(m => m.id === orderData.deliveryMethodId)?.name || 'Estándar',
-                    deliveryCost: orderData.deliveryCost || 0,
-                    paymentMethod: orderData.paymentMethod
-                  }
-                }
-              });
-              if (error) throw error;
-              console.log('[Email] Respuesta exitosa de Supabase:', data);
-            } catch (emailErr) {
-              console.error('[Email] La función de correo falló:', emailErr.message);
-            }
-          })());
+          // Las tareas D (Correo) se manejan ahora vía Database Webhooks en Supabase
+          // para mayor fiabilidad (no dependen del navegador del cliente).
 
           await Promise.all(bgTasks);
         } catch (bgErr) {
