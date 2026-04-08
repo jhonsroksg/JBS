@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../services/db';
 import { X, Trash2, CheckCircle, User, Mail, Phone, MapPin, Truck, CreditCard } from 'lucide-react';
 import { hondurasLocations } from '../data/hondurasLocations';
+import { supabase } from '../lib/supabaseClient';
 import './CheckoutModal.css';
 
 const CheckoutModal = ({ isOpen, onClose }) => {
@@ -199,6 +200,34 @@ const CheckoutModal = ({ isOpen, onClose }) => {
               }
             })());
           });
+
+          // Tarea D: Correo de Confirmación (Invocación a Edge Function)
+          bgTasks.push((async () => {
+            try {
+              console.log('Enviando correo de confirmación...');
+              const { data, error } = await supabase.functions.invoke('send-order-confirmation', {
+                body: { 
+                  orderData: {
+                    order_id_custom: customId,
+                    customerName: customerInfo.name,
+                    customerEmail: customerInfo.email,
+                    items: orderData.items,
+                    subtotal: orderData.subtotal,
+                    discountAmount: orderData.discountAmount || 0,
+                    adminDiscountAmount: 0, // En checkout (cliente) siempre es 0 al inicio
+                    total: orderData.total,
+                    deliveryMethodName: deliveryMethods.find(m => m.id === orderData.deliveryMethodId)?.name || 'Estándar',
+                    deliveryCost: deliveryMethods.find(m => m.id === orderData.deliveryMethodId)?.cost || 0,
+                    paymentMethod: orderData.paymentMethod
+                  }
+                }
+              });
+              if (error) throw error;
+              console.log('Correo enviado con éxito:', data);
+            } catch (emailErr) {
+              console.warn('Envío de correo falló (no crítico):', emailErr.message);
+            }
+          })());
 
           await Promise.all(bgTasks);
         } catch (bgErr) {
