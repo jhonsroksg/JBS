@@ -134,15 +134,16 @@ const CheckoutModal = ({ isOpen, onClose }) => {
 
       // 3. Create Order (Priority 1)
       let newOrder;
+      let customId = 'PENDIENTE'; 
+
       try {
         newOrder = await db.insert('orders', orderData);
         if (newOrder && newOrder.order_number) {
           // Generar el nuevo ID personalizado (ej. 07ABR26PED0001)
-          const customId = db.formatOrderId(newOrder.order_number, orderData.date);
+          customId = db.formatOrderId(newOrder.order_number, orderData.date);
           setCompletedOrderNumber(customId);
           
           // Guardar el ID personalizado en la base de datos (Columna order_id_custom)
-          // Lo hacemos en segundo plano para no bloquear el éxito del usuario
           db.update('orders', newOrder.id, { order_id_custom: customId }).catch(e => 
             console.error('Error al guardar el ID personalizado en DB:', e)
           );
@@ -204,7 +205,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
           // Tarea D: Correo de Confirmación (Invocación a Edge Function)
           bgTasks.push((async () => {
             try {
-              console.log('Enviando correo de confirmación...');
+              console.log(`[Email] Iniciando envío para pedido: ${customId}...`);
               const { data, error } = await supabase.functions.invoke('send-order-confirmation', {
                 body: { 
                   orderData: {
@@ -214,18 +215,18 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                     items: orderData.items,
                     subtotal: orderData.subtotal,
                     discountAmount: orderData.discountAmount || 0,
-                    adminDiscountAmount: 0, // En checkout (cliente) siempre es 0 al inicio
+                    adminDiscountAmount: 0,
                     total: orderData.total,
-                    deliveryMethodName: deliveryMethods.find(m => m.id === orderData.deliveryMethodId)?.name || 'Estándar',
-                    deliveryCost: deliveryMethods.find(m => m.id === orderData.deliveryMethodId)?.cost || 0,
+                    deliveryMethodName: availableDeliveryMethods.find(m => m.id === orderData.deliveryMethodId)?.name || 'Estándar',
+                    deliveryCost: orderData.deliveryCost || 0,
                     paymentMethod: orderData.paymentMethod
                   }
                 }
               });
               if (error) throw error;
-              console.log('Correo enviado con éxito:', data);
+              console.log('[Email] Respuesta exitosa de Supabase:', data);
             } catch (emailErr) {
-              console.warn('Envío de correo falló (no crítico):', emailErr.message);
+              console.error('[Email] La función de correo falló:', emailErr.message);
             }
           })());
 
