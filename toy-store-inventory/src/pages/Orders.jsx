@@ -887,7 +887,7 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
                     {activeTab !== 'deleted' && activeTab !== 'cancelled' ? (
                       <>
                         {order.status !== 'Cancelado' && !order.isDeleted && (
-                          <button className="btn-icon" style={{color: '#e74c3c', borderColor: 'rgba(231,76,60,0.3)'}} title="Cancelar pedido" onClick={() => handleCancelOrder(order)}><XCircle size={20} strokeWidth={2.5} /></button>
+                          <button className="btn-icon cancel-btn" title="Cancelar pedido" onClick={() => handleCancelOrder(order)}><XCircle size={20} strokeWidth={2.5} /></button>
                         )}
                         <button className="btn-icon" title="Logística" onClick={() => openShippingModal(order)}><Truck size={20} strokeWidth={2.5} /></button>
                         <button className="btn-icon" title="Ver" onClick={() => openModal(order, false)}><Eye size={20} strokeWidth={2.5} /></button>
