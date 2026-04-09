@@ -242,14 +242,18 @@ const Storefront = () => {
           <SkeletonGrid count={8} />
         ) : (
           <>
-            {filteredProducts.map(product => (
+            {filteredProducts.map((product, index) => (
               <div key={product.id} className="product-card" style={{ display: 'flex', flexDirection: 'column' }}>
                 <div className="product-image-container" onClick={() => { setSelectedProduct(product); setMainImageIndex(0); }} style={{ cursor: 'pointer' }}>
                   <img 
                     src={product.imageUrl || 'https://via.placeholder.com/300'} 
                     alt={`Juguete ${product.name} - ${product.brand || 'Joa Baby Shop'}`} 
                     className="product-image" 
-                    loading="lazy"
+                    loading={index < 4 ? "eager" : "lazy"}
+                    fetchpriority={index < 4 ? "high" : "low"}
+                    decoding="async"
+                    width="400"
+                    height="400"
                   />
                   <div className="product-badges">
                     {isNewProduct(product.created_at) && <span className="product-badge new">NUEVO</span>}
