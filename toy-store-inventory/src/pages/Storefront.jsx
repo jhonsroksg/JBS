@@ -1,3 +1,4 @@
+// Storefront - Última actualización: Refinamiento de Catálogo
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../services/db';
 import { ShoppingCart, X, Zap, Search, Filter, MessageCircle } from 'lucide-react';
