@@ -258,37 +258,29 @@ const Storefront = () => {
                   <div className="product-badges">
                     {isNewProduct(product.created_at) && <span className="product-badge new">NUEVO</span>}
                     {(product.stock > 0 && product.stock < 3) && <span className="product-badge limited">ÚLTIMAS PIEZAS</span>}
-                    {product.discountPrice && <span className="product-badge sale">¡Oferta!</span>}
+                    {product.discountPrice && <span className="product-badge sale">OFERTA</span>}
                   </div>
                   {product.stock <= 5 && <span className="stock-badge">¡Solo quedan {product.stock}!</span>}
                 </div>
                 <div className="product-info">
                   <h3 className="product-title">{product.name}</h3>
-                  <p className="product-category text-secondary">{categories.find(c => c.id === product.categoryId)?.name || 'Sin Categoría'}</p>
-                  <div className="product-footer">
-                    {product.discountPrice ? (
-                      <div className="product-price" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                        <span style={{ textDecoration: 'line-through', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 'normal' }}>L. {Number(product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                        <span style={{ color: 'var(--danger)' }}>L. {Number(product.discountPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-
-                      </div>
-                    ) : (
-                      <span className="product-price">L. {Number(product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-
+                  <p className="product-category">{categories.find(c => c.id === product.categoryId)?.name || 'Sin Categoría'}</p>
+                  
+                  <div className="product-price-container">
+                    <span className="product-price-current">
+                      L. {Number(product.discountPrice || product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                    {product.discountPrice && (
+                      <span className="product-price-old">
+                        L. {Number(product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
                     )}
                   </div>
+
                   <div className="card-actions">
                     <button className="btn-whatsapp-primary" onClick={() => handleWhatsAppContact(product)}>
-                      <MessageCircle size={20} strokeWidth={2.5} /> Pedir por WhatsApp
+                      <MessageCircle size={18} strokeWidth={2.5} /> Pedir por WhatsApp
                     </button>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                      <button className="btn-buy-now-mini" onClick={() => handleBuyNow(product)}>
-                        <Zap size={16} /> Comprar
-                      </button>
-                      <button className="btn-add-cart-mini" onClick={() => handleAddToCart(product)}>
-                        <ShoppingCart size={16} /> Carrito
-                      </button>
-                    </div>
                   </div>
                 </div>
               </div>

@@ -278,14 +278,13 @@
   border-radius: 12px;
   background: #fff;
   border: 1px solid var(--border-color);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  transition: all 0.3s ease;
+  text-align: left; /* Alineación a la izquierda */
 }
 
 .product-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 15px -3px rgba(31, 183, 185, 0.15), 0 4px 6px -2px rgba(31, 183, 185, 0.05);
-  border-color: var(--accent-primary);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.08);
 }
 
 .product-image-container {
@@ -293,14 +292,16 @@
   width: 100%;
   position: relative;
   overflow: hidden;
+  background-color: #F9F9F9; /* Fondo gris tenue */
+  border-bottom: 1px solid rgba(0,0,0,0.03);
 }
 
 .product-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  background-color: white; /* Por si se usa contain en el futuro o hay bordes */
-  transition: transform var(--transition-normal);
+  mix-blend-mode: multiply; /* Para integrar mejor fotos con fondo blanco en el gris */
+  transition: transform 0.5s ease;
 }
 
 .product-card:hover .product-image {
@@ -346,9 +347,12 @@
 }
 
 .product-badge.sale {
-  background: #FFEBEE;
-  color: #D32F2F;
-  border: 1px solid rgba(211, 47, 47, 0.1);
+  background: #eb445a;
+  color: white;
+  font-size: 0.6rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 900;
 }
 
 .stock-badge {
@@ -366,20 +370,49 @@
 }
 
 .product-info {
-  padding: 24px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   flex: 1;
+  gap: 8px;
 }
 
 .product-title {
-  font-size: 1.15rem;
-  margin-bottom: 4px;
+  font-size: 0.875rem; /* text-sm */
+  line-height: 1.25rem;
+  font-weight: 600;
+  color: #000; /* Título en negro */
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Truncado a 2 líneas */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .product-category {
-  font-size: 0.9rem;
-  margin-bottom: 20px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.product-price-container {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.product-price-current {
+  font-size: 1.125rem; /* text-lg */
+  font-weight: 800;
+  color: var(--accent-primary); /* Color resaltado */
+}
+
+.product-price-old {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-decoration: line-through;
+  font-weight: 400;
 }
 
 .product-footer {
@@ -436,23 +469,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 14px;
-  background: #25D366; /* Oficial WhatsApp Green */
+  gap: 8px;
+  padding: 10px 16px; /* py-2 px-4 */
+  background: #22C55E; /* Verde vibrante solicitado */
   color: white;
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
 }
 
 .btn-whatsapp-primary:hover {
-  background: #128C7E;
+  background: #16a34a;
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
 }
 
 .btn-buy-now-mini,
