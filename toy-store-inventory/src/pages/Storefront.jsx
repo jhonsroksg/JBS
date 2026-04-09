@@ -7,44 +7,80 @@ import { OptimizedImage } from '../components/OptimizedImage';
 import './Storefront.css';
 
 const Storefront = () => {
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // --- Lógica de Caché SWR Nativo (Persistente) ---
+  const getCache = (key) => {
+    try {
+      const cached = localStorage.getItem(`joa_cache_${key}`);
+      return cached ? JSON.parse(cached) : null;
+    } catch { return null; }
+  };
+  const setCache = (key, data) => {
+    try { localStorage.setItem(`joa_cache_${key}`, JSON.stringify(data)); } catch {}
+  };
+
+  const [products, setProducts] = useState(getCache('products') || []);
+  const [categories, setCategories] = useState(getCache('categories') || []);
+  const [storeInfo, setStoreInfo] = useState(getCache('storeInfo') || { name: 'Joa Baby Shop', welcomeMessage: '¡Bienvenido a nuestra tienda!' });
+  const [isLoading, setIsLoading] = useState(!getCache('products') || getCache('products').length === 0);
+  
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeAgeRange, setActiveAgeRange] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [priceRange, setPriceRange] = useState(1000); // Default max price
+  const [priceRange, setPriceRange] = useState(1000);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
-  const [storeInfo, setStoreInfo] = useState({ name: 'Joa Baby Shop', welcomeMessage: '¡Bienvenido a nuestra tienda!' });
+
+  // Función de revalidación silenciosa (estilo ISR)
+  const revalidateData = async (silent = false) => {
+    if (!silent && products.length === 0) setIsLoading(true);
+    try {
+      const [info, allProducts, cats] = await Promise.all([
+        db.getStoreInfo(),
+        db.getAll('products'),
+        db.getAll('categories'),
+      ]);
+      
+      const activeProducts = allProducts.filter(p => !p.deleted && p.stock > 0);
+      
+      // Actualizar estados
+      setStoreInfo(info);
+      setProducts(activeProducts);
+      setCategories(cats);
+      
+      // Actualizar caché persistente
+      setCache('storeInfo', info);
+      setCache('products', activeProducts);
+      setCache('categories', cats);
+    } catch (error) {
+      console.error('Error revalidating storefront data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const [info, allProducts, cats] = await Promise.all([
-          db.getStoreInfo(),
-          db.getAll('products'),
-          db.getAll('categories'),
-        ]);
-        setStoreInfo(info);
-        setProducts(allProducts.filter(p => !p.deleted && p.stock > 0));
-        setCategories(cats);
-      } catch (error) {
-        console.error('Error loading storefront data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
+    // 1. Revalidación inmediata al montar (en segundo plano)
+    revalidateData(true);
+
+    // 2. Configurar intervalo de revalidación cada 60 segundos (ISR style)
+    const revalidateInterval = setInterval(() => {
+      console.log('[SWR] Revalidando datos en segundo plano...');
+      revalidateData(true);
+    }, 60000);
 
     const handleStoreUpdate = async () => {
       const info = await db.getStoreInfo();
       setStoreInfo(info);
+      setCache('storeInfo', info);
     };
+
     window.addEventListener('store_info_updated', handleStoreUpdate);
-    return () => window.removeEventListener('store_info_updated', handleStoreUpdate);
+    
+    return () => {
+      clearInterval(revalidateInterval);
+      window.removeEventListener('store_info_updated', handleStoreUpdate);
+    };
   }, []);
 
   // Extraer rangos de edad únicos
