@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../services/db';
 import { ShoppingCart, X, Zap, Search, Filter, MessageCircle } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
-import { SkeletonGrid } from '../components/SkeletonLoader';
+import { OptimizedImage } from '../components/OptimizedImage';
 import './Storefront.css';
 
 const Storefront = () => {
@@ -245,13 +245,11 @@ const Storefront = () => {
             {filteredProducts.map((product, index) => (
               <div key={product.id} className="product-card" style={{ display: 'flex', flexDirection: 'column' }}>
                 <div className="product-image-container" onClick={() => { setSelectedProduct(product); setMainImageIndex(0); }} style={{ cursor: 'pointer' }}>
-                  <img 
+                  <OptimizedImage 
                     src={product.imageUrl || 'https://via.placeholder.com/300'} 
                     alt={`Juguete ${product.name} - ${product.brand || 'Joa Baby Shop'}`} 
                     className="product-image" 
-                    loading={index < 4 ? "eager" : "lazy"}
-                    fetchpriority={index < 4 ? "high" : "low"}
-                    decoding="async"
+                    priority={index < 4}
                     width="400"
                     height="400"
                   />
