@@ -287,7 +287,6 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                             <div className="item-card-details">
                               <div className="item-card-header">
                                 <h4>{item.product.name}</h4>
-                                <span className="item-card-price">L. {Number(item.product.discountPrice || item.product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                               </div>
                               <div className="item-card-footer">
                                 <div className="item-qty-selector">
@@ -406,7 +405,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                     )}
                     <div className="summary-line total-line">
                       <span>Total de Compra</span>
-                      <span>L. {cartTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span className="summary-total-value">{cartTotalAmount.toLocaleString('en-US', { style: 'currency', currency: 'LPS' }).replace('LPS', 'L.')}</span>
                     </div>
 
                     <button 
