@@ -106,8 +106,14 @@
 
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 24px;
+}
+
+@media (min-width: 1024px) {
+  .products-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 /* Sidebar Styling */
@@ -594,6 +600,12 @@
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--text-secondary);
+  }
+}
+
+@media (max-width: 768px) {
+  .products-grid {
+    gap: 16px; /* Ajuste para móviles más pequeños para ganar espacio */
   }
 }
 
