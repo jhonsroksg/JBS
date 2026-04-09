@@ -4,6 +4,7 @@ import { db } from '../services/db';
 import { ShoppingCart, X, Zap, Search, Filter, MessageCircle } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { OptimizedImage } from '../components/OptimizedImage';
+import { SkeletonGrid } from '../components/SkeletonLoader';
 import './Storefront.css';
 
 const Storefront = () => {
