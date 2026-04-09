@@ -243,7 +243,7 @@ const Storefront = () => {
         ) : (
           <>
             {filteredProducts.map(product => (
-              <div key={product.id} className="product-card glass-panel" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div key={product.id} className="product-card" style={{ display: 'flex', flexDirection: 'column' }}>
                 <div className="product-image-container" onClick={() => { setSelectedProduct(product); setMainImageIndex(0); }} style={{ cursor: 'pointer' }}>
                   <img 
                     src={product.imageUrl || 'https://via.placeholder.com/300'} 
