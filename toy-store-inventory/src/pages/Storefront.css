@@ -424,100 +424,37 @@
 }
 
 /* ── Card action buttons ─────────────────────────────────────── */
-.card-actions {
+.card-actions-icons {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 20px;
+  justify-content: center;
+  align-items: center;
+  gap: 24px; /* Espaciado generoso para toque */
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0,0,0,0.03);
 }
 
-.btn-buy-now,
-.btn-add-cart, 
-.btn-whatsapp {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  font-family: inherit;
-  font-size: 0.8rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.icon-action-btn {
+  background: transparent;
   border: none;
-  position: relative;
-  overflow: hidden;
-  text-align: center;
-}
-
-.btn-add-cart svg, 
-.btn-whatsapp svg,
-.btn-buy-now svg {
-  flex-shrink: 0;
-}
-
-.btn-buy-now:active,
-.btn-add-cart:active, 
-.btn-whatsapp:active {
-  transform: scale(0.97);
-}
-
-.btn-whatsapp-primary {
-  width: 100%;
+  color: #22C55E; /* Verde vibrante JoaBabyShop */
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 10px 16px; /* py-2 px-4 */
-  background: #22C55E; /* Verde vibrante solicitado */
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  padding: 4px;
+  border-radius: 50%;
 }
 
-.btn-whatsapp-primary:hover {
-  background: #16a34a;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+.icon-action-btn:hover {
+  opacity: 0.7;
+  transform: scale(1.2);
+  background: rgba(34, 197, 94, 0.05);
 }
 
-.btn-buy-now-mini,
-.btn-add-cart-mini {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px;
-  border-radius: 8px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-}
-
-.btn-buy-now-mini {
-  background: white;
-  color: var(--accent-primary);
-  border-color: var(--accent-primary);
-}
-
-.btn-buy-now-mini:hover {
-  background: var(--accent-primary);
-  color: white;
-}
-
-.btn-add-cart-mini:hover {
-  background: var(--bg-secondary);
-  border-color: var(--text-primary);
+.icon-action-btn:active {
+  transform: scale(0.95);
 }
 
 /* Comprar ahora — Logo Coral Premium con Brillo Rose */

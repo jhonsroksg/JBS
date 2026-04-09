@@ -277,9 +277,15 @@ const Storefront = () => {
                     )}
                   </div>
 
-                  <div className="card-actions">
-                    <button className="btn-whatsapp-primary" onClick={() => handleWhatsAppContact(product)}>
-                      <MessageCircle size={18} strokeWidth={2.5} /> Pedir por WhatsApp
+                  <div className="card-actions-icons">
+                    <button className="icon-action-btn" onClick={() => handleWhatsAppContact(product)} title="Pedir por WhatsApp">
+                      <MessageCircle size={24} strokeWidth={2} />
+                    </button>
+                    <button className="icon-action-btn" onClick={() => handleBuyNow(product)} title="Comprar ahora">
+                      <Zap size={24} strokeWidth={2} />
+                    </button>
+                    <button className="icon-action-btn" onClick={() => handleAddToCart(product)} title="Agregar al carrito">
+                      <ShoppingCart size={24} strokeWidth={2} />
                     </button>
                   </div>
                 </div>
