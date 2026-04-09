@@ -12,8 +12,10 @@ const Storefront = () => {
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeAgeRange, setActiveAgeRange] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [priceRange, setPriceRange] = useState(1000); // Default max price
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [mainImageIndex, setMainImageIndex] = useState(0);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [storeInfo, setStoreInfo] = useState({ name: 'Joa Baby Shop', welcomeMessage: '¡Bienvenido a nuestra tienda!' });
 
   useEffect(() => {
@@ -58,9 +60,26 @@ const Storefront = () => {
       const matchSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           (p.sku && p.sku.toLowerCase().includes(searchTerm.toLowerCase()));
       
-      return matchCategory && matchAgeRange && matchSearch;
+      const price = Number(p.discountPrice || p.sellingPrice);
+      const matchPrice = price <= priceRange;
+
+      return matchCategory && matchAgeRange && matchSearch && matchPrice;
     });
-  }, [products, activeCategory, activeAgeRange, searchTerm]);
+  }, [products, activeCategory, activeAgeRange, searchTerm, priceRange]);
+
+  const maxPriceAvailable = useMemo(() => {
+    if (products.length === 0) return 1000;
+    return Math.max(...products.map(p => Number(p.discountPrice || p.sellingPrice)));
+  }, [products]);
+
+  // Lógica para etiquetas (badges)
+  const isNewProduct = (dateStr) => {
+    if (!dateStr) return false;
+    const createdDate = new Date(dateStr);
+    const now = new Date();
+    const diffDays = Math.ceil((now - createdDate) / (1000 * 60 * 60 * 24));
+    return diffDays <= 7; // Considerado nuevo por 7 días
+  };
 
   const handleAddToCart = (product) => {
     const currentCart = JSON.parse(localStorage.getItem('toy_store_cart') || '[]');
@@ -125,63 +144,97 @@ const Storefront = () => {
         </div>
       </div>
 
-      <div className="filters-container glass-panel" style={{ padding: '24px', marginBottom: '32px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        {/* Barra de Búsqueda Integrada */}
-        <div style={{ position: 'relative', width: '100%' }}>
-          <Search style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} size={20} />
-          <input 
-            type="text" 
-            placeholder="Buscar juguetes por nombre o SKU..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ width: '100%', padding: '14px 14px 14px 48px', borderRadius: '12px', border: '1px solid var(--border-color)', outline: 'none', fontSize: '1rem', background: 'var(--bg-secondary)', color: 'var(--text-primary)', transition: 'border-color 0.2s', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.05)' }}
-          />
-        </div>
+      <div className="storefront-content">
+        <aside className={`sidebar-filters ${isMobileFiltersOpen ? 'open' : ''}`}>
+          <div className="sidebar-header">
+            <h3>Filtros</h3>
+            <button className="btn-close-sidebar" onClick={() => setIsMobileFiltersOpen(false)}><X size={20}/></button>
+          </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', justifyContent: 'space-between' }}>
-          {/* Opciones de Categoría */}
-          <div style={{ flex: '1 1 300px' }}>
-            <h3 style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold' }}><Filter size={14}/> Categoría</h3>
-            
-            {/* Selector para Móvil (Dropdown) */}
-            <select 
-              className="category-select-mobile"
-              value={activeCategory} 
-              onChange={(e) => setActiveCategory(e.target.value)}
-            >
-              <option value="all">Todas las categorías</option>
-              {categories.map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
+          {/* Barra de Búsqueda Integrada */}
+          <div className="sidebar-section search-section">
+            <h4 className="sidebar-title"><Search size={14} /> Buscar</h4>
+            <div className="search-input-wrapper">
+              <Search className="search-icon-inline" size={16} />
+              <input 
+                type="text" 
+                placeholder="Nombre o SKU..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
 
-            {/* Botones para Escritorio */}
-            <div className="category-filters-desktop" style={{ margin: 0, padding: 0, border: 'none', background: 'transparent' }}>
-              <button className={`filter-btn ${activeCategory === 'all' ? 'active' : ''}`} onClick={() => setActiveCategory('all')}>Todas</button>
+          <div className="sidebar-section">
+            <h4 className="sidebar-title"><Filter size={14}/> Categorías</h4>
+            <div className="category-list">
+              <button 
+                className={`category-item-btn ${activeCategory === 'all' ? 'active' : ''}`}
+                onClick={() => setActiveCategory('all')}
+              >
+                Todas las categorías
+              </button>
               {categories.map(cat => (
-                <button key={cat.id} className={`filter-btn ${activeCategory === cat.id ? 'active' : ''}`} onClick={() => setActiveCategory(cat.id)}>{cat.name}</button>
+                <button 
+                  key={cat.id} 
+                  className={`category-item-btn ${activeCategory === cat.id ? 'active' : ''}`}
+                  onClick={() => setActiveCategory(cat.id)}
+                >
+                  {cat.name}
+                </button>
               ))}
             </div>
           </div>
+
+          <div className="sidebar-section">
+            <h4 className="sidebar-title"><Filter size={14}/> Rango de Precio</h4>
+            <div className="price-filter-wrapper">
+              <div className="price-labels">
+                <span>L. 0</span>
+                <span>L. {priceRange.toLocaleString()}</span>
+              </div>
+              <input 
+                type="range" 
+                min="0" 
+                max={maxPriceAvailable > 0 ? maxPriceAvailable : 1000} 
+                step="50" 
+                value={priceRange} 
+                onChange={(e) => setPriceRange(Number(e.target.value))}
+                className="price-slider"
+              />
+            </div>
+          </div>
           
-          {/* Filtro Rango de Edad */}
           {ageRanges.length > 0 && (
-            <div style={{ flex: '0 1 250px' }}>
-              <h3 style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold' }}><Filter size={14}/> Rango de Edad</h3>
+            <div className="sidebar-section">
+              <h4 className="sidebar-title"><Filter size={14}/> Edad</h4>
               <select 
                 value={activeAgeRange} 
                 onChange={(e) => setActiveAgeRange(e.target.value)}
-                style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none', cursor: 'pointer', fontSize: '0.95rem' }}
+                className="sidebar-select"
               >
-                <option value="all">Todas las edades</option>
+                <option value="all">Cualquier edad</option>
                 {ageRanges.map(age => (
                   <option key={age} value={age}>{age}</option>
                 ))}
               </select>
             </div>
           )}
-        </div>
-      </div>
+
+          <button className="btn-clear-filters" onClick={() => { setActiveCategory('all'); setActiveAgeRange('all'); setSearchTerm(''); setPriceRange(maxPriceAvailable); }}>
+            Limpiar filtros
+          </button>
+        </aside>
+
+        <main className="main-products-view">
+          <div className="mobile-filter-bar">
+            <button className="btn-mobile-filter" onClick={() => setIsMobileFiltersOpen(true)}>
+              <Filter size={18} /> Filtrar y Buscar
+            </button>
+            <div className="active-filters-summary">
+              {filteredProducts.length} productos encontrados
+            </div>
+          </div>
 
       <div className="products-grid">
         {isLoading ? (
@@ -197,10 +250,12 @@ const Storefront = () => {
                     className="product-image" 
                     loading="lazy"
                   />
+                  <div className="product-badges">
+                    {isNewProduct(product.created_at) && <span className="product-badge new">Nuevo</span>}
+                    {(product.stock < 10 || product.featured) && <span className="product-badge trend">Más Vendido</span>}
+                    {product.discountPrice && <span className="product-badge sale">¡Oferta!</span>}
+                  </div>
                   {product.stock <= 5 && <span className="stock-badge">¡Solo quedan {product.stock}!</span>}
-                  {product.discountPrice && (
-                    <span style={{ position: 'absolute', top: '10px', left: '10px', background: 'var(--danger)', color: 'white', padding: '4px 10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 'bold', zIndex: 5, boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>¡OFERTA!</span>
-                  )}
                 </div>
                 <div className="product-info">
                   <h3 className="product-title">{product.name}</h3>
@@ -241,6 +296,12 @@ const Storefront = () => {
             )}
           </>
         )}
+        </main>
+      </div>
+
+      <div className="floating-whatsapp-btn" onClick={() => handleWhatsAppContact({ name: 'Consulta General', sku: 'Web' })}>
+        <MessageCircle size={32} fill="currentColor" />
+        <span className="tooltip">¿Necesitas ayuda?</span>
       </div>
 
       {selectedProduct && (
