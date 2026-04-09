@@ -297,8 +297,9 @@ const Storefront = () => {
             )}
           </>
         )}
-        </main>
       </div>
+    </main>
+  </div>
 
       <div className="floating-whatsapp-btn" onClick={() => handleWhatsAppContact({ name: 'Consulta General', sku: 'Web' })}>
         <MessageCircle size={32} fill="currentColor" />
