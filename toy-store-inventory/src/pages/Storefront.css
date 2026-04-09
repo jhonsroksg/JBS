@@ -398,14 +398,21 @@
 .product-price-container {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 12px;
   margin-top: 4px;
+  flex-wrap: wrap; /* Permite que el precio de oferta baje si no hay espacio, pero manteniendo el símbolo pegado */
+}
+
+.product-price-current,
+.product-price-old {
+  white-space: nowrap; /* Evita que L. se separe del número */
+  display: inline-block;
 }
 
 .product-price-current {
   font-size: 1.125rem; /* text-lg */
   font-weight: 800;
-  color: var(--accent-primary); /* Color resaltado */
+  color: #22C55E; /* Verde vibrante solicitado anteriormente */
 }
 
 .product-price-old {

@@ -268,11 +268,11 @@ const Storefront = () => {
                   
                   <div className="product-price-container">
                     <span className="product-price-current">
-                      L. {Number(product.discountPrice || product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      L.{Number(product.discountPrice || product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                     {product.discountPrice && (
                       <span className="product-price-old">
-                        L. {Number(product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        L.{Number(product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     )}
                   </div>
