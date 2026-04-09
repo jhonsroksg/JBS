@@ -114,7 +114,7 @@ const Storefront = () => {
       cleanPhone = '504' + cleanPhone;
     }
     
-    const message = `Hola JoaBabyShop, me interesa el producto ${product.name} con código ${product.sku || product.id} que vi en la web.`;
+    const message = `¡Hola! Me interesa este producto: ${product.name}. ¿Tienen disponibilidad?`;
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank');
@@ -273,16 +273,18 @@ const Storefront = () => {
 
                     )}
                   </div>
-                  <div className="card-actions" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                    <button className="btn-buy-now" onClick={() => handleBuyNow(product)} style={{ gridColumn: '1 / -1' }}>
-                      <Zap size={18} strokeWidth={2.5} /> Comprar ahora
+                  <div className="card-actions">
+                    <button className="btn-whatsapp-primary" onClick={() => handleWhatsAppContact(product)}>
+                      <MessageCircle size={20} strokeWidth={2.5} /> Pedir por WhatsApp
                     </button>
-                    <button className="btn-whatsapp" onClick={() => handleWhatsAppContact(product)}>
-                      <MessageCircle size={18} strokeWidth={2} /> WhatsApp
-                    </button>
-                    <button className="btn-add-cart" onClick={() => handleAddToCart(product)}>
-                      <ShoppingCart size={18} strokeWidth={2.5} /> Carrito
-                    </button>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <button className="btn-buy-now-mini" onClick={() => handleBuyNow(product)}>
+                        <Zap size={16} /> Comprar
+                      </button>
+                      <button className="btn-add-cart-mini" onClick={() => handleAddToCart(product)}>
+                        <ShoppingCart size={16} /> Carrito
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
