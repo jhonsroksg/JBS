@@ -359,6 +359,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                         <div className="form-input-group">
                           <MapPin className="input-icon" size={18} style={{ top: '15px', transform: 'none' }} />
                           <textarea placeholder="Punto de referencia o dirección exacta..." required rows="2" value={customerInfo.address} onChange={e => setCustomerInfo({ ...customerInfo, address: e.target.value })} />
+                          <span className="input-helper-text">Direccion Completa</span>
                         </div>
                       )}
 

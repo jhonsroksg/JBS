@@ -373,6 +373,18 @@
   outline: none;
 }
 
+.input-helper-text {
+  display: block;
+  font-size: 0.75rem;
+  color: #718096;
+  margin-top: 8px;
+  margin-left: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+}
+
 /* Summary Card Premium */
 .summary-section {
   grid-area: summary;
