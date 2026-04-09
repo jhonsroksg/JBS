@@ -79,7 +79,7 @@ const Storefront = () => {
     const createdDate = new Date(dateStr);
     const now = new Date();
     const diffDays = Math.ceil((now - createdDate) / (1000 * 60 * 60 * 24));
-    return diffDays <= 7; // Considerado nuevo por 7 días
+    return diffDays <= 3; // Considerado nuevo por 3 días
   };
 
   const handleAddToCart = (product) => {
@@ -252,8 +252,8 @@ const Storefront = () => {
                     loading="lazy"
                   />
                   <div className="product-badges">
-                    {isNewProduct(product.created_at) && <span className="product-badge new">Nuevo</span>}
-                    {(product.stock < 10 || product.featured) && <span className="product-badge trend">Más Vendido</span>}
+                    {isNewProduct(product.created_at) && <span className="product-badge new">NUEVO</span>}
+                    {(product.stock > 0 && product.stock < 3) && <span className="product-badge limited">ÚLTIMAS PIEZAS</span>}
                     {product.discountPrice && <span className="product-badge sale">¡Oferta!</span>}
                   </div>
                   {product.stock <= 5 && <span className="stock-badge">¡Solo quedan {product.stock}!</span>}
