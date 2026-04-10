@@ -14,33 +14,14 @@ export const AuthProvider = ({ children }) => {
     let mounted = true;
 
     // Supabase v2 onAuthStateChange handles the initial session automatically
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      try {
-        if (!mounted) return;
-
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session) {
-          // Solo verificamos MFA si hay una sesión activa para evitar bloqueos innecesarios
-          try {
-            const { data: mfaData, error: mfaError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-            if (!mfaError && mfaData) {
-              setMfaLevel(mfaData.currentLevel || 'aal1');
-              setHasMfaEnrolled((mfaData.nextLevel || mfaData.currentLevel) === 'aal2');
-            }
-          } catch (mfaErr) {
-            console.warn('MFA status check deferred');
-          }
-        } else {
-          setMfaLevel('aal1');
-          setHasMfaEnrolled(false);
-        }
-      } catch (err) {
-        console.error('Auth sync error:', err);
-      } finally {
-        if (mounted) setLoading(false);
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      // La primera vez que recibimos un evento sólido, dejamos de mostrar "loading"
+      setLoading(false);
     });
 
     return () => {
@@ -48,6 +29,36 @@ export const AuthProvider = ({ children }) => {
       subscription?.unsubscribe();
     };
   }, []);
+
+  // Efecto separado para verificar el nivel de MFA sin bloquear el hilo de autenticación inicial
+  useEffect(() => {
+    let mounted = true;
+
+    const checkMFA = async () => {
+      if (!session) {
+        setMfaLevel('aal1');
+        setHasMfaEnrolled(false);
+        return;
+      }
+
+      try {
+        // Añadimos un pequeño retraso para asegurar que cualquier transacción de Auth previa haya finalizado
+        await new Promise(resolve => setTimeout(resolve, 0));
+        
+        if (!mounted) return;
+        const { data: mfaData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (mounted && mfaData) {
+          setMfaLevel(mfaData.currentLevel || 'aal1');
+          setHasMfaEnrolled((mfaData.nextLevel || mfaData.currentLevel) === 'aal2');
+        }
+      } catch (err) {
+        console.warn('Deferred MFA check check failed');
+      }
+    };
+
+    checkMFA();
+    return () => { mounted = false; };
+  }, [session]);
 
   const value = {
     session,
