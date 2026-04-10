@@ -357,9 +357,9 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                       
                       {!isPickUp && (
                         <div className="form-input-group">
-                          <MapPin className="input-icon" size={18} style={{ top: '15px', transform: 'none' }} />
-                          <textarea placeholder="Punto de referencia o dirección exacta..." required rows="2" value={customerInfo.address} onChange={e => setCustomerInfo({ ...customerInfo, address: e.target.value })} />
-                          <span className="input-helper-text">Direccion Completa</span>
+                          <span className="input-helper-text" style={{ marginBottom: '8px', marginLeft: '0' }}>Dirección Completa</span>
+                          <MapPin className="input-icon" size={18} style={{ top: selectedDelivery ? '45px' : '45px', transform: 'none' }} />
+                          <textarea placeholder="Punto de referencia o dirección exacta..." required rows="2" value={customerInfo.address} onChange={e => setCustomerInfo({ ...customerInfo, address: e.target.value })} style={{ paddingTop: '16px' }} />
                         </div>
                       )}
 
