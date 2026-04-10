@@ -15,41 +15,50 @@ export const AuthProvider = ({ children }) => {
     const setData = async () => {
       try {
           const { data: { session }, error } = await supabase.auth.getSession();
-          if (error) {
-            console.warn('Supabase session recovery ignored:', error.message);
+          if (error || !session) {
             setSession(null);
             setUser(null);
             setMfaLevel('aal1');
             setHasMfaEnrolled(false);
           } else {
             setSession(session);
-            setUser(session?.user ?? null);
+            setUser(session.user);
             
-            // Check MFA Level
-            const { data: mfaData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-            setMfaLevel(mfaData?.currentLevel || 'aal1');
-            setHasMfaEnrolled((mfaData?.nextLevel || mfaData?.currentLevel) === 'aal2');
+            try {
+              const { data: mfaData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+              setMfaLevel(mfaData?.currentLevel || 'aal1');
+              setHasMfaEnrolled((mfaData?.nextLevel || mfaData?.currentLevel) === 'aal2');
+            } catch (mfaErr) {
+              console.warn('MFA check failed during init:', mfaErr);
+            }
           }
       } catch (err) {
-        console.warn('Silent auth failure handled');
+        console.warn('Auth init failed:', err);
         setSession(null);
         setUser(null);
-        setMfaLevel('aal1');
-        setHasMfaEnrolled(false);
       } finally {
         setLoading(false);
       }
     };
 
     const { data: { listener } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      const { data: mfaData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      setMfaLevel(mfaData?.currentLevel || 'aal1');
-      setHasMfaEnrolled((mfaData?.nextLevel || mfaData?.currentLevel) === 'aal2');
-      
-      setLoading(false);
+      try {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session) {
+          const { data: mfaData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+          setMfaLevel(mfaData?.currentLevel || 'aal1');
+          setHasMfaEnrolled((mfaData?.nextLevel || mfaData?.currentLevel) === 'aal2');
+        } else {
+          setMfaLevel('aal1');
+          setHasMfaEnrolled(false);
+        }
+      } catch (err) {
+        console.warn('Auth state change error:', err);
+      } finally {
+        setLoading(false);
+      }
     });
 
     setData();
