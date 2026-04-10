@@ -1,7 +1,7 @@
 // Storefront - Última actualización: Refinamiento de Catálogo
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../services/db';
-import { ShoppingCart, X, Zap, Search, Filter, MessageCircle } from 'lucide-react';
+import { ShoppingCart, X, Zap, Search, Filter, MessageCircle, Package, Users, CheckCircle, Truck } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { OptimizedImage } from '../components/OptimizedImage';
 import { SkeletonGrid } from '../components/SkeletonLoader';
@@ -351,21 +351,34 @@ const Storefront = () => {
         <div className="modal-overlay" onClick={() => setSelectedProduct(null)} style={{ zIndex: 1000 }}>
           <div className="modal-content glass-panel" style={{ maxWidth: '850px', width: '90%', padding: '0', display: 'flex', flexDirection: 'row', overflow: 'hidden', minHeight: '400px' }} onClick={e => e.stopPropagation()}>
             <div style={{ flex: '1.2', display: 'flex', flexDirection: 'column', background: 'var(--bg-secondary)', borderRight: '1px solid var(--border-color)' }}>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', minHeight: '300px' }}>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', minHeight: '300px' }}>
                 <img 
                   src={(selectedProduct.images && selectedProduct.images.length > 0) ? selectedProduct.images[mainImageIndex] : (selectedProduct.imageUrl || 'https://via.placeholder.com/400')} 
                   alt={selectedProduct.name} 
-                  style={{ maxWidth: '100%', maxHeight: '450px', objectFit: 'contain' }} 
+                  className="modal-main-image"
                   loading="lazy"
                 />
+                
+                {selectedProduct.images && selectedProduct.images.length > 1 && (
+                  <div className="carousel-dots">
+                    {selectedProduct.images.map((_, idx) => (
+                      <button 
+                        key={idx} 
+                        className={`dot ${mainImageIndex === idx ? 'active' : ''}`}
+                        onClick={() => setMainImageIndex(idx)}
+                        aria-label={`Ir a imagen ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
               {selectedProduct.images && selectedProduct.images.length > 1 && (
-                <div style={{ display: 'flex', gap: '10px', padding: '15px 20px', overflowX: 'auto', background: 'rgba(34, 193, 195, 0.08)', borderTop: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', gap: '10px', padding: '15px 20px', overflowX: 'auto', background: 'rgba(34, 193, 195, 0.04)', borderTop: '1px solid var(--border-color)' }}>
                   {selectedProduct.images.map((img, idx) => (
                     <img 
                       key={idx} src={img} alt={`${selectedProduct.name} vista ${idx + 1}`} 
                       onClick={() => setMainImageIndex(idx)} 
-                      style={{ width: '60px', height: '60px', objectFit: 'cover', cursor: 'pointer', borderRadius: '6px', border: mainImageIndex === idx ? '2px solid var(--accent-primary)' : '2px solid transparent', opacity: mainImageIndex === idx ? 1 : 0.6, transition: 'all 0.2s ease' }} 
+                      style={{ width: '50px', height: '50px', objectFit: 'cover', cursor: 'pointer', borderRadius: '12px', border: mainImageIndex === idx ? '2px solid var(--accent-primary)' : '2px solid transparent', opacity: mainImageIndex === idx ? 1 : 0.6, transition: 'all 0.2s ease', background: '#fff' }} 
                     />
                   ))}
                 </div>
@@ -373,32 +386,56 @@ const Storefront = () => {
             </div>
             <div style={{ flex: '1', padding: '40px', position: 'relative', display: 'flex', flexDirection: 'column' }}>
               <button className="btn-icon" onClick={() => setSelectedProduct(null)} style={{ position: 'absolute', top: '15px', right: '15px' }}><X /></button>
-              <h2 style={{ fontSize: '1.8rem', marginBottom: '8px', paddingRight: '30px', color: 'var(--text-primary)' }}>{selectedProduct.name}</h2>
-              <p className="text-secondary" style={{ fontSize: '1.1rem', marginBottom: '20px' }}>{categories.find(c => c.id === selectedProduct.categoryId)?.name || 'Sin Categoría'}</p>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>SKU: {selectedProduct.sku}</p>
-              {selectedProduct.brand && <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>Marca: <strong style={{ color: 'var(--text-primary)' }}>{selectedProduct.brand}</strong></p>}
-              {selectedProduct.ageRange && <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>Edad Recomendada: <strong style={{ color: 'var(--text-primary)' }}>{selectedProduct.ageRange}</strong></p>}
-              <p style={{ fontSize: '0.9rem', color: selectedProduct.stock > 0 ? 'var(--success)' : 'var(--danger)', marginBottom: '15px' }}>
-                {selectedProduct.stock > 0 ? `En Stock (${selectedProduct.stock} disponibles)` : 'Agotado'}
-              </p>
-              {selectedProduct.description && <div style={{ fontSize: '1rem', color: 'var(--text-secondary)', marginBottom: '15px', lineHeight: '1.5' }}>{selectedProduct.description}</div>}
-              {selectedProduct.discountPrice ? (
-                <div style={{ margin: '30px 0', fontSize: '2.5rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
-                  <span style={{ textDecoration: 'line-through', color: 'var(--text-secondary)', fontSize: '1.5rem' }}>L. {Number(selectedProduct.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  <span style={{ color: 'var(--danger)' }}>L. {Number(selectedProduct.discountPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-
+              
+              <h2 style={{ fontSize: '1.8rem', marginBottom: '8px', paddingRight: '30px', color: 'var(--text-primary)', fontWeight: '700' }}>{selectedProduct.name}</h2>
+              <p className="text-secondary" style={{ fontSize: '1.1rem', marginBottom: '8px' }}>{categories.find(c => c.id === selectedProduct.categoryId)?.name || 'Sin Categoría'}</p>
+              
+              <div className="product-meta-grid">
+                <div className="meta-item">
+                  <Package size={16} className="meta-icon" /> 
+                  <span>REF: <strong>{selectedProduct.sku}</strong></span>
                 </div>
-              ) : (
-                <div style={{ margin: '30px 0', fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>L. {Number(selectedProduct.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                <div className="meta-item">
+                  <Package size={16} className="meta-icon" /> 
+                  <span>Marca: <strong>{selectedProduct.brand || 'N/A'}</strong></span>
+                </div>
+                <div className="meta-item">
+                  <Users size={16} className="meta-icon" /> 
+                  <span>Edad: <strong>{selectedProduct.ageRange || 'Todas'}</strong></span>
+                </div>
+                <div className="meta-item">
+                  <CheckCircle size={16} className="meta-icon" style={{ color: selectedProduct.stock > 0 ? '#10B981' : '#EF4444' }} /> 
+                  <span>Stock: <strong style={{ color: selectedProduct.stock > 0 ? '#10B981' : '#EF4444' }}>{selectedProduct.stock > 0 ? `${selectedProduct.stock} disponibles` : 'Agotado'}</strong></span>
+                </div>
+              </div>
 
+              {selectedProduct.description && (
+                <div style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '20px', lineHeight: '1.6', borderLeft: '3px solid var(--accent-primary)', paddingLeft: '15px', fontStyle: 'italic' }}>
+                  {selectedProduct.description}
+                </div>
               )}
+
+              <div className="modal-price-display">
+                {selectedProduct.discountPrice && (
+                  <span className="modal-price-old">
+                    L. {Number(selectedProduct.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                )}
+                <span className="modal-price-current">
+                  L. {Number(selectedProduct.discountPrice || selectedProduct.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+
               <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <button className="btn-whatsapp" style={{ padding: '15px', fontSize: '1rem', justifyContent: 'center' }} onClick={() => handleWhatsAppContact(selectedProduct)}>
+                <button className="btn-whatsapp" style={{ padding: '16px', justifyContent: 'center' }} onClick={() => handleWhatsAppContact(selectedProduct)}>
                   <MessageCircle size={22} strokeWidth={2.5} /> Consultar por WhatsApp
                 </button>
-                <button className="btn-add-cart" disabled={selectedProduct.stock === 0} style={{ padding: '15px', fontSize: '1rem', justifyContent: 'center', opacity: selectedProduct.stock === 0 ? 0.5 : 1 }} onClick={() => { handleAddToCart(selectedProduct); setSelectedProduct(null); }}>
+                <button className="btn-add-cart" disabled={selectedProduct.stock === 0} style={{ padding: '16px', justifyContent: 'center', opacity: selectedProduct.stock === 0 ? 0.5 : 1 }} onClick={() => { handleAddToCart(selectedProduct); setSelectedProduct(null); }}>
                   <ShoppingCart size={22} strokeWidth={2.5} /> Agregar al Carrito
                 </button>
+                <p className="micro-copy">
+                  <Truck size={14} /> Envío rápido a toda Honduras 🇭🇳
+                </p>
               </div>
             </div>
           </div>
