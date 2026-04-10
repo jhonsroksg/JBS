@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../services/db';
+import { supabase } from '../lib/supabaseClient';
 import { Plus, Trash2, Edit2, Check, X, Save, Image as ImageIcon, Upload, Shield } from 'lucide-react';
 
 const Settings = () => {
