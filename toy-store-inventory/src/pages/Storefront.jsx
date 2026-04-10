@@ -393,11 +393,11 @@ const Storefront = () => {
 
               )}
               <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <button className="btn-whatsapp" style={{ padding: '15px', fontSize: '1.1rem', justifyContent: 'center' }} onClick={() => handleWhatsAppContact(selectedProduct)}>
-                  <MessageCircle className="icon-sm" /> Consultar por WhatsApp
+                <button className="btn-whatsapp" style={{ padding: '15px', fontSize: '1rem', justifyContent: 'center' }} onClick={() => handleWhatsAppContact(selectedProduct)}>
+                  <MessageCircle size={22} /> Consultar por WhatsApp
                 </button>
-                <button className="btn-primary" disabled={selectedProduct.stock === 0} style={{ padding: '15px', fontSize: '1.1rem', justifyContent: 'center', opacity: selectedProduct.stock === 0 ? 0.5 : 1 }} onClick={() => { handleAddToCart(selectedProduct); setSelectedProduct(null); }}>
-                  <ShoppingCart className="icon-sm" /> Agregar al Carrito
+                <button className="btn-add-cart" disabled={selectedProduct.stock === 0} style={{ padding: '15px', fontSize: '1rem', justifyContent: 'center', opacity: selectedProduct.stock === 0 ? 0.5 : 1 }} onClick={() => { handleAddToCart(selectedProduct); setSelectedProduct(null); }}>
+                  <ShoppingCart size={22} /> Agregar al Carrito
                 </button>
               </div>
             </div>
