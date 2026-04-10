@@ -298,18 +298,20 @@ const Storefront = () => {
                   {product.stock <= 5 && <span className="stock-badge">¡Solo quedan {product.stock}!</span>}
                 </div>
                 <div className="product-info">
-                  <h3 className="product-title">{product.name}</h3>
-                  <p className="product-category">{categories.find(c => c.id === product.categoryId)?.name || 'Sin Categoría'}</p>
-                  
-                  <div className="product-price-container">
-                    <span className="product-price-current">
-                      L.{Number(product.discountPrice || product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                    {product.discountPrice && (
-                      <span className="product-price-old">
-                        L.{Number(product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  <div className="product-card-top-info">
+                    <h3 className="product-title">{product.name}</h3>
+                    <p className="product-category">{categories.find(c => c.id === product.categoryId)?.name || 'Sin Categoría'}</p>
+                    
+                    <div className="product-price-container">
+                      <span className="product-price-current">
+                        L.{Number(product.discountPrice || product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
-                    )}
+                      {product.discountPrice && (
+                        <span className="product-price-old">
+                          L.{Number(product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="card-actions-icons">

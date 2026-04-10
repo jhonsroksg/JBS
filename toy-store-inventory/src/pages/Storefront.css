@@ -107,12 +107,13 @@
 .products-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
+  gap: 20px;
 }
 
 @media (min-width: 1024px) {
   .products-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, 1fr); /* 4 Columnas exactas solicitadas */
+    gap: 24px;
   }
 }
 
@@ -374,7 +375,9 @@
   display: flex;
   flex-direction: column;
   flex: 1;
-  gap: 8px;
+  gap: 12px;
+  justify-content: space-between; /* Empuja las acciones al final */
+  min-height: 180px; /* Asegura que todas las tarjetas tengan la misma altura de info */
 }
 
 .product-title {
@@ -430,30 +433,33 @@
   margin-bottom: 16px;
 }
 
-/* ── Card action buttons ─────────────────────────────────────── */
+/* ── Card action buttons - Alineación Simétrica Precisa ─────────────────────────────────────── */
 .card-actions-icons {
   display: flex;
-  justify-content: center;
+  justify-content: center; /* Alineación horizontal centrada perfecta */
   align-items: center;
-  gap: 24px; /* Espaciado generoso para toque */
-  margin-top: 12px;
-  padding-top: 12px;
+  gap: 16px; /* Espaciado idéntico entre iconos */
+  margin-top: auto; /* Empuja al fondo del contenedor */
+  padding-top: 16px;
   border-top: 1px solid rgba(0,0,0,0.03);
+  width: 100%;
 }
 
 .icon-action-btn {
-  background: rgba(255, 255, 255, 0.85); /* Fondo premium traslúcido */
-  border: 1px solid rgba(34, 193, 195, 0.2); /* Borde sutil turquesa */
-  color: var(--accent-primary); /* Turquesa oficial de la tienda */
+  background: white; 
+  border: 1px solid rgba(31, 183, 185, 0.25); /* Borde teal fino */
+  color: var(--accent-primary);
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 10px; /* Más espacio para el área de clic */
+  width: 42px; /* Tamaño fijo para círculo perfecto */
+  height: 42px;
   border-radius: 50%;
-  box-shadow: 0 4px 12px rgba(34, 193, 195, 0.15); /* Sombra suave turquesa */
-  backdrop-filter: blur(8px); /* Efecto Glassmorphism */
+  box-shadow: 0 6px 14px rgba(31, 183, 185, 0.15); /* Sombra circular difuminada */
+  position: relative;
+  overflow: visible;
 }
 
 .icon-action-btn:hover {
