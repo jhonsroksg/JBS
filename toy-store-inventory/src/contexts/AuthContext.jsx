@@ -13,14 +13,26 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     let mounted = true;
 
-    // Supabase v2 onAuthStateChange handles the initial session automatically
+    // Obtener sesión inicial manualmente para cargar la UI rápido
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+        }
+      } catch (err) {
+        if (mounted) setLoading(false);
+      }
+    };
+    initAuth();
+
+    // Suscribirse a cambios futuros
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
-      
       setSession(session);
       setUser(session?.user ?? null);
-      
-      // La primera vez que recibimos un evento sólido, dejamos de mostrar "loading"
       setLoading(false);
     });
 
