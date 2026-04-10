@@ -392,12 +392,12 @@ const Storefront = () => {
                 <div style={{ margin: '30px 0', fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>L. {Number(selectedProduct.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
 
               )}
-              <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <button className="btn-whatsapp" style={{ padding: '15px', fontSize: '1rem', justifyContent: 'center' }} onClick={() => handleWhatsAppContact(selectedProduct)}>
-                  <MessageCircle size={22} /> Consultar por WhatsApp
+                  <MessageCircle size={22} strokeWidth={2.5} /> Consultar por WhatsApp
                 </button>
                 <button className="btn-add-cart" disabled={selectedProduct.stock === 0} style={{ padding: '15px', fontSize: '1rem', justifyContent: 'center', opacity: selectedProduct.stock === 0 ? 0.5 : 1 }} onClick={() => { handleAddToCart(selectedProduct); setSelectedProduct(null); }}>
-                  <ShoppingCart size={22} /> Agregar al Carrito
+                  <ShoppingCart size={22} strokeWidth={2.5} /> Agregar al Carrito
                 </button>
               </div>
             </div>
