@@ -3,13 +3,17 @@ import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from './LoadingSpinner';
 
 const ProtectedRoute = ({ children }) => {
-  const { user, session } = useAuth();
+  const { user, session, mfaLevel, hasMfaEnrolled } = useAuth();
 
   if (session === undefined) {
     return <LoadingSpinner fullPage />;
   }
 
   if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (hasMfaEnrolled && mfaLevel !== 'aal2') {
     return <Navigate to="/login" replace />;
   }
 

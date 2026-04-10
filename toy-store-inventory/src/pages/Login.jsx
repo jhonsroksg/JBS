@@ -9,7 +9,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const { user } = useAuth();
+  const { user, mfaLevel, hasMfaEnrolled } = useAuth();
   const navigate = useNavigate();
 
   // MFA States
@@ -18,8 +18,23 @@ const Login = () => {
   const [mfaError, setMfaError] = useState(null);
   const [mfaData, setMfaData] = useState(null); // To store factor info
 
-  // Si ya está logueado, redirigir al admin
-  if (user) {
+  // Efecto para detectar si necesitamos mostrar el reto MFA automáticamente
+  useEffect(() => {
+    if (user && hasMfaEnrolled && mfaLevel === 'aal1') {
+      const checkFactors = async () => {
+        const { data: factors } = await supabase.auth.mfa.listFactors();
+        const totpFactor = factors?.totp.find(f => f.status === 'verified');
+        if (totpFactor) {
+          setMfaData(totpFactor);
+          setShowMfa(true);
+        }
+      };
+      checkFactors();
+    }
+  }, [user, mfaLevel, hasMfaEnrolled]);
+
+  // Si ya está logueado con el nivel máximo, redirigir al admin
+  if (user && (!hasMfaEnrolled || mfaLevel === 'aal2')) {
     return <Navigate to="/admin" replace />;
   }
 
