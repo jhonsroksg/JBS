@@ -11,60 +11,41 @@ export const AuthProvider = ({ children }) => {
   const [hasMfaEnrolled, setHasMfaEnrolled] = useState(false);
 
   useEffect(() => {
-    // Escuchar cambios en la sesión
-    const setData = async () => {
-      try {
-          const { data: { session }, error } = await supabase.auth.getSession();
-          if (error || !session) {
-            setSession(null);
-            setUser(null);
-            setMfaLevel('aal1');
-            setHasMfaEnrolled(false);
-          } else {
-            setSession(session);
-            setUser(session.user);
-            
-            try {
-              const { data: mfaData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-              setMfaLevel(mfaData?.currentLevel || 'aal1');
-              setHasMfaEnrolled((mfaData?.nextLevel || mfaData?.currentLevel) === 'aal2');
-            } catch (mfaErr) {
-              console.warn('MFA check failed during init:', mfaErr);
-            }
-          }
-      } catch (err) {
-        console.warn('Auth init failed:', err);
-        setSession(null);
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
+    let mounted = true;
 
-    const { data: { listener } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    // Supabase v2 onAuthStateChange handles the initial session automatically
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       try {
+        if (!mounted) return;
+
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session) {
-          const { data: mfaData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-          setMfaLevel(mfaData?.currentLevel || 'aal1');
-          setHasMfaEnrolled((mfaData?.nextLevel || mfaData?.currentLevel) === 'aal2');
+          // Solo verificamos MFA si hay una sesión activa para evitar bloqueos innecesarios
+          try {
+            const { data: mfaData, error: mfaError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+            if (!mfaError && mfaData) {
+              setMfaLevel(mfaData.currentLevel || 'aal1');
+              setHasMfaEnrolled((mfaData.nextLevel || mfaData.currentLevel) === 'aal2');
+            }
+          } catch (mfaErr) {
+            console.warn('MFA status check deferred');
+          }
         } else {
           setMfaLevel('aal1');
           setHasMfaEnrolled(false);
         }
       } catch (err) {
-        console.warn('Auth state change error:', err);
+        console.error('Auth sync error:', err);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     });
 
-    setData();
-
     return () => {
-      listener?.subscription.unsubscribe();
+      mounted = false;
+      subscription?.unsubscribe();
     };
   }, []);
 
