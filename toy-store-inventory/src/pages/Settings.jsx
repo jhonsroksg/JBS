@@ -587,9 +587,9 @@ const Settings = () => {
                   
                   <div style={{ background: 'white', padding: '15px', borderRadius: '12px', display: 'inline-block', marginBottom: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
                     <img 
-                      src={`https://chart.googleapis.com/chart?chs=200x200&chld=M|0&cht=qr&chl=${encodeURIComponent(mfaEnrollment.totp.uri)}`} 
+                      src={mfaEnrollment.totp.qr_code || `https://chart.googleapis.com/chart?chs=200x200&chld=M|0&cht=qr&chl=${encodeURIComponent(mfaEnrollment.totp.uri)}`} 
                       alt="MFA QR Code" 
-                      style={{ display: 'block' }}
+                      style={{ display: 'block', width: '200px', height: '200px' }}
                     />
                   </div>
 
