@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../services/db';
-import { Plus, Trash2, Edit2, Check, X, Save, Image as ImageIcon, Upload } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, Save, Image as ImageIcon, Upload, Shield } from 'lucide-react';
 
 const Settings = () => {
   const [methods, setMethods] = useState([]);
@@ -44,6 +44,13 @@ const Settings = () => {
   });
   const [activeTab, setActiveTab] = useState('general');
 
+  // MFA States
+  const [mfaFactors, setMfaFactors] = useState([]);
+  const [mfaEnrollment, setMfaEnrollment] = useState(null);
+  const [mfaVerifyCode, setMfaVerifyCode] = useState('');
+  const [mfaLoading, setMfaLoading] = useState(false);
+  const [mfaError, setMfaError] = useState('');
+
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
@@ -59,6 +66,15 @@ const Settings = () => {
     setCoupons(coup);
     setOrderStatuses(statuses);
     if (info) setStoreInfo(info);
+    await loadMFAStatus();
+  };
+
+  const loadMFAStatus = async () => {
+    try {
+      const { data, error } = await supabase.auth.mfa.listFactors();
+      if (error) throw error;
+      setMfaFactors(data.all || []);
+    } catch (err) { console.error('Error loading MFA factors:', err); }
   };
 
   const handleSaveStoreInfo = async (e) => {
@@ -299,7 +315,8 @@ const Settings = () => {
           { id: 'general', label: 'General', icon: '⚙️' },
           { id: 'logistica', label: 'Logística', icon: '🚚' },
           { id: 'pagos', label: 'Pagos', icon: '💳' },
-          { id: 'promociones', label: 'Promociones', icon: '🏷️' }
+          { id: 'promociones', label: 'Promociones', icon: '🏷️' },
+          { id: 'seguridad', label: 'Seguridad', icon: '🛡️' }
         ].map(tab => (
           <button 
             key={tab.id}
@@ -509,6 +526,151 @@ const Settings = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+      {/* Security Tab */}
+      {activeTab === 'seguridad' && (
+        <div className="glass-panel" style={{ padding: '40px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '30px', borderBottom: '1px solid var(--border-color)', paddingBottom: '20px' }}>
+            <div style={{ padding: '12px', background: 'rgba(52, 152, 219, 0.1)', borderRadius: '12px', color: 'var(--accent-primary)' }}>
+              <Shield size={24} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '1.4rem', margin: 0 }}>Seguridad de la Cuenta (2FA)</h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '4px 0 0' }}>Agrega una capa extra de protección con Autenticación en Dos Pasos.</p>
+            </div>
+          </div>
+
+          <div style={{ maxWidth: '600px' }}>
+            {mfaFactors.length > 0 ? (
+              <div style={{ padding: '24px', background: 'rgba(39, 174, 96, 0.05)', borderRadius: '20px', border: '1px solid rgba(39, 174, 96, 0.2)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                  <div style={{ color: '#27ae60' }}><Check size={20} /></div>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#27ae60' }}>La Autenticación en Dos Pasos está Activa</h3>
+                </div>
+                <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '24px' }}>
+                  Tu cuenta está protegida. Se te solicitará un código de seguridad cada vez que inicies sesión.
+                </p>
+                
+                {mfaFactors.map(factor => (
+                  <div key={factor.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{factor.friendly_name || 'Aplicación Autenticadora'}</div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Activado el {new Date(factor.created_at).toLocaleDateString()}</div>
+                    </div>
+                    <button 
+                      onClick={async () => {
+                        if (confirm('¿Seguro que deseas desactivar la seguridad de 2 pasos? Esto reducirá la protección de tu cuenta.')) {
+                          try {
+                            const { error } = await supabase.auth.mfa.unenroll({ factorId: factor.id });
+                            if (error) throw error;
+                            alert('2FA desactivado correctamente.');
+                            await loadMFAStatus();
+                          } catch (err) { alert('Error al desactivar: ' + err.message); }
+                        }
+                      }}
+                      className="btn-icon danger" 
+                      title="Desactivar 2FA"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : mfaEnrollment ? (
+              <div className="enrollment-flow">
+                <div style={{ background: 'var(--bg-tertiary)', padding: '30px', borderRadius: '20px', textAlign: 'center' }}>
+                  <h3 style={{ marginBottom: '10px', color: 'var(--text-primary)' }}>Configura tu Aplicación</h3>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '24px' }}>Escanea este código QR con Google Authenticator o Authy.</p>
+                  
+                  <div style={{ background: 'white', padding: '15px', borderRadius: '12px', display: 'inline-block', marginBottom: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+                    <img 
+                      src={`https://chart.googleapis.com/chart?chs=200x200&chld=M|0&cht=qr&chl=${encodeURIComponent(mfaEnrollment.totp.uri)}`} 
+                      alt="MFA QR Code" 
+                      style={{ display: 'block' }}
+                    />
+                  </div>
+
+                  <div style={{ maxWidth: '300px', margin: '0 auto' }}>
+                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, textAlign: 'left', marginBottom: '8px', color: 'var(--text-primary)' }}>Introduce el código de 6 dígitos:</label>
+                    <input 
+                      type="text" 
+                      placeholder="000 000" 
+                      maxLength="6"
+                      value={mfaVerifyCode}
+                      onChange={e => setMfaVerifyCode(e.target.value.replace(/\D/g, ''))}
+                      style={{ ...inputStyle, textAlign: 'center', fontSize: '1.5rem', letterSpacing: '4px', marginBottom: '16px' }} 
+                    />
+                    
+                    {mfaError && <p style={{ color: '#eb445a', fontSize: '0.85rem', marginBottom: '16px' }}>{mfaError}</p>}
+
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button 
+                        onClick={() => { setMfaEnrollment(null); setMfaVerifyCode(''); setMfaError(''); }} 
+                        className="btn-secondary" 
+                        style={{ flex: 1, padding: '12px' }}
+                      >
+                        Cancelar
+                      </button>
+                      <button 
+                        onClick={async () => {
+                          if (mfaVerifyCode.length !== 6) return;
+                          setMfaLoading(true);
+                          setMfaError('');
+                          try {
+                            const challenge = await supabase.auth.mfa.challenge({ factorId: mfaEnrollment.id });
+                            if (challenge.error) throw challenge.error;
+                            
+                            const verify = await supabase.auth.mfa.verify({
+                              factorId: mfaEnrollment.id,
+                              challengeId: challenge.data.id,
+                              code: mfaVerifyCode
+                            });
+                            
+                            if (verify.error) throw verify.error;
+                            
+                            alert('✅ Autenticación en 2 pasos activada con éxito.');
+                            setMfaEnrollment(null);
+                            setMfaVerifyCode('');
+                            await loadMFAStatus();
+                          } catch (err) {
+                            setMfaError('Código incorrecto. Inténtalo de nuevo.');
+                          } finally { setMfaLoading(false); }
+                        }}
+                        className="btn-primary" 
+                        style={{ flex: 1.5, padding: '12px' }}
+                        disabled={mfaLoading || mfaVerifyCode.length !== 6}
+                      >
+                        {mfaLoading ? 'Verificando...' : 'Verificar y Activar'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ padding: '30px', background: 'var(--bg-tertiary)', borderRadius: '20px' }}>
+                <p style={{ lineHeight: '1.6', color: 'var(--text-secondary)', marginBottom: '24px' }}>
+                  Al activar la autenticación de dos pasos, se te pedirá un código generado por una aplicación móvil (como Google Authenticator) cada vez que intentes acceder al panel.
+                </p>
+                <button 
+                  onClick={async () => {
+                    setMfaLoading(true);
+                    try {
+                      const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp' });
+                      if (error) throw error;
+                      setMfaEnrollment(data);
+                    } catch (err) { alert('Error al iniciar enrolamiento: ' + err.message); }
+                    finally { setMfaLoading(false); }
+                  }}
+                  className="btn-primary" 
+                  style={{ padding: '14px 28px' }}
+                  disabled={mfaLoading}
+                >
+                  {mfaLoading ? 'Iniciando...' : 'Configurar Autenticador Móvil'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
