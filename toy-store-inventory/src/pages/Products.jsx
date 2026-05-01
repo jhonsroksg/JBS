@@ -62,24 +62,26 @@ const Products = () => {
     setIsModalOpen(true);
     if (product) {
       setEditingId(product.id);
-      const fullProduct = await productRepository.getById(product.id);
-        const prodData = fullProduct || product; // Fallback just in case
+      setLoading(true);
+      try {
+        const fullProduct = await productRepository.getById(product.id);
+        const prodData = fullProduct || product;
         setFormData({
           ...prodData,
           costPrice: prodData.costPrice ? Number(prodData.costPrice).toFixed(2) : '',
           sellingPrice: prodData.sellingPrice ? Number(prodData.sellingPrice).toFixed(2) : '',
           discountPrice: prodData.discountPrice ? Number(prodData.discountPrice).toFixed(2) : '',
           images: prodData.images || (prodData.imageUrl ? [prodData.imageUrl] : []),
-          newImageFiles: [] // Reset nuevos archivos al abrir
+          newImageFiles: []
         });
         setEditingId(prodData.id);
-
       } catch (err) {
         console.error('Error fetching full product details:', err);
       } finally {
         setLoading(false);
       }
     } else {
+
       setFormData({ sku: '', name: '', categoryId: categories[0]?.id || '', costPrice: '', sellingPrice: '', discountPrice: '', stock: '', minStock: '', imageUrl: '', images: [], ageRange: '', description: '', brand: '', newImageFiles: [] });
       setEditingId(null);
     }
