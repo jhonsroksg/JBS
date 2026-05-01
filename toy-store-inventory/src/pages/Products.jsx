@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../services/db';
+import { productRepository, db } from '../services/db';
 import { Plus, Search, Edit2, Trash2, X, Download, Upload } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import './Products.css';
@@ -29,8 +29,7 @@ const Products = () => {
     setLoading(true);
     try {
       const [prods, cats] = await Promise.all([
-        // Excluimos la inmensa columna 'images' pero mantenemos 'imageUrl' (imagen de portada)
-        db.getAllSelected('products', 'id, sku, name, brand, description, ageRange, categoryId, costPrice, sellingPrice, discountPrice, stock, minStock, imageUrl'),
+        productRepository.getAll(),
         db.getAll('categories'),
       ]);
       setProducts(prods);
@@ -60,10 +59,10 @@ const Products = () => {
   const getCategoryName = (id) => categories.find(c => c.id === id)?.name || 'Sin Categoría';
 
   const handleOpenModal = async (product = null) => {
+    setIsModalOpen(true);
     if (product) {
-      setLoading(true); // Show page spinner while loading images
-      try {
-        const fullProduct = await db.getById('products', product.id);
+      setEditingId(product.id);
+      const fullProduct = await productRepository.getById(product.id);
         const prodData = fullProduct || product; // Fallback just in case
         setFormData({
           ...prodData,
@@ -225,10 +224,11 @@ const Products = () => {
       };
 
       if (editingId) {
-        await db.update('products', editingId, dataToSave);
+        await productRepository.update(editingId, dataToSave);
       } else {
-        await db.insert('products', dataToSave);
+        await productRepository.create(dataToSave);
       }
+
       
       await loadData();
       handleCloseModal();
@@ -252,7 +252,7 @@ const Products = () => {
       const originalProducts = [...products];
       setProducts(prev => prev.filter(p => p.id !== id));
       try {
-        await db.delete('products', id);
+        await productRepository.delete(id);
         console.log('handleDelete: Borrado exitoso en DB');
         // Sync check in background
         loadData();
@@ -333,16 +333,17 @@ const Products = () => {
           };
 
           if (existing) {
-            await db.update('products', existing.id, productData);
+            await productRepository.update(existing.id, productData);
             updated++;
           } else {
-            await db.insert('products', {
+            await productRepository.create({
               ...productData,
               imageUrl: '',
               images: []
             });
             imported++;
           }
+
         }
 
         await loadData();

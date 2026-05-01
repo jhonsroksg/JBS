@@ -1,12 +1,36 @@
 // Storefront - Última actualización: Refinamiento de Catálogo
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { db } from '../services/db';
-import { ShoppingCart, X, Zap, Search, Filter, MessageCircle, Package, Users, CheckCircle, Truck } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import { ShoppingCart, X, Zap, Search, Filter, MessageCircle, Package, Users, CheckCircle, Truck } from 'lucide-react';
+import { productRepository, db } from '../services/db';
 import { OptimizedImage } from '../components/OptimizedImage';
 import { SkeletonGrid } from '../components/SkeletonLoader';
 import './Storefront.css';
+
+// Componente para manejar el SEO Dinámico
+const StorefrontSEO = ({ activeCategory, categories, totalProducts }) => {
+  const currentCategory = categories.find(c => c.id === activeCategory);
+  const categoryName = currentCategory ? currentCategory.name : 'Todas las Categorías';
+  
+  const title = activeCategory === 'all' 
+    ? 'Joa Baby Shop | Juguetería y Accesorios para Bebés' 
+    : `${categoryName} | Juguetes Premium | Joa Baby Shop`;
+    
+  const description = activeCategory === 'all'
+    ? `Explora más de ${totalProducts} juguetes y accesorios para bebés en San Pedro Sula. Calidad premium y envíos a toda Honduras.`
+    : `Encuentra los mejores artículos de ${categoryName} en Joa Baby Shop. Calidad garantizada para tu bebé.`;
+
+  return (
+    <Helmet>
+      <title>{title}</title>
+      <meta name="description" content={description} />
+      <meta property="og:title" content={title} />
+      <meta property="og:description" content={description} />
+      <meta name="keywords" content={`juguetes, bebés, ${categoryName}, honduras, joa baby shop`} />
+    </Helmet>
+  );
+};
 
 import { useToast } from '../hooks/useToast';
 
@@ -93,23 +117,23 @@ const Storefront = () => {
   const revalidateData = async (silent = false) => {
     if (!silent && products.length === 0) setIsLoading(true);
     try {
-      const [info, allProducts, cats] = await Promise.all([
+      const [info, productsData, categoriesData] = await Promise.all([
         db.getStoreInfo(),
-        db.getAll('products'),
+        productRepository.getAll(),
         db.getAll('categories'),
       ]);
       
-      const activeProducts = allProducts.filter(p => !p.deleted && p.stock > 0);
+      const activeProducts = productsData.filter(p => !p.deleted && p.stock > 0);
       
       // Actualizar estados
       setStoreInfo(info);
       setProducts(activeProducts);
-      setCategories(cats);
+      setCategories(categoriesData);
       
       // Actualizar caché persistente
       setCache('storeInfo', info);
       setCache('products', activeProducts);
-      setCache('categories', cats);
+      setCache('categories', categoriesData);
     } catch (error) {
       console.error('Error revalidating storefront data:', error);
     } finally {
@@ -146,8 +170,10 @@ const Storefront = () => {
 
     const handleStoreUpdate = async () => {
       const info = await db.getStoreInfo();
-      setStoreInfo(info);
-      setCache('storeInfo', info);
+      if (info) {
+        setStoreInfo(info);
+        setCache('storeInfo', info);
+      }
     };
 
     window.addEventListener('store_info_updated', handleStoreUpdate);
@@ -239,21 +265,11 @@ const Storefront = () => {
 
   return (
     <div className="storefront">
-      <Helmet>
-        <title>{activeCategory === 'all' ? `${storeInfo.name} | Tienda de Juguetes` : `${categories.find(c => c.id === activeCategory)?.name} - ${storeInfo.name}`}</title>
-        <meta name="description" content={storeInfo.welcomeMessage || "Encuentra los mejores juguetes para bebés y niños en Joa Baby Shop. Calidad y seguridad garantizadas."} />
-        
-        {/* OpenGraph / Social Media */}
-        <meta property="og:title" content={storeInfo.name} />
-        <meta property="og:description" content={storeInfo.welcomeMessage} />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={window.location.href} />
-        <meta property="og:image" content={storeInfo.og_image_url || "/og-image.png"} />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:image" content={storeInfo.og_image_url || "/og-image.png"} />
-      </Helmet>
+      <StorefrontSEO 
+        activeCategory={activeCategory} 
+        categories={categories} 
+        totalProducts={products.length} 
+      />
       <div 
         className="hero-section glass-panel" 
         style={{ 
@@ -437,12 +453,13 @@ const Storefront = () => {
           <div className="modal-content glass-panel" style={{ maxWidth: '850px', width: '90%', padding: '0', display: 'flex', flexDirection: 'row', overflow: 'hidden', minHeight: '400px' }} onClick={e => e.stopPropagation()}>
             <div style={{ flex: '1.2', display: 'flex', flexDirection: 'column', background: 'var(--bg-secondary)', borderRight: '1px solid var(--border-color)' }}>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', minHeight: '300px' }}>
-                <img 
+                <OptimizedImage 
                   src={(selectedProduct.images && selectedProduct.images.length > 0) ? selectedProduct.images[mainImageIndex] : (selectedProduct.imageUrl || 'https://via.placeholder.com/400')} 
                   alt={selectedProduct.name} 
                   className="modal-main-image"
-                  loading="lazy"
+                  priority={true}
                 />
+
                 
                 {selectedProduct.images && selectedProduct.images.length > 1 && (
                   <div className="carousel-dots">
@@ -460,12 +477,13 @@ const Storefront = () => {
               {selectedProduct.images && selectedProduct.images.length > 1 && (
                 <div style={{ display: 'flex', gap: '10px', padding: '15px 20px', overflowX: 'auto', background: 'rgba(34, 193, 195, 0.04)', borderTop: '1px solid var(--border-color)' }}>
                   {selectedProduct.images.map((img, idx) => (
-                    <img 
+                    <OptimizedImage 
                       key={idx} src={img} alt={`${selectedProduct.name} vista ${idx + 1}`} 
                       onClick={() => setMainImageIndex(idx)} 
                       style={{ width: '50px', height: '50px', objectFit: 'cover', cursor: 'pointer', borderRadius: '12px', border: mainImageIndex === idx ? '2px solid var(--accent-primary)' : '2px solid transparent', opacity: mainImageIndex === idx ? 1 : 0.6, transition: 'all 0.2s ease', background: '#fff' }} 
                     />
                   ))}
+
                 </div>
               )}
             </div>

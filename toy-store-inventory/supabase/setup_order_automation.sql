@@ -31,7 +31,51 @@ BEFORE INSERT ON orders
 FOR EACH ROW
 EXECUTE FUNCTION generate_order_id_custom();
 
--- 3. Asegurar que la columna deliveryMethodName existe (para el correo)
+-- 3. Función para validar stock y descontarlo automáticamente
+CREATE OR REPLACE FUNCTION validate_and_update_stock()
+RETURNS TRIGGER AS $$
+DECLARE
+    item RECORD;
+    current_stock INT;
+    product_name TEXT;
+BEGIN
+    -- El payload de orders tiene un campo 'items' que es un JSONB array
+    -- Formato esperado: [{"productId": "...", "quantity": 2, "product": {"name": "..."}}, ...]
+    
+    FOR item IN SELECT * FROM jsonb_to_recordset(NEW.items) AS x(productId UUID, quantity INT)
+    LOOP
+        -- Obtener stock actual y nombre del producto
+        SELECT stock, name INTO current_stock, product_name
+        FROM products
+        WHERE id = item.productId
+        FOR UPDATE; -- Bloquear la fila para evitar condiciones de carrera
+
+        IF NOT FOUND THEN
+            RAISE EXCEPTION 'Producto con ID % no encontrado.', item.productId;
+        END IF;
+
+        IF current_stock < item.quantity THEN
+            RAISE EXCEPTION 'Stock insuficiente para "%": solicitado %, disponible %.', product_name, item.quantity, current_stock;
+        END IF;
+
+        -- Descontar stock
+        UPDATE products
+        SET stock = stock - item.quantity
+        WHERE id = item.productId;
+    END LOOP;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 4. Trigger para validar y descontar stock antes de insertar el pedido
+DROP TRIGGER IF EXISTS trg_validate_stock ON orders;
+CREATE TRIGGER trg_validate_stock
+BEFORE INSERT ON orders
+FOR EACH ROW
+EXECUTE FUNCTION validate_and_update_stock();
+
+-- 5. Asegurar que la columna deliveryMethodName existe (para el correo)
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'orders' AND COLUMN_NAME = 'deliveryMethodName') THEN
