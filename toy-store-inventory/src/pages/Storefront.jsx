@@ -1,5 +1,6 @@
 // Storefront - Última actualización: Refinamiento de Catálogo
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { db } from '../services/db';
 import { ShoppingCart, X, Zap, Search, Filter, MessageCircle, Package, Users, CheckCircle, Truck } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
@@ -7,7 +8,41 @@ import { OptimizedImage } from '../components/OptimizedImage';
 import { SkeletonGrid } from '../components/SkeletonLoader';
 import './Storefront.css';
 
+import { useToast } from '../hooks/useToast';
+
+const ProductJsonLd = ({ product }) => {
+  const jsonLd = {
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    "name": product.name,
+    "image": product.imageUrl || (product.images && product.images[0]),
+    "description": product.description || `Compra ${product.name} en Joa Baby Shop.`,
+    "sku": product.sku,
+    "brand": {
+      "@type": "Brand",
+      "name": product.brand || "Joa Baby Shop"
+    },
+    "offers": {
+      "@type": "Offer",
+      "url": window.location.href,
+      "priceCurrency": "HNL",
+      "price": product.discountPrice || product.sellingPrice,
+      "availability": product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      "itemCondition": "https://schema.org/NewCondition"
+    }
+  };
+
+  return (
+    <Helmet>
+      <script type="application/ld+json">
+        {JSON.stringify(jsonLd)}
+      </script>
+    </Helmet>
+  );
+};
+
 const Storefront = () => {
+  const { showToast } = useToast();
   // --- Lógica de Caché SWR Nativo (Persistente) ---
   const getCache = (key) => {
     try {
@@ -24,11 +59,33 @@ const Storefront = () => {
   const [storeInfo, setStoreInfo] = useState(getCache('storeInfo') || { name: 'Joa Baby Shop', welcomeMessage: '¡Bienvenido a nuestra tienda!' });
   const [isLoading, setIsLoading] = useState(!getCache('products') || getCache('products').length === 0);
   
-  const [activeCategory, setActiveCategory] = useState('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeCategory = searchParams.get('cat') || 'all';
+  const searchTerm = searchParams.get('q') || '';
+  const selectedProductId = searchParams.get('producto');
+
+  const updateParams = (updates) => {
+    const newParams = new URLSearchParams(searchParams);
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null || value === 'all' || value === '') newParams.delete(key);
+      else newParams.set(key, value);
+    });
+    setSearchParams(newParams, { replace: true });
+  };
+
+  const setActiveCategory = (cat) => updateParams({ cat });
+  const setSearchTerm = (q) => updateParams({ q });
+  const setSelectedProduct = (product) => {
+    updateParams({ producto: product ? product.id : null });
+    if (product) setMainImageIndex(0);
+  };
+
+  const selectedProduct = useMemo(() => 
+    products.find(p => p.id === selectedProductId) || null, 
+  [products, selectedProductId]);
+
   const [activeAgeRange, setActiveAgeRange] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
   const [priceRange, setPriceRange] = useState(1000);
-  const [selectedProduct, setSelectedProduct] = useState(null);
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
@@ -64,11 +121,28 @@ const Storefront = () => {
     // 1. Revalidación inmediata al montar (en segundo plano)
     revalidateData(true);
 
-    // 2. Configurar intervalo de revalidación cada 60 segundos (ISR style)
-    const revalidateInterval = setInterval(() => {
-      console.log('[SWR] Revalidando datos en segundo plano...');
-      revalidateData(true);
-    }, 60000);
+    // 2. Configurar intervalo de revalidación con Page Visibility API
+    let intervalId;
+
+    const startInterval = () => {
+      if (intervalId) clearInterval(intervalId);
+      intervalId = setInterval(() => {
+        console.log('[SWR] Revalidando datos en segundo plano...');
+        revalidateData(true);
+      }, 60000);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        revalidateData(true);
+        startInterval();
+      } else {
+        clearInterval(intervalId);
+      }
+    };
+
+    startInterval();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     const handleStoreUpdate = async () => {
       const info = await db.getStoreInfo();
@@ -79,7 +153,8 @@ const Storefront = () => {
     window.addEventListener('store_info_updated', handleStoreUpdate);
     
     return () => {
-      clearInterval(revalidateInterval);
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('store_info_updated', handleStoreUpdate);
     };
   }, []);
@@ -124,7 +199,7 @@ const Storefront = () => {
     const existing = currentCart.find(item => item.product.id === product.id);
     if (existing) {
       if (existing.quantity < product.stock) { existing.quantity += 1; }
-      else { alert('No hay más stock disponible de este producto.'); return; }
+      else { showToast('No hay más stock disponible de este producto.', 'warning'); return; }
     } else {
       currentCart.push({ product, quantity: 1 });
     }
@@ -141,8 +216,13 @@ const Storefront = () => {
 
   const handleWhatsAppContact = (product) => {
     // Intentamos obtener el número de la configuración de la tienda primero
-    let rawPhone = storeInfo.phone || import.meta.env.VITE_WHATSAPP_NUMBER || '50498927803';
+    let rawPhone = storeInfo.phone || import.meta.env.VITE_WHATSAPP_NUMBER;
     
+    if (!rawPhone) {
+      showToast('Lo sentimos, no hay un número de contacto configurado para esta tienda.', 'error');
+      return;
+    }
+
     // Limpiamos el número de cualquier caracter no numérico (espacios, guiones, etc)
     let cleanPhone = rawPhone.replace(/\D/g, '');
     
@@ -168,7 +248,11 @@ const Storefront = () => {
         <meta property="og:description" content={storeInfo.welcomeMessage} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={window.location.href} />
-        <meta property="og:image" content={products[0]?.imageUrl || "/favicon.svg"} />
+        <meta property="og:image" content={storeInfo.og_image_url || "/og-image.png"} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content={storeInfo.og_image_url || "/og-image.png"} />
       </Helmet>
       <div 
         className="hero-section glass-panel" 
@@ -281,7 +365,7 @@ const Storefront = () => {
           <>
             {filteredProducts.map((product, index) => (
               <div key={product.id} className="product-card" style={{ display: 'flex', flexDirection: 'column' }}>
-                <div className="product-image-container" onClick={() => { setSelectedProduct(product); setMainImageIndex(0); }} style={{ cursor: 'pointer' }}>
+                <div className="product-image-container" onClick={() => setSelectedProduct(product)} style={{ cursor: 'pointer' }}>
                   <OptimizedImage 
                     src={product.imageUrl || 'https://via.placeholder.com/300'} 
                     alt={`Juguete ${product.name} - ${product.brand || 'Joa Baby Shop'}`} 
@@ -349,6 +433,7 @@ const Storefront = () => {
 
       {selectedProduct && (
         <div className="modal-overlay" onClick={() => setSelectedProduct(null)} style={{ zIndex: 1000 }}>
+          <ProductJsonLd product={selectedProduct} />
           <div className="modal-content glass-panel" style={{ maxWidth: '850px', width: '90%', padding: '0', display: 'flex', flexDirection: 'row', overflow: 'hidden', minHeight: '400px' }} onClick={e => e.stopPropagation()}>
             <div style={{ flex: '1.2', display: 'flex', flexDirection: 'column', background: 'var(--bg-secondary)', borderRight: '1px solid var(--border-color)' }}>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', minHeight: '300px' }}>

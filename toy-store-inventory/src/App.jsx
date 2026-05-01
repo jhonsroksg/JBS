@@ -4,6 +4,7 @@ import MainLayout from './layouts/MainLayout';
 import PublicLayout from './layouts/PublicLayout';
 import LoadingSpinner from './components/LoadingSpinner';
 import { AuthProvider } from './contexts/AuthContext';
+import { ToastProvider } from './context/ToastContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
@@ -18,36 +19,38 @@ const Login = React.lazy(() => import('./pages/Login'));
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <React.Suspense fallback={<LoadingSpinner fullPage />}>
-          <Routes>
-            {/* Rutas Públicas */}
-            <Route path="/" element={<PublicLayout />}>
-              <Route index element={<Storefront />} />
-            </Route>
+      <ToastProvider>
+        <BrowserRouter>
+          <React.Suspense fallback={<LoadingSpinner fullPage />}>
+            <Routes>
+              {/* Rutas Públicas */}
+              <Route path="/" element={<PublicLayout />}>
+                <Route index element={<Storefront />} />
+              </Route>
 
-            {/* Login */}
-            <Route path="/login" element={<Login />} />
+              {/* Login */}
+              <Route path="/login" element={<Login />} />
 
-            {/* Rutas de Administración Protegidas */}
-            <Route path="/admin" element={
-              <ProtectedRoute>
-                <MainLayout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<Dashboard />} />
-              <Route path="products" element={<Products />} />
-              <Route path="categories" element={<Categories />} />
-              <Route path="orders" element={<Orders />} />
-              <Route path="customers" element={<Customers />} />
-              <Route path="settings" element={<Settings />} />
-            </Route>
+              {/* Rutas de Administración Protegidas */}
+              <Route path="/admin" element={
+                <ProtectedRoute>
+                  <MainLayout />
+                </ProtectedRoute>
+              }>
+                <Route index element={<Dashboard />} />
+                <Route path="products" element={<Products />} />
+                <Route path="categories" element={<Categories />} />
+                <Route path="orders" element={<Orders />} />
+                <Route path="customers" element={<Customers />} />
+                <Route path="settings" element={<Settings />} />
+              </Route>
 
-            {/* Redirección por defecto */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </React.Suspense>
-      </BrowserRouter>
+              {/* Redirección por defecto */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </React.Suspense>
+        </BrowserRouter>
+      </ToastProvider>
     </AuthProvider>
   );
 }

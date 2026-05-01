@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../services/db';
 import { Eye, X, Download, Send, Edit, Save, Trash2, List, Archive, Truck, Package, CheckCircle, XCircle, Calendar } from 'lucide-react';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+import LoadingSpinner from '../components/LoadingSpinner';
 import './Products.css';
 
 const Orders = () => {
@@ -13,6 +11,7 @@ const Orders = () => {
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [orderStatuses, setOrderStatuses] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   
   // Modals state
@@ -449,9 +448,14 @@ const Orders = () => {
     }
   };
 
-  const generatePDF = (order) => {
-    const doc = new jsPDF();
-    const orderId = getDisplayId(order);
+  const generatePDF = async (order) => {
+    setIsExporting(true);
+    try {
+      const jsPDF = (await import('jspdf')).default;
+      const { default: autoTable } = await import('jspdf-autotable');
+      
+      const doc = new jsPDF();
+      const orderId = getDisplayId(order);
     
     doc.setFontSize(22);
     doc.text('Factura de Pedido', 14, 22);
@@ -531,6 +535,12 @@ const Orders = () => {
     pdfLink.click();
     setTimeout(() => { document.body.removeChild(pdfLink); URL.revokeObjectURL(pdfUrl); }, 200);
 
+    } catch (err) {
+      console.error('Error al generar PDF individual:', err);
+      alert('Error al generar PDF: ' + err.message);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const sendWhatsApp = (order) => {
@@ -591,8 +601,10 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
     window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
   };
 
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
+    setIsExporting(true);
     try {
+      const XLSX = await import('xlsx');
       const data = displayOrders.map(order => ({
         'ID Pedido': getDisplayId(order),
         'Cliente': order.customerName || '',
@@ -633,12 +645,18 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
     } catch(err) {
       console.error('Error exportando Excel:', err);
       alert('Error al exportar Excel: ' + err.message);
+    } finally {
+      setIsExporting(false);
     }
   };
 
-  const exportToPDFReport = () => {
+  const exportToPDFReport = async () => {
     try {
       if (displayOrders.length === 0) { alert('No hay pedidos para exportar.'); return; }
+      setIsExporting(true);
+      
+      const jsPDF = (await import('jspdf')).default;
+      const { default: autoTable } = await import('jspdf-autotable');
 
       const doc = new jsPDF('landscape');
       const tabLabel = { all:'TODOS', active:'ACTIVOS', shipped:'ENVIADOS', completed:'COMPLETADOS', cancelled:'CANCELADOS', deleted:'ELIMINADOS' }[activeTab] || activeTab.toUpperCase();
@@ -679,6 +697,8 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
     } catch(err) {
       console.error('Error exportando PDF:', err);
       alert('Error al exportar PDF: ' + err.message);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -1375,6 +1395,8 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
           </div>
         </div>
       )}
+
+      {isExporting && <LoadingSpinner fullPage />}
     </div>
   );
 };

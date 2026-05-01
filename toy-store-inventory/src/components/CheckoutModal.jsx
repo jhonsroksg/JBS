@@ -3,9 +3,11 @@ import { db } from '../services/db';
 import { X, Trash2, CheckCircle, User, Mail, Phone, MapPin, Truck, CreditCard } from 'lucide-react';
 import { hondurasLocations } from '../data/hondurasLocations';
 import { supabase } from '../lib/supabaseClient';
+import { useToast } from '../hooks/useToast';
 import './CheckoutModal.css';
 
 const CheckoutModal = ({ isOpen, onClose }) => {
+  const { showToast } = useToast();
   const [cart, setCart] = useState([]);
   const [customerInfo, setCustomerInfo] = useState({ name: '', email: '', phone: '', address: '', department: '', municipality: '' });
   const [orderComplete, setOrderComplete] = useState(false);
@@ -224,7 +226,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
       console.error('Error detallado al procesar pedido:', err);
       // More user-friendly error details if possible
       const errorMsg = err.message || 'Error desconocido';
-      alert(`Hubo un error al procesar tu pedido.\n\nDetalle: ${errorMsg}\n\nPor favor intenta de nuevo o contacta por WhatsApp.`);
+      showToast(`Hubo un error al procesar tu pedido. Detalle: ${errorMsg}. Por favor intenta de nuevo o contacta por WhatsApp.`, 'error');
     } finally {
       setIsSubmitting(false);
     }

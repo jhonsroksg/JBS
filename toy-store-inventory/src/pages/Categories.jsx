@@ -3,7 +3,10 @@ import { db } from '../services/db';
 import { Plus, Edit2, Trash2, X, Tags } from 'lucide-react';
 import './Products.css';
 
+import { useToast } from '../hooks/useToast';
+
 const Categories = () => {
+  const { showToast } = useToast();
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -50,13 +53,13 @@ const Categories = () => {
       handleCloseModal();
     } catch (error) {
       console.error('Error al guardar categoría:', error);
-      alert('Error al guardar la categoría. Intenta de nuevo.');
+      showToast('Error al guardar la categoría. Intenta de nuevo.', 'error');
     }
   };
 
   const handleDelete = async (id) => {
     if (getProductCount(id) > 0) {
-      alert('No puedes eliminar una categoría que tiene productos asignados.');
+      showToast('No puedes eliminar una categoría que tiene productos asignados.', 'warning');
       return;
     }
     if (confirm('¿Seguro que deseas eliminar esta categoría?')) {
