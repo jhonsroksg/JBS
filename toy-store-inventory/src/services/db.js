@@ -139,6 +139,35 @@ export const db = {
     return data;
   },
 
+  async insert(collection, item) {
+    const { data, error } = await supabase.from(collection).insert([item]).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  async update(collection, id, updates) {
+    const { data, error } = await supabase.from(collection).update(updates).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  async delete(collection, id) {
+    const { error } = await supabase.from(collection).delete().eq('id', id);
+    if (error) throw error;
+    return true;
+  },
+
+  async updateStoreInfo(updates) {
+    const { data, error } = await supabase
+      .from('store_info')
+      .update(updates)
+      .eq('id', 1)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
   async getStoreInfo() {
     const { data, error } = await supabase
       .from('store_info')
