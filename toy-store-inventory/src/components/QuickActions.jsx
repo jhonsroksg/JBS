@@ -55,7 +55,7 @@ const QuickActions = () => {
         {/* Chat en Vivo */}
         <button className="quick-action-item" onClick={() => handleAction('chat')}>
           <div className="icon-circle">
-            <MessageCircle size={28} strokeWidth={2.5} />
+            <MessageCircle size={28} strokeWidth={2} />
             {chatCount > 0 && <span className="action-badge">{chatCount}</span>}
           </div>
           <span className="action-label">Chat en vivo</span>
@@ -64,7 +64,7 @@ const QuickActions = () => {
         {/* Ofertas del Día */}
         <button className="quick-action-item" onClick={() => handleAction('offers')}>
           <div className="icon-circle">
-            <Zap size={28} strokeWidth={2.5} />
+            <Zap size={28} strokeWidth={2} />
           </div>
           <span className="action-label">Ofertas del día</span>
         </button>
@@ -72,7 +72,7 @@ const QuickActions = () => {
         {/* Mi Carrito */}
         <button className="quick-action-item" onClick={() => handleAction('cart')}>
           <div className="icon-circle">
-            <ShoppingCart size={28} strokeWidth={2.5} />
+            <ShoppingCart size={28} strokeWidth={2} />
             {cartCount > 0 && <span className="action-badge">{cartCount}</span>}
           </div>
           <span className="action-label">Mi carrito</span>
@@ -81,7 +81,7 @@ const QuickActions = () => {
         {/* Compartir */}
         <button className="quick-action-item" onClick={() => handleAction('share')}>
           <div className="icon-circle">
-            <Share2 size={28} strokeWidth={2.5} />
+            <Share2 size={28} strokeWidth={2} />
           </div>
           <span className="action-label">Compartir</span>
         </button>

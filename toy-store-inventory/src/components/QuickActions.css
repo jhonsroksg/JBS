@@ -43,45 +43,49 @@
   width: 64px;
   height: 64px;
   background-color: #ffffff;
+  border: 1.5px solid rgba(14, 165, 212, 0.2); /* Borde azul celeste suave */
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.04); /* Sombra drop-shadow suave */
   color: #0ea5d4;
   position: relative;
-  transition: box-shadow 0.3s ease, background-color 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .quick-action-item:hover .icon-circle {
-  box-shadow: 0 8px 25px rgba(14, 165, 212, 0.15);
+  box-shadow: 0 8px 20px rgba(14, 165, 212, 0.12);
+  border-color: rgba(14, 165, 212, 0.5);
+  transform: translateY(-2px);
 }
 
 .action-label {
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
-  color: #475569;
+  color: #64748b; /* Color más amigable/suave */
   text-align: center;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
+  margin-top: 4px;
 }
 
 .action-badge {
   position: absolute;
-  top: -2px;
-  right: -2px;
-  background-color: #ef4444;
+  top: 0;
+  right: 0;
+  background-color: #ff4d4f; /* Rojo vibrante amigable */
   color: #ffffff;
-  font-size: 10px;
-  font-weight: 700;
-  min-width: 18px;
+  font-size: 9px;
+  font-weight: 800;
+  width: 18px;
   height: 18px;
-  border-radius: 9px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 4px;
   border: 2px solid #ffffff;
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+  box-shadow: 0 2px 5px rgba(255, 77, 79, 0.3);
+  z-index: 2;
 }
 
 @media (max-width: 640px) {
