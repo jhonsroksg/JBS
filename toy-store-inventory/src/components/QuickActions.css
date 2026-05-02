@@ -89,16 +89,39 @@
 }
 
 @media (max-width: 640px) {
+  .quick-actions-section {
+    padding: 24px 16px;
+    background: #e8f7ff; /* Fondo específico para mobile */
+    border-radius: 20px; /* Borde redondeado del contenedor */
+    margin: 10px 16px;
+    width: calc(100% - 32px);
+    box-shadow: 0 4px 12px rgba(14, 165, 212, 0.08);
+  }
+
   .quick-actions-container {
-    gap: 24px;
+    gap: 14px; /* Gap específico de 14px */
+    justify-content: space-evenly;
   }
   
   .icon-circle {
-    width: 56px;
-    height: 56px;
+    width: 52px;
+    height: 52px;
+    border-width: 1px;
+  }
+
+  .quick-action-item:active {
+    transform: scale(0.95); /* Animación suave al presionar */
   }
   
   .action-label {
     font-size: 11px;
+    color: #1a7fa0; /* Color de label específico para mobile */
+    margin-top: 6px;
+  }
+
+  .action-badge {
+    width: 16px;
+    height: 16px;
+    font-size: 8px;
   }
 }
