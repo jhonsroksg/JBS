@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { ShoppingCart, X, Zap, Search, Filter, MessageCircle, Package, Users, CheckCircle, Truck } from 'lucide-react';
+import { ShoppingCart, X, Zap, Search, Filter, MessageCircle, Package, Users, CheckCircle, Truck, Share2 } from 'lucide-react';
 import { productRepository, db } from '../services/db';
 import { OptimizedImage } from '../components/OptimizedImage';
 import { SkeletonGrid } from '../components/SkeletonLoader';
@@ -27,6 +27,11 @@ const StorefrontSEO = ({ activeCategory, categories, totalProducts }) => {
       <meta name="description" content={description} />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
+      <meta property="og:image" content={currentCategory?.imageUrl || "/og-image.jpg"} />
+      <meta property="og:url" content={window.location.href} />
+      <meta property="og:site_name" content="Joa Baby Shop" />
+      <meta name="twitter:title" content={title} />
+      <meta name="twitter:description" content={description} />
       <meta name="keywords" content={`juguetes, bebés, ${categoryName}, honduras, joa baby shop`} />
     </Helmet>
   );
@@ -67,15 +72,45 @@ const ProductJsonLd = ({ product }) => {
 
 const Storefront = () => {
   const { showToast } = useToast();
+  const sanitizeCartForStorage = (cart) => {
+    return cart.map(item => ({
+      ...item,
+      product: {
+        id: item.product.id,
+        name: item.product.name,
+        sellingPrice: item.product.sellingPrice,
+        discountPrice: item.product.discountPrice,
+        stock: item.product.stock,
+        imageUrl: item.product.imageUrl,
+        sku: item.product.sku
+      }
+    }));
+  };
+
   // --- Lógica de Caché SWR Nativo (Persistente) ---
   const getCache = (key) => {
     try {
-      const cached = localStorage.getItem(`joa_cache_${key}`);
-      return cached ? JSON.parse(cached) : null;
+      const cachedStr = localStorage.getItem(`joa_cache_${key}`);
+      if (!cachedStr) return null;
+      
+      const cached = JSON.parse(cachedStr);
+      const now = new Date().getTime();
+      
+      // Validar expiración (30 minutos)
+      if (cached.expiresAt && now > cached.expiresAt) {
+        localStorage.removeItem(`joa_cache_${key}`);
+        return null;
+      }
+      
+      return cached.data;
     } catch { return null; }
   };
+
   const setCache = (key, data) => {
-    try { localStorage.setItem(`joa_cache_${key}`, JSON.stringify(data)); } catch {}
+    try { 
+      const expiresAt = new Date().getTime() + (30 * 60 * 1000);
+      localStorage.setItem(`joa_cache_${key}`, JSON.stringify({ data, expiresAt })); 
+    } catch {}
   };
 
   const [products, setProducts] = useState(getCache('products') || []);
@@ -229,7 +264,8 @@ const Storefront = () => {
     } else {
       currentCart.push({ product, quantity: 1 });
     }
-    localStorage.setItem('toy_store_cart', JSON.stringify(currentCart));
+    const sanitizedCart = sanitizeCartForStorage(currentCart);
+    localStorage.setItem('toy_store_cart', JSON.stringify(sanitizedCart));
     window.dispatchEvent(new Event('cart_updated'));
     window.dispatchEvent(new Event('open_cart'));
   };
@@ -261,6 +297,16 @@ const Storefront = () => {
     const encodedMessage = encodeURIComponent(message);
     const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank');
+  };
+
+  const handleShareProduct = (e, product) => {
+    e.stopPropagation();
+    const url = `${window.location.origin}/producto/${product.id}`;
+    navigator.clipboard.writeText(url).then(() => {
+      showToast('¡Enlace copiado al portapapeles!', 'success');
+    }).catch(() => {
+      showToast('Error al copiar el enlace.', 'error');
+    });
   };
 
   return (
@@ -366,6 +412,14 @@ const Storefront = () => {
 
         <main className="main-products-view">
           <div className="mobile-filter-bar">
+            <input 
+              type="text" 
+              placeholder="Buscar productos..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="mobile-search-input"
+              aria-label="Buscar productos"
+            />
             <button className="btn-mobile-filter" onClick={() => setIsMobileFiltersOpen(true)}>
               <Filter size={18} /> Filtrar y Buscar
             </button>
@@ -380,7 +434,7 @@ const Storefront = () => {
         ) : (
           <>
             {filteredProducts.map((product, index) => (
-              <div key={product.id} className="product-card" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div key={product.id} className="product-card" style={{ display: 'flex', flexDirection: 'column' }} role="article" aria-label={`Producto: ${product.name}`}>
                 <div className="product-image-container" onClick={() => setSelectedProduct(product)} style={{ cursor: 'pointer' }}>
                   <OptimizedImage 
                     src={product.imageUrl || 'https://via.placeholder.com/300'} 
@@ -415,14 +469,17 @@ const Storefront = () => {
                   </div>
 
                   <div className="card-actions-icons">
-                    <button className="icon-action-btn" onClick={() => handleWhatsAppContact(product)} title="Pedir por WhatsApp">
+                    <button className="icon-action-btn" onClick={() => handleWhatsAppContact(product)} title="Pedir por WhatsApp" aria-label="Pedir por WhatsApp">
                       <MessageCircle size={24} strokeWidth={2} />
                     </button>
-                    <button className="icon-action-btn" onClick={() => handleBuyNow(product)} title="Comprar ahora">
+                    <button className="icon-action-btn" onClick={() => handleBuyNow(product)} title="Comprar ahora" aria-label="Comprar ahora">
                       <Zap size={24} strokeWidth={2} />
                     </button>
-                    <button className="icon-action-btn" onClick={() => handleAddToCart(product)} title="Agregar al carrito">
+                    <button className="icon-action-btn" onClick={() => handleAddToCart(product)} title="Agregar al carrito" aria-label="Agregar al carrito">
                       <ShoppingCart size={24} strokeWidth={2} />
+                    </button>
+                    <button className="icon-action-btn share-btn" onClick={(e) => handleShareProduct(e, product)} title="Compartir enlace" aria-label="Compartir enlace">
+                      <Share2 size={22} strokeWidth={2} />
                     </button>
                   </div>
                 </div>
@@ -442,7 +499,7 @@ const Storefront = () => {
     </main>
   </div>
 
-      <div className="floating-whatsapp-btn" onClick={() => handleWhatsAppContact({ name: 'Consulta General', sku: 'Web' })}>
+      <div className="floating-whatsapp-btn" onClick={() => handleWhatsAppContact({ name: 'Consulta General', sku: 'Web' })} role="button" aria-label="Contactar por WhatsApp">
         <MessageCircle size={32} fill="currentColor" />
         <span className="tooltip">¿Necesitas ayuda?</span>
       </div>

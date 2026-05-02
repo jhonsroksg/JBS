@@ -13,6 +13,7 @@ const Categories = React.lazy(() => import('./pages/Categories'));
 const Orders = React.lazy(() => import('./pages/Orders'));
 const Customers = React.lazy(() => import('./pages/Customers'));
 const Storefront = React.lazy(() => import('./pages/Storefront'));
+const ProductPage = React.lazy(() => import('./pages/ProductPage'));
 const Settings = React.lazy(() => import('./pages/Settings'));
 const Login = React.lazy(() => import('./pages/Login'));
 
@@ -26,6 +27,7 @@ function App() {
               {/* Rutas Públicas */}
               <Route path="/" element={<PublicLayout />}>
                 <Route index element={<Storefront />} />
+                <Route path="producto/:productId" element={<ProductPage />} />
               </Route>
 
               {/* Login */}

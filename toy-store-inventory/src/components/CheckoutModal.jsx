@@ -9,6 +9,21 @@ import './CheckoutModal.css';
 const CheckoutModal = ({ isOpen, onClose }) => {
   const { showToast } = useToast();
   const [cart, setCart] = useState([]);
+
+  const sanitizeCartForStorage = (cart) => {
+    return cart.map(item => ({
+      ...item,
+      product: {
+        id: item.product.id,
+        name: item.product.name,
+        sellingPrice: item.product.sellingPrice,
+        discountPrice: item.product.discountPrice,
+        stock: item.product.stock,
+        imageUrl: item.product.imageUrl,
+        sku: item.product.sku
+      }
+    }));
+  };
   const [customerInfo, setCustomerInfo] = useState({ name: '', email: '', phone: '', address: '', department: '', municipality: '' });
   const [orderComplete, setOrderComplete] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
@@ -59,7 +74,8 @@ const CheckoutModal = ({ isOpen, onClose }) => {
     if (item.quantity + delta > 0 && item.quantity + delta <= item.product.stock) {
       item.quantity += delta;
       setCart(newCart);
-      localStorage.setItem('toy_store_cart', JSON.stringify(newCart));
+      const sanitizedCart = sanitizeCartForStorage(newCart);
+      localStorage.setItem('toy_store_cart', JSON.stringify(sanitizedCart));
       window.dispatchEvent(new Event('cart_updated'));
     }
   };
@@ -67,7 +83,8 @@ const CheckoutModal = ({ isOpen, onClose }) => {
   const removeItem = (index) => {
     const newCart = cart.filter((_, i) => i !== index);
     setCart(newCart);
-    localStorage.setItem('toy_store_cart', JSON.stringify(newCart));
+    const sanitizedCart = sanitizeCartForStorage(newCart);
+    localStorage.setItem('toy_store_cart', JSON.stringify(sanitizedCart));
     window.dispatchEvent(new Event('cart_updated'));
   };
 
@@ -88,7 +105,51 @@ const CheckoutModal = ({ isOpen, onClose }) => {
   const handleCheckout = async (e) => {
     e.preventDefault();
     if (cart.length === 0 || isSubmitting) return;
+
+    // --- VALIDACIÓN DE CAMPOS ---
+    if (customerInfo.name.trim().length < 3) {
+      showToast('Por favor ingresa un nombre válido (mínimo 3 caracteres).', 'warning');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(customerInfo.email)) {
+      showToast('Por favor ingresa un correo electrónico válido.', 'warning');
+      return;
+    }
+    const phoneDigits = customerInfo.phone.replace(/\D/g, '');
+    if (phoneDigits.length !== 8) {
+      showToast('El teléfono debe tener exactamente 8 dígitos numéricos.', 'warning');
+      return;
+    }
+    if (!isPickUp && !customerInfo.address.trim()) {
+      showToast('La dirección de envío es requerida.', 'warning');
+      return;
+    }
+    if (!deliveryMethodId) {
+      showToast('Por favor selecciona un método de envío.', 'warning');
+      return;
+    }
+    if (!paymentMethod) {
+      showToast('Por favor selecciona un método de pago.', 'warning');
+      return;
+    }
+
     setIsSubmitting(true);
+
+    // --- VALIDACIÓN DE STOCK REAL-TIME ---
+    try {
+      for (const item of cart) {
+        const dbProduct = await db.getById('products', item.product.id);
+        if (!dbProduct || dbProduct.stock < item.quantity) {
+          showToast(`Lo sentimos, el producto "${item.product.name}" ya no tiene suficiente stock disponible.`, 'error');
+          setIsSubmitting(false);
+          return;
+        }
+      }
+    } catch (stockErr) {
+      console.error('Error validando stock:', stockErr);
+      // Continuamos si hay error de red, pero lo ideal es que pase la validación
+    }
 
     const currentSubtotal = cart.reduce((acc, item) => acc + ((item.product.discountPrice || item.product.sellingPrice) * item.quantity), 0);
     let currentDiscount = 0;
@@ -266,8 +327,10 @@ const CheckoutModal = ({ isOpen, onClose }) => {
               </div>
               <h3>¡Pedido completado!</h3>
               <p>Gracias por tu compra en Joa Baby Shop. Tu número de pedido es: 
-                <strong style={{ display: 'block', fontSize: '1.5rem', color: 'var(--accent-primary)', marginTop: '10px' }}>
-                  {completedOrderNumber || 'Procesando...'}
+                <strong style={{ display: 'block', fontSize: '1.2rem', color: 'var(--accent-primary)', marginTop: '10px' }}>
+                  {completedOrderNumber?.includes('PROCESANDO') 
+                    ? 'Tu pedido fue recibido. Te contactaremos pronto para confirmarlo.' 
+                    : (completedOrderNumber || 'Procesando...')}
                 </strong>
               </p>
               <p>Hemos recibido tu pedido y comenzaremos a procesarlo pronto.</p>
@@ -416,8 +479,14 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                       form="checkout-form-data" 
                       className="confirm-order-btn" 
                       disabled={isSubmitting}
+                      style={isSubmitting ? { pointerEvents: 'none' } : {}}
                     >
-                      {isSubmitting ? 'Procesando...' : 'Confirmar Pedido'}
+                      {isSubmitting ? (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <div className="spinner"></div>
+                          Procesando...
+                        </div>
+                      ) : 'Confirmar Pedido'}
                     </button>
                   </div>
                 )}

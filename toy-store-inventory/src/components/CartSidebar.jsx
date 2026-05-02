@@ -5,6 +5,21 @@ import './CartSidebar.css';
 const CartSidebar = ({ isOpen, onClose, onCheckout }) => {
   const [cart, setCart] = useState([]);
 
+  const sanitizeCartForStorage = (cart) => {
+    return cart.map(item => ({
+      ...item,
+      product: {
+        id: item.product.id,
+        name: item.product.name,
+        sellingPrice: item.product.sellingPrice,
+        discountPrice: item.product.discountPrice,
+        stock: item.product.stock,
+        imageUrl: item.product.imageUrl,
+        sku: item.product.sku
+      }
+    }));
+  };
+
   useEffect(() => {
     if (isOpen) {
       loadCart();
@@ -38,7 +53,8 @@ const CartSidebar = ({ isOpen, onClose, onCheckout }) => {
     if (item.quantity + delta > 0 && item.quantity + delta <= item.product.stock) {
       item.quantity += delta;
       setCart(newCart);
-      localStorage.setItem('toy_store_cart', JSON.stringify(newCart));
+      const sanitizedCart = sanitizeCartForStorage(newCart);
+      localStorage.setItem('toy_store_cart', JSON.stringify(sanitizedCart));
       window.dispatchEvent(new Event('cart_updated'));
     }
   };
@@ -46,7 +62,8 @@ const CartSidebar = ({ isOpen, onClose, onCheckout }) => {
   const removeItem = (index) => {
     const newCart = cart.filter((_, i) => i !== index);
     setCart(newCart);
-    localStorage.setItem('toy_store_cart', JSON.stringify(newCart));
+    const sanitizedCart = sanitizeCartForStorage(newCart);
+    localStorage.setItem('toy_store_cart', JSON.stringify(sanitizedCart));
     window.dispatchEvent(new Event('cart_updated'));
   };
 

@@ -662,6 +662,22 @@
   .products-grid {
     gap: 16px; /* Ajuste para móviles más pequeños para ganar espacio */
   }
+
+  .mobile-search-input {
+    display: block;
+    width: 100%;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-size: 14px;
+    background: white;
+    outline: none;
+    margin-bottom: 8px;
+  }
+}
+
+.mobile-search-input {
+  display: none;
 }
 
 @media (max-width: 600px) {
