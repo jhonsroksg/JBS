@@ -59,33 +59,58 @@ const Products = () => {
   const getCategoryName = (id) => categories.find(c => c.id === id)?.name || 'Sin Categoría';
 
   const handleOpenModal = async (product = null) => {
-    setIsModalOpen(true);
     if (product) {
       setEditingId(product.id);
+      // Cargamos datos básicos inmediatamente para evitar modal vacío
+      setFormData({
+        ...product,
+        costPrice: product.costPrice ? Number(product.costPrice).toFixed(2) : '',
+        sellingPrice: product.sellingPrice ? Number(product.sellingPrice).toFixed(2) : '',
+        discountPrice: product.discountPrice ? Number(product.discountPrice).toFixed(2) : '',
+        images: product.images || (product.imageUrl ? [product.imageUrl] : []),
+        newImageFiles: []
+      });
+      setIsModalOpen(true);
+
+      // Cargamos detalles completos (incluyendo joins) en segundo plano
       setLoading(true);
       try {
         const fullProduct = await productRepository.getById(product.id);
-        const prodData = fullProduct || product;
-        setFormData({
-          ...prodData,
-          costPrice: prodData.costPrice ? Number(prodData.costPrice).toFixed(2) : '',
-          sellingPrice: prodData.sellingPrice ? Number(prodData.sellingPrice).toFixed(2) : '',
-          discountPrice: prodData.discountPrice ? Number(prodData.discountPrice).toFixed(2) : '',
-          images: prodData.images || (prodData.imageUrl ? [prodData.imageUrl] : []),
-          newImageFiles: []
-        });
-        setEditingId(prodData.id);
+        if (fullProduct) {
+          setFormData({
+            ...fullProduct,
+            costPrice: fullProduct.costPrice ? Number(fullProduct.costPrice).toFixed(2) : '',
+            sellingPrice: fullProduct.sellingPrice ? Number(fullProduct.sellingPrice).toFixed(2) : '',
+            discountPrice: fullProduct.discountPrice ? Number(fullProduct.discountPrice).toFixed(2) : '',
+            images: fullProduct.images || (fullProduct.imageUrl ? [fullProduct.imageUrl] : []),
+            newImageFiles: []
+          });
+        }
       } catch (err) {
         console.error('Error fetching full product details:', err);
       } finally {
         setLoading(false);
       }
     } else {
-
-      setFormData({ sku: '', name: '', categoryId: categories[0]?.id || '', costPrice: '', sellingPrice: '', discountPrice: '', stock: '', minStock: '', imageUrl: '', images: [], ageRange: '', description: '', brand: '', newImageFiles: [] });
       setEditingId(null);
+      setFormData({
+        sku: '',
+        name: '',
+        categoryId: categories[0]?.id || '',
+        costPrice: '',
+        sellingPrice: '',
+        discountPrice: '',
+        stock: '',
+        minStock: '',
+        imageUrl: '',
+        images: [],
+        ageRange: '',
+        description: '',
+        brand: '',
+        newImageFiles: []
+      });
+      setIsModalOpen(true);
     }
-    setIsModalOpen(true);
   };
 
   const handleCloseModal = () => setIsModalOpen(false);
