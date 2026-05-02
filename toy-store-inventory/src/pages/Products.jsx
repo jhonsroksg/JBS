@@ -537,7 +537,7 @@ const Products = () => {
                 <textarea name="description" value={formData.description || ''} onChange={handleChange} rows="3" placeholder="Detalles, características, etc." style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '10px 12px', borderRadius: '8px', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}></textarea>
               </div>
               <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                <label>Imágenes del Producto (Máx. 5)</label>
+                <label>Imágenes del Producto (Máx. 5 - Recomendado: Cuadradas 1080x1080px)</label>
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '8px' }}>
                   {(formData.images || []).map((img, idx) => (
                     <div key={idx} style={{ position: 'relative', width: '80px', height: '80px' }}>
