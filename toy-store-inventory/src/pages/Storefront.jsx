@@ -6,6 +6,7 @@ import { ShoppingCart, X, Zap, Search, Filter, MessageCircle, Package, Users, Ch
 import { productRepository, db } from '../services/db';
 import { OptimizedImage } from '../components/OptimizedImage';
 import { SkeletonGrid } from '../components/SkeletonLoader';
+import QuickActions from '../components/QuickActions';
 import './Storefront.css';
 
 // Componente para manejar el SEO Dinámico
@@ -327,6 +328,8 @@ const Storefront = () => {
           <p>{storeInfo.welcomeMessage}</p>
         </div>
       </div>
+
+      <QuickActions />
 
       <div className="storefront-content">
         <aside className={`sidebar-filters ${isMobileFiltersOpen ? 'open' : ''}`}>
