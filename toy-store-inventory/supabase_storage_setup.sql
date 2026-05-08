@@ -24,6 +24,13 @@ ON storage.objects FOR INSERT
 TO public
 WITH CHECK (bucket_id = 'product-images');
 
+-- Permitir actualizar imágenes
+DROP POLICY IF EXISTS "Permitir actualización de imágenes" ON storage.objects;
+CREATE POLICY "Permitir actualización de imágenes"
+ON storage.objects FOR UPDATE
+TO public
+USING (bucket_id = 'product-images');
+
 -- Permitir borrar imágenes
 DROP POLICY IF EXISTS "Permitir borrado de imágenes" ON storage.objects;
 CREATE POLICY "Permitir borrado de imágenes"

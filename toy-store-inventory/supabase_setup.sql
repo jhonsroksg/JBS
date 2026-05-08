@@ -164,12 +164,29 @@ CREATE POLICY "Lectura pública de estados" ON order_statuses FOR SELECT TO anon
 
 -- --- POLÍTICAS ADMINISTRATIVAS (Acceso Total para Autenticados) ---
 
+DROP POLICY IF EXISTS "Gestión administrativa de categorías" ON categories;
 CREATE POLICY "Gestión administrativa de categorías" ON categories FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Gestión administrativa de productos" ON products;
 CREATE POLICY "Gestión administrativa de productos" ON products FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Gestión administrativa de clientes" ON customers;
 CREATE POLICY "Gestión administrativa de clientes" ON customers FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Gestión administrativa de pedidos" ON orders;
 CREATE POLICY "Gestión administrativa de pedidos" ON orders FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Gestión administrativa de envíos" ON delivery_methods;
 CREATE POLICY "Gestión administrativa de envíos" ON delivery_methods FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Gestión administrativa de pagos" ON payment_methods;
 CREATE POLICY "Gestión administrativa de pagos" ON payment_methods FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Gestión administrativa de cupones" ON coupons;
 CREATE POLICY "Gestión administrativa de cupones" ON coupons FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Gestión administrativa de info tienda" ON store_info;
 CREATE POLICY "Gestión administrativa de info tienda" ON store_info FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Gestión administrativa de estados" ON order_statuses;
 CREATE POLICY "Gestión administrativa de estados" ON order_statuses FOR ALL TO authenticated USING (true) WITH CHECK (true);

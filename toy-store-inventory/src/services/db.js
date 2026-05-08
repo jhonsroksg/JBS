@@ -179,10 +179,23 @@ export const db = {
   },
 
   async uploadFile(bucket, path, file) {
-    const { data, error } = await supabase.storage
+    let { data, error } = await supabase.storage
       .from(bucket)
       .upload(path, file, { upsert: true });
+      
+    // Fallback: Si el upsert falla por políticas de seguridad (ej. falta permiso de UPDATE), 
+    // intentamos una subida normal (insert puro) por si el archivo no existía.
+    if (error && error.message && error.message.includes('row-level security')) {
+      console.warn('Upsert failed due to RLS, attempting standard insert...', error);
+      const fallbackResult = await supabase.storage
+        .from(bucket)
+        .upload(path, file, { upsert: false });
+      data = fallbackResult.data;
+      error = fallbackResult.error;
+    }
+
     if (error) throw error;
+    
     const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(data.path);
     return publicUrl;
   }
