@@ -216,10 +216,8 @@ const Products = () => {
       let finalImages = [...(formData.images || [])];
       
       if (formData.newImageFiles && formData.newImageFiles.length > 0) {
-        // Encontramos qué imágenes en 'images' son las Base64 que corresponden a newImageFiles
-        // Por simplificación, asumimos que las últimas N son las nuevas
-        const existingCount = formData.images.length - formData.newImageFiles.length;
-        const baseImages = formData.images.slice(0, existingCount);
+        // Encontramos qué imágenes en 'images' son las verdaderas URLs de Supabase
+        const baseImages = formData.images.filter(img => img && img.startsWith('http'));
         
         const uploadPromises = formData.newImageFiles.map((file, idx) => {
           const fileExt = file.name.split('.').pop();
@@ -258,6 +256,10 @@ const Products = () => {
 
       
       await loadData();
+      // Limpiar caché de la tienda pública para que refleje los cambios al instante
+      localStorage.removeItem('joa_cache_products');
+      localStorage.removeItem('joa_cache_categories');
+      
       handleCloseModal();
       alert('¡Producto guardado exitosamente!');
     } catch (error) {

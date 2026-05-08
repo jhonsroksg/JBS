@@ -197,6 +197,6 @@ export const db = {
     if (error) throw error;
     
     const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(data.path);
-    return publicUrl;
+    return `${publicUrl}?t=${Date.now()}`;
   }
 };

@@ -109,7 +109,7 @@ const Storefront = () => {
 
   const setCache = (key, data) => {
     try { 
-      const expiresAt = new Date().getTime() + (30 * 60 * 1000);
+      const expiresAt = new Date().getTime() + (5 * 60 * 1000); 
       localStorage.setItem(`joa_cache_${key}`, JSON.stringify({ data, expiresAt })); 
     } catch {}
   };

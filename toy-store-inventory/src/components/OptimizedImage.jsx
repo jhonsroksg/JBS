@@ -23,9 +23,17 @@ export const OptimizedImage = ({
     
     // Si es de Supabase, activamos la transformación a WebP y compresión
     if (url.includes('supabase.co/storage/v1/object/public/')) {
-      // Evitamos duplicar parámetros si ya existen
-      if (!url.includes('?')) {
-        return `${url}?width=${width || 800}&quality=80&format=webp`;
+      try {
+        const urlObj = new URL(url);
+        urlObj.searchParams.set('width', width || 800);
+        urlObj.searchParams.set('quality', '80');
+        urlObj.searchParams.set('format', 'webp');
+        return urlObj.toString();
+      } catch (e) {
+        // Fallback if URL parsing fails
+        if (!url.includes('?')) {
+          return `${url}?width=${width || 800}&quality=80&format=webp`;
+        }
       }
     }
     return url;
