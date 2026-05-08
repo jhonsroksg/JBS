@@ -221,7 +221,8 @@ const Products = () => {
         
         const uploadPromises = formData.newImageFiles.map((file, idx) => {
           const fileExt = file.name.split('.').pop();
-          const fileName = `${formData.sku || 'prod'}_${Date.now()}_${idx}.${fileExt}`;
+          const safeSku = (formData.sku || 'prod').replace(/[^a-zA-Z0-9]/g, '_');
+          const fileName = `${safeSku}_${Date.now()}_${idx}.${fileExt}`;
           return db.uploadFile('product-images', fileName, file);
         });
         
