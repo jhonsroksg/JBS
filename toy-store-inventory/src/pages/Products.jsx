@@ -4,8 +4,10 @@ import { Plus, Search, Edit2, Trash2, X, Download, Upload } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import './Products.css';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { useToast } from '../hooks/useToast';
 
 const Products = () => {
+  const { showToast } = useToast();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -57,6 +59,23 @@ const Products = () => {
   const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
 
   const getCategoryName = (id) => categories.find(c => c.id === id)?.name || 'Sin Categoría';
+
+  const handleToggleBadge = async (productId, field, currentValue) => {
+    try {
+      const newValue = !currentValue;
+      // Actualizar el estado local optimistamente
+      setProducts(prev => prev.map(p => p.id === productId ? { ...p, [field]: newValue } : p));
+      
+      // Llamada a la API
+      await productRepository.update(productId, { [field]: newValue });
+      showToast('✓ Actualizado', 'success');
+    } catch (error) {
+      console.error('Error actualizando badge:', error);
+      // Revertir en caso de error
+      setProducts(prev => prev.map(p => p.id === productId ? { ...p, [field]: currentValue } : p));
+      showToast('Error al actualizar', 'error');
+    }
+  };
 
   const handleOpenModal = async (product = null) => {
     if (product) {
@@ -433,7 +452,11 @@ const Products = () => {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Producto</th><th>SKU</th><th>Categoría</th><th>Costo</th><th>Precio Venta</th><th>Stock</th><th>Acciones</th>
+                <th>Producto</th><th>SKU</th><th>Categoría</th><th>Costo</th><th>Precio Venta</th><th>Stock</th>
+                <th className="badge-col-header">Nuevo</th>
+                <th className="badge-col-header">¡Solo<br/>quedan!</th>
+                <th className="badge-col-header">Últimas<br/>piezas</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -452,6 +475,30 @@ const Products = () => {
                   <td data-label="Stock">
                     <span className={`badge ${product.stock <= product.minStock ? 'badge-danger' : 'badge-success'}`}>{product.stock}</span>
                   </td>
+                  <td data-label="Nuevo" className="badge-toggle-cell">
+                    <div className="toggle-switch-wrapper">
+                      <label className="toggle-switch">
+                        <input type="checkbox" checked={product.isNewBadge || false} onChange={() => handleToggleBadge(product.id, 'isNewBadge', product.isNewBadge)} />
+                        <span className="toggle-slider"></span>
+                      </label>
+                    </div>
+                  </td>
+                  <td data-label="¡Solo quedan!" className="badge-toggle-cell">
+                    <div className="toggle-switch-wrapper">
+                      <label className="toggle-switch">
+                        <input type="checkbox" checked={product.showStockBadge || false} onChange={() => handleToggleBadge(product.id, 'showStockBadge', product.showStockBadge)} />
+                        <span className="toggle-slider"></span>
+                      </label>
+                    </div>
+                  </td>
+                  <td data-label="Últimas piezas" className="badge-toggle-cell">
+                    <div className="toggle-switch-wrapper">
+                      <label className="toggle-switch">
+                        <input type="checkbox" checked={product.isLimitedBadge || false} onChange={() => handleToggleBadge(product.id, 'isLimitedBadge', product.isLimitedBadge)} />
+                        <span className="toggle-slider"></span>
+                      </label>
+                    </div>
+                  </td>
                   <td data-label="Acciones" className="actions-cell">
                     <button className="btn-icon" title="Editar" onClick={() => handleOpenModal(product)}><Edit2 strokeWidth={2.5} /></button>
                     <button className="btn-icon danger" title="Eliminar" onClick={() => handleDelete(product.id)}><Trash2 strokeWidth={2.5} /></button>
@@ -459,7 +506,7 @@ const Products = () => {
                 </tr>
               ))}
               {filteredProducts.length === 0 && (
-                <tr><td colSpan="7" className="empty-state">No se encontraron productos.</td></tr>
+                <tr><td colSpan="10" className="empty-state">No se encontraron productos.</td></tr>
               )}
             </tbody>
           </table>

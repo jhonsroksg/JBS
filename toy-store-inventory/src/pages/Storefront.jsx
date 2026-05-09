@@ -448,11 +448,11 @@ const Storefront = () => {
                     height="400"
                   />
                   <div className="product-badges">
-                    {isNewProduct(product.created_at) && <span className="product-badge new">NUEVO</span>}
-                    {(product.stock > 0 && product.stock < 3) && <span className="product-badge limited">ÚLTIMAS PIEZAS</span>}
+                    {product.isNewBadge && <span className="product-badge new">NUEVO</span>}
+                    {product.isLimitedBadge && <span className="product-badge limited">ÚLTIMAS PIEZAS</span>}
                     {product.discountPrice && <span className="product-badge sale">OFERTA</span>}
                   </div>
-                  {product.stock <= 5 && <span className="stock-badge">¡Solo quedan {product.stock}!</span>}
+                  {product.showStockBadge && <span className="stock-badge">¡Solo quedan {product.stock}!</span>}
                 </div>
                 <div className="product-info">
                   <div className="product-card-top-info">
