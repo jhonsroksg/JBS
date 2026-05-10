@@ -17,9 +17,42 @@ export const productRepository = {
     const { data, error } = await supabase
       .from('products')
       .select('*')
+      .eq('deleted', false)
       .order('created_at', { ascending: false });
     if (error) throw error;
     return data || [];
+  },
+
+  async getPaginated({ page = 0, limit = 12, category = 'all', search = '', minPrice = 0, maxPrice = 10000, ageRange = 'all' }) {
+    let query = supabase
+      .from('products')
+      .select('*', { count: 'exact' })
+      .eq('deleted', false)
+      .gt('stock', 0);
+
+    if (category !== 'all') query = query.eq('categoryId', category);
+    if (ageRange !== 'all') query = query.eq('ageRange', ageRange);
+    if (search) {
+      // Búsqueda en nombre o SKU
+      query = query.or(`name.ilike.%${search}%,sku.ilike.%${search}%`);
+    }
+    
+    // Filtro de precio
+    query = query.gte('sellingPrice', minPrice).lte('sellingPrice', maxPrice);
+
+    const from = page * limit;
+    const to = from + limit - 1;
+
+    const { data, error, count } = await query
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
+    return { 
+      products: data || [], 
+      total: count,
+      hasNextPage: count > to + 1
+    };
   },
 
   async getActive() {

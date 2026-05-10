@@ -1,12 +1,14 @@
 // Storefront - Última actualización: Refinamiento de Catálogo
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { ShoppingCart, X, Zap, Search, Filter, MessageCircle, Package, Users, CheckCircle, Truck, Share2 } from 'lucide-react';
+import { ShoppingCart, X, Zap, Search, Filter, MessageCircle, Package, Users, CheckCircle, Truck, Share2, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
 import { productRepository, db } from '../services/db';
 import { OptimizedImage } from '../components/OptimizedImage';
 import { SkeletonGrid } from '../components/SkeletonLoader';
 
+import { SearchBar } from '../components/SearchBar';
+const ProductModal = lazy(() => import('../components/ProductModal').then(module => ({ default: module.ProductModal })));
 import './Storefront.css';
 
 // Componente para manejar el SEO Dinámico
@@ -114,16 +116,20 @@ const Storefront = () => {
     } catch {}
   };
 
-  const [products, setProducts] = useState(getCache('products') || []);
+  const [products, setProducts] = useState(getCache('products:all:0') || []);
   const [categories, setCategories] = useState(getCache('categories') || []);
-  const [storeInfo, setStoreInfo] = useState(getCache('storeInfo') || { name: 'Joa Baby Shop', welcomeMessage: '¡Bienvenido a nuestra tienda!' });
-  const [isLoading, setIsLoading] = useState(!getCache('products') || getCache('products').length === 0);
+  const [storeInfo, setStoreInfo] = useState(getCache('storeInfo') || { name: 'Joa Baby Shop' });
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   
   const [searchParams, setSearchParams] = useSearchParams();
   const activeCategory = searchParams.get('cat') || 'all';
   const searchTerm = searchParams.get('q') || '';
   const selectedProductId = searchParams.get('producto');
 
+  // --- Estados de Paginación ---
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
   const updateParams = (updates) => {
     const newParams = new URLSearchParams(searchParams);
     Object.entries(updates).forEach(([key, value]) => {
@@ -143,37 +149,76 @@ const Storefront = () => {
   const selectedProduct = useMemo(() => 
     products.find(p => p.id === selectedProductId) || null, 
   [products, selectedProductId]);
-
   const [activeAgeRange, setActiveAgeRange] = useState('all');
-  const [priceRange, setPriceRange] = useState(1000);
+  const [priceRange, setPriceRange] = useState(2500); // Rango inicial más amplio
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   // Función de revalidación silenciosa (estilo ISR)
-  const revalidateData = async (silent = false) => {
-    if (!silent && products.length === 0) setIsLoading(true);
+  // --- Estrategia de Carga Granular (Paginada) ---
+  const fetchProducts = async (pageToFetch, isNewSearch = false) => {
+    const cacheKey = `products:${activeCategory}:${activeAgeRange}:${priceRange}:${searchTerm}:${pageToFetch}`;
+    const cachedData = getCache(cacheKey);
+
+    if (cachedData && !isNewSearch) {
+      if (pageToFetch === 0) setProducts(cachedData.products);
+      else setProducts(prev => [...prev, ...cachedData.products]);
+      setHasMore(cachedData.hasNextPage);
+      return;
+    }
+
+    if (pageToFetch === 0) setIsLoading(true);
+    else setIsLoadingMore(true);
+
     try {
-      const [info, productsData, categoriesData] = await Promise.all([
-        db.getStoreInfo(),
-        productRepository.getAll(),
-        db.getAll('categories'),
-      ]);
-      
-      const activeProducts = productsData.filter(p => !p.deleted && p.stock > 0);
-      
-      // Actualizar estados
-      setStoreInfo(info);
-      setProducts(activeProducts);
-      setCategories(categoriesData);
-      
-      // Actualizar caché persistente
-      setCache('storeInfo', info);
-      setCache('products', activeProducts);
-      setCache('categories', categoriesData);
+      const { products: newProducts, hasNextPage } = await productRepository.getPaginated({
+        page: pageToFetch,
+        limit: 12,
+        category: activeCategory,
+        search: searchTerm,
+        maxPrice: priceRange,
+        ageRange: activeAgeRange
+      });
+
+      if (pageToFetch === 0) setProducts(newProducts);
+      else setProducts(prev => [...prev, ...newProducts]);
+
+      setHasMore(hasNextPage);
+      setCache(cacheKey, { products: newProducts, hasNextPage });
+
+      // Prefetch siguiente página
+      if (hasNextPage) {
+        productRepository.getPaginated({
+          page: pageToFetch + 1,
+          limit: 12,
+          category: activeCategory,
+          search: searchTerm,
+          maxPrice: priceRange,
+          ageRange: activeAgeRange
+        }).then(nextData => {
+          setCache(`products:${activeCategory}:${activeAgeRange}:${priceRange}:${searchTerm}:${pageToFetch + 1}`, nextData);
+        });
+      }
     } catch (error) {
-      console.error('Error revalidating storefront data:', error);
+      console.error("Error fetching products:", error);
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
+    }
+  };
+
+  // Efecto para cambios de filtros (reinicia paginación)
+  useEffect(() => {
+    setPage(0);
+    fetchProducts(0, true);
+  }, [activeCategory, searchTerm, activeAgeRange, priceRange]);
+
+  // Efecto para scroll infinito
+  const loadMore = () => {
+    if (hasMore && !isLoadingMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchProducts(nextPage);
     }
   };
 
@@ -214,12 +259,30 @@ const Storefront = () => {
 
     window.addEventListener('store_info_updated', handleStoreUpdate);
     
+    // Navegación por teclado para el modal
+    const handleKeyDown = (e) => {
+      if (!selectedProduct) return;
+      const imagesCount = selectedProduct.images?.length || 0;
+      if (imagesCount <= 1) return;
+
+      if (e.key === 'ArrowRight') {
+        setMainImageIndex(prev => (prev + 1) % imagesCount);
+      } else if (e.key === 'ArrowLeft') {
+        setMainImageIndex(prev => (prev - 1 + imagesCount) % imagesCount);
+      } else if (e.key === 'Escape') {
+        setSelectedProduct(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    
     return () => {
       clearInterval(intervalId);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('store_info_updated', handleStoreUpdate);
+      window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [selectedProduct]);
 
   // Extraer rangos de edad únicos
   const ageRanges = useMemo(() => {
@@ -228,24 +291,10 @@ const Storefront = () => {
   }, [products]);
 
   // Filtrado eficiente con useMemo para evitar renderizados innecesarios
-  const filteredProducts = useMemo(() => {
-    return products.filter(p => {
-      const matchCategory = activeCategory === 'all' || p.categoryId === activeCategory;
-      const matchAgeRange = activeAgeRange === 'all' || p.ageRange === activeAgeRange;
-      const matchSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          (p.sku && p.sku.toLowerCase().includes(searchTerm.toLowerCase()));
-      
-      const price = Number(p.discountPrice || p.sellingPrice);
-      const matchPrice = price <= priceRange;
+  // El filtrado ahora ocurre en el servidor
+  const filteredProducts = products;
 
-      return matchCategory && matchAgeRange && matchSearch && matchPrice;
-    });
-  }, [products, activeCategory, activeAgeRange, searchTerm, priceRange]);
-
-  const maxPriceAvailable = useMemo(() => {
-    if (products.length === 0) return 1000;
-    return Math.max(...products.map(p => Number(p.discountPrice || p.sellingPrice)));
-  }, [products]);
+  const maxPriceAvailable = 5000; // Valor estático razonable para el slider
 
   // Lógica para etiquetas (badges)
   const isNewProduct = (dateStr) => {
@@ -331,21 +380,96 @@ const Storefront = () => {
 
 
 
+      {/* Buscador Global Mejorado */}
+      <SearchBar 
+        value={searchTerm} 
+        onChange={setSearchTerm} 
+        onSelect={setSearchTerm}
+        products={products}
+        categories={categories}
+      />
+
+      {/* Barra de Filtros Horizontal (Sticky) */}
+      <div className="filter-bar">
+        {/* Desktop View */}
+        <div className="filter-bar-inner">
+          {/* Categoría y otros filtros se mantienen, la búsqueda se movió arriba */}
+          <div className="filter-item">
+            <span className="filter-label">Categoría</span>
+            <select 
+              value={activeCategory} 
+              onChange={(e) => setActiveCategory(e.target.value)}
+              aria-label="Filtrar por categoría"
+            >
+              <option value="all">Todas</option>
+              {categories.map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-item">
+            <span className="filter-label">Edad</span>
+            <select 
+              value={activeAgeRange} 
+              onChange={(e) => setActiveAgeRange(e.target.value)}
+              aria-label="Filtrar por edad"
+            >
+              <option value="all">Cualquier edad</option>
+              {ageRanges.map(age => (
+                <option key={age} value={age}>{age}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-item" style={{ minWidth: '150px' }}>
+            <span className="filter-label">Precio máx</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+              <input 
+                type="range" 
+                min="0" 
+                max={maxPriceAvailable > 0 ? maxPriceAvailable : 1000} 
+                step="50" 
+                value={priceRange} 
+                onChange={(e) => setPriceRange(Number(e.target.value))}
+                style={{ padding: 0, height: '6px' }}
+              />
+              <span style={{ fontSize: '0.8rem', fontWeight: '700', whiteSpace: 'nowrap' }}>L. {priceRange}</span>
+            </div>
+          </div>
+
+          <button className="btn-clear-inline" onClick={() => { setActiveCategory('all'); setActiveAgeRange('all'); setSearchTerm(''); setPriceRange(maxPriceAvailable); }}>
+            Limpiar
+          </button>
+        </div>
+
+        {/* Mobile View Trigger */}
+        <div className="mobile-filter-trigger">
+          <button className="btn-filter-toggle" onClick={() => setIsMobileFiltersOpen(true)}>
+            <Filter size={18} /> Filtros y Búsqueda
+          </button>
+          <div className="active-filters-summary">
+            {filteredProducts.length} productos
+          </div>
+        </div>
+      </div>
+
       <div className="storefront-content">
+        {/* Drawer de Filtros para Mobile */}
         <aside className={`sidebar-filters ${isMobileFiltersOpen ? 'open' : ''}`}>
           <div className="sidebar-header">
             <h3>Filtros</h3>
             <button className="btn-close-sidebar" onClick={() => setIsMobileFiltersOpen(false)}><X size={20}/></button>
           </div>
 
-          {/* Barra de Búsqueda Integrada */}
-          <div className="sidebar-section search-section">
-            <h4 className="sidebar-title"><Search size={14} /> Buscar</h4>
+          {/* Filtros Mobile Drawer */}
+          <div className="sidebar-section">
+            <h4 className="sidebar-title"><Search size={14} /> Refinar Búsqueda</h4>
             <div className="search-input-wrapper">
               <Search className="search-icon-inline" size={16} />
               <input 
                 type="text" 
-                placeholder="Nombre o SKU..." 
+                placeholder="Escribe para buscar..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -357,7 +481,7 @@ const Storefront = () => {
             <div className="category-list">
               <button 
                 className={`category-item-btn ${activeCategory === 'all' ? 'active' : ''}`}
-                onClick={() => setActiveCategory('all')}
+                onClick={() => { setActiveCategory('all'); setIsMobileFiltersOpen(false); }}
               >
                 Todas las categorías
               </button>
@@ -365,7 +489,7 @@ const Storefront = () => {
                 <button 
                   key={cat.id} 
                   className={`category-item-btn ${activeCategory === cat.id ? 'active' : ''}`}
-                  onClick={() => setActiveCategory(cat.id)}
+                  onClick={() => { setActiveCategory(cat.id); setIsMobileFiltersOpen(false); }}
                 >
                   {cat.name}
                 </button>
@@ -374,7 +498,7 @@ const Storefront = () => {
           </div>
 
           <div className="sidebar-section">
-            <h4 className="sidebar-title"><Filter size={14}/> Rango de Precio</h4>
+            <h4 className="sidebar-title"><Filter size={14}/> Precio Máximo</h4>
             <div className="price-filter-wrapper">
               <div className="price-labels">
                 <span>L. 0</span>
@@ -397,7 +521,7 @@ const Storefront = () => {
               <h4 className="sidebar-title"><Filter size={14}/> Edad</h4>
               <select 
                 value={activeAgeRange} 
-                onChange={(e) => setActiveAgeRange(e.target.value)}
+                onChange={(e) => { setActiveAgeRange(e.target.value); setIsMobileFiltersOpen(false); }}
                 className="sidebar-select"
               >
                 <option value="all">Cualquier edad</option>
@@ -408,44 +532,34 @@ const Storefront = () => {
             </div>
           )}
 
-          <button className="btn-clear-filters" onClick={() => { setActiveCategory('all'); setActiveAgeRange('all'); setSearchTerm(''); setPriceRange(maxPriceAvailable); }}>
-            Limpiar filtros
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: 'auto', paddingTop: '20px' }}>
+            <button className="btn-primary" style={{ width: '100%', height: '48px' }} onClick={() => setIsMobileFiltersOpen(false)}>
+              Aplicar Filtros
+            </button>
+            <button className="btn-clear-filters" style={{ width: '100%' }} onClick={() => { setActiveCategory('all'); setActiveAgeRange('all'); setSearchTerm(''); setPriceRange(maxPriceAvailable); setIsMobileFiltersOpen(false); }}>
+              Limpiar todo
+            </button>
+          </div>
         </aside>
 
-        <main className="main-products-view">
-          <div className="mobile-filter-bar">
-            <input 
-              type="text" 
-              placeholder="Buscar productos..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="mobile-search-input"
-              aria-label="Buscar productos"
-            />
-            <button className="btn-mobile-filter" onClick={() => setIsMobileFiltersOpen(true)}>
-              <Filter size={18} /> Filtrar y Buscar
-            </button>
-            <div className="active-filters-summary">
-              {filteredProducts.length} productos encontrados
-            </div>
-          </div>
-
       <div className="products-grid">
-        {isLoading ? (
+        {isLoading && page === 0 ? (
           <SkeletonGrid count={8} />
         ) : (
           <>
             {filteredProducts.map((product, index) => (
-              <div key={product.id} className="product-card" style={{ display: 'flex', flexDirection: 'column' }} role="article" aria-label={`Producto: ${product.name}`}>
+              <div key={product.id} className="product-card" role="article" aria-label={`Producto: ${product.name}`}>
+                {/* Contenido de la tarjeta se mantiene igual... */}
                 <div className="product-image-container" onClick={() => setSelectedProduct(product)} style={{ cursor: 'pointer' }}>
                   <OptimizedImage 
                     src={product.imageUrl || 'https://via.placeholder.com/300'} 
                     alt={`Juguete ${product.name} - ${product.brand || 'Joa Baby Shop'}`} 
                     className="product-image" 
-                    priority={index < 4}
+                    priority={index < 3}
+                    lazy={true}
+                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 400px"
                     width="400"
-                    height="400"
+                    height="300"
                   />
                   <div className="product-badges">
                     {product.isNewBadge && <span className="product-badge new">NUEVO</span>}
@@ -488,17 +602,30 @@ const Storefront = () => {
                 </div>
               </div>
             ))}
-            {filteredProducts.length === 0 && (
-              <div className="empty-state glass-panel" style={{ gridColumn: '1 / -1', padding: '60px 20px', textAlign: 'center', borderRadius: '24px' }}>
-                <div style={{ fontSize: '4rem', marginBottom: '16px' }}>😕</div>
-                <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', marginBottom: '8px' }}>No hay resultados</h2>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>Intenta ajustando tus filtros de categoría, edad, o revisa cómo has escrito tu búsqueda.</p>
-                <button className="btn-secondary" style={{ marginTop: '20px' }} onClick={() => { setActiveCategory('all'); setActiveAgeRange('all'); setSearchTerm(''); }}>Limpiar Filtros</button>
-              </div>
-            )}
           </>
         )}
       </div>
+
+      {hasMore && (
+        <div className="load-more-container" style={{ textAlign: 'center', padding: '40px 0' }}>
+          <button 
+            className="btn-secondary" 
+            onClick={loadMore} 
+            disabled={isLoadingMore}
+            style={{ minWidth: '200px' }}
+          >
+            {isLoadingMore ? 'Cargando más...' : 'Cargar más productos'}
+          </button>
+        </div>
+      )}
+
+      {filteredProducts.length === 0 && !isLoading && (
+        <div className="empty-state glass-panel" style={{ padding: '60px 20px', textAlign: 'center', borderRadius: '24px' }}>
+          <div style={{ fontSize: '4rem', marginBottom: '16px' }}>😕</div>
+          <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', marginBottom: '8px' }}>No hay resultados</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>Intenta ajustando tus filtros.</p>
+        </div>
+      )}
     </main>
   </div>
 
@@ -507,103 +634,19 @@ const Storefront = () => {
         <span className="tooltip">¿Necesitas ayuda?</span>
       </div>
 
-      {selectedProduct && (
-        <div className="modal-overlay" onClick={() => setSelectedProduct(null)} style={{ zIndex: 1000 }}>
-          <ProductJsonLd product={selectedProduct} />
-          <div className="modal-content glass-panel" style={{ maxWidth: '850px', width: '90%', padding: '0', display: 'flex', flexDirection: 'row', overflow: 'hidden', minHeight: '400px' }} onClick={e => e.stopPropagation()}>
-            <div style={{ flex: '1.2', display: 'flex', flexDirection: 'column', background: 'var(--bg-secondary)', borderRight: '1px solid var(--border-color)' }}>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', minHeight: '300px' }}>
-                <OptimizedImage 
-                  src={(selectedProduct.images && selectedProduct.images.length > 0) ? selectedProduct.images[mainImageIndex] : (selectedProduct.imageUrl || 'https://via.placeholder.com/400')} 
-                  alt={selectedProduct.name} 
-                  className="modal-main-image"
-                  priority={true}
-                />
-
-                
-                {selectedProduct.images && selectedProduct.images.length > 1 && (
-                  <div className="carousel-dots">
-                    {selectedProduct.images.map((_, idx) => (
-                      <button 
-                        key={idx} 
-                        className={`dot ${mainImageIndex === idx ? 'active' : ''}`}
-                        onClick={() => setMainImageIndex(idx)}
-                        aria-label={`Ir a imagen ${idx + 1}`}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-              {selectedProduct.images && selectedProduct.images.length > 1 && (
-                <div style={{ display: 'flex', gap: '10px', padding: '15px 20px', overflowX: 'auto', background: 'rgba(34, 193, 195, 0.04)', borderTop: '1px solid var(--border-color)' }}>
-                  {selectedProduct.images.map((img, idx) => (
-                    <OptimizedImage 
-                      key={idx} src={img} alt={`${selectedProduct.name} vista ${idx + 1}`} 
-                      onClick={() => setMainImageIndex(idx)} 
-                      style={{ width: '50px', height: '50px', objectFit: 'cover', cursor: 'pointer', borderRadius: '12px', border: mainImageIndex === idx ? '2px solid var(--accent-primary)' : '2px solid transparent', opacity: mainImageIndex === idx ? 1 : 0.6, transition: 'all 0.2s ease', background: '#fff' }} 
-                    />
-                  ))}
-
-                </div>
-              )}
-            </div>
-            <div style={{ flex: '1', padding: '40px', position: 'relative', display: 'flex', flexDirection: 'column' }}>
-              <button className="btn-icon" onClick={() => setSelectedProduct(null)} style={{ position: 'absolute', top: '15px', right: '15px' }}><X /></button>
-              
-              <h2 style={{ fontSize: '1.8rem', marginBottom: '8px', paddingRight: '30px', color: 'var(--text-primary)', fontWeight: '700' }}>{selectedProduct.name}</h2>
-              <p className="text-secondary" style={{ fontSize: '1.1rem', marginBottom: '8px' }}>{categories.find(c => c.id === selectedProduct.categoryId)?.name || 'Sin Categoría'}</p>
-              
-              <div className="product-meta-grid">
-                <div className="meta-item">
-                  <Package size={16} className="meta-icon" /> 
-                  <span>REF: <strong>{selectedProduct.sku}</strong></span>
-                </div>
-                <div className="meta-item">
-                  <Package size={16} className="meta-icon" /> 
-                  <span>Marca: <strong>{selectedProduct.brand || 'N/A'}</strong></span>
-                </div>
-                <div className="meta-item">
-                  <Users size={16} className="meta-icon" /> 
-                  <span>Edad: <strong>{selectedProduct.ageRange || 'Todas'}</strong></span>
-                </div>
-                <div className="meta-item">
-                  <CheckCircle size={16} className="meta-icon" style={{ color: selectedProduct.stock > 0 ? '#10B981' : '#EF4444' }} /> 
-                  <span>Stock: <strong style={{ color: selectedProduct.stock > 0 ? '#10B981' : '#EF4444' }}>{selectedProduct.stock > 0 ? `${selectedProduct.stock} disponibles` : 'Agotado'}</strong></span>
-                </div>
-              </div>
-
-              {selectedProduct.description && (
-                <div style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginBottom: '20px', lineHeight: '1.6', borderLeft: '3px solid var(--accent-primary)', paddingLeft: '15px', fontStyle: 'italic' }}>
-                  {selectedProduct.description}
-                </div>
-              )}
-
-              <div className="modal-price-display">
-                {selectedProduct.discountPrice && (
-                  <span className="modal-price-old">
-                    L. {Number(selectedProduct.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                )}
-                <span className="modal-price-current">
-                  L. {Number(selectedProduct.discountPrice || selectedProduct.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-
-              <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <button className="btn-whatsapp" style={{ padding: '16px', justifyContent: 'center' }} onClick={() => handleWhatsAppContact(selectedProduct)}>
-                  <MessageCircle size={22} strokeWidth={2.5} /> Consultar por WhatsApp
-                </button>
-                <button className="btn-add-cart" disabled={selectedProduct.stock === 0} style={{ padding: '16px', justifyContent: 'center', opacity: selectedProduct.stock === 0 ? 0.5 : 1 }} onClick={() => { handleAddToCart(selectedProduct); setSelectedProduct(null); }}>
-                  <ShoppingCart size={22} strokeWidth={2.5} /> Agregar al Carrito
-                </button>
-                <p className="micro-copy">
-                  <Truck size={14} /> Envío rápido a toda Honduras 🇭🇳
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <Suspense fallback={null}>
+        {selectedProduct && (
+          <ProductModal 
+            product={selectedProduct}
+            onClose={() => setSelectedProduct(null)}
+            categories={categories}
+            onWhatsApp={handleWhatsAppContact}
+            onBuyNow={handleBuyNow}
+            onAddToCart={handleAddToCart}
+            onShare={handleShareProduct}
+          />
+        )}
+      </Suspense>
     </div>
   );
 };
