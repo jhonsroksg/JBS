@@ -34,8 +34,11 @@ const Products = () => {
         productRepository.getAll(),
         db.getAll('categories'),
       ]);
-      setProducts(prods);
-      setCategories(cats);
+      setProducts(prods || []);
+      setCategories(cats || []);
+    } catch (error) {
+      console.error('Error loading inventory data:', error);
+      showToast('Error al cargar datos del inventario: ' + error.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -276,9 +279,12 @@ const Products = () => {
 
       
       await loadData();
-      // Limpiar caché de la tienda pública para que refleje los cambios al instante
-      localStorage.removeItem('joa_cache_products');
-      localStorage.removeItem('joa_cache_categories');
+      // Limpiar todo el caché de la tienda para asegurar consistencia
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('joa_cache_')) {
+          localStorage.removeItem(key);
+        }
+      });
       
       handleCloseModal();
       alert('¡Producto guardado exitosamente!');

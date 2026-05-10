@@ -17,7 +17,6 @@ export const productRepository = {
     const { data, error } = await supabase
       .from('products')
       .select('*')
-      .eq('deleted', false)
       .order('created_at', { ascending: false });
     if (error) throw error;
     return data || [];
@@ -27,7 +26,6 @@ export const productRepository = {
     let query = supabase
       .from('products')
       .select('*', { count: 'exact' })
-      .eq('deleted', false)
       .gt('stock', 0);
 
     if (category !== 'all') query = query.eq('categoryId', category);
@@ -209,6 +207,15 @@ export const db = {
       .single();
     if (error) return null;
     return data;
+  },
+
+  async getCategories() {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .order('name');
+    if (error) throw error;
+    return data || [];
   },
 
   async uploadFile(bucket, path, file) {
