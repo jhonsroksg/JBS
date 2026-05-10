@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Package, Users, CheckCircle, MessageCircle, Zap, ShoppingCart, Share2, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
+import { X, Package, Users, CheckCircle, MessageCircle, Zap, ShoppingCart, Share2, ChevronLeft, ChevronRight, Maximize2, Tag, Calendar } from 'lucide-react';
 import { OptimizedImage } from './OptimizedImage';
 import './ProductModal.css';
 
@@ -87,12 +87,28 @@ export const ProductModal = ({
           <p className="modal-product-category">{categories.find(c => c.id === product.categoryId)?.name || 'Sin Categoría'}</p>
           
           <div className="product-meta-grid">
-            <div className="meta-item"><Package size={16}/> <span>REF: <strong>{product.sku}</strong></span></div>
-            <div className="meta-item"><Package size={16}/> <span>Marca: <strong>{product.brand || 'N/A'}</strong></span></div>
-            <div className="meta-item"><Users size={16}/> <span>Edad: <strong>{product.ageRange || 'Todas'}</strong></span></div>
             <div className="meta-item">
-              <CheckCircle size={16} style={{ color: product.stock > 0 ? '#10B981' : '#EF4444' }} /> 
-              <span style={{ color: product.stock > 0 ? '#10B981' : '#EF4444' }}>{product.stock > 0 ? `${product.stock} disponibles` : 'Agotado'}</span>
+              <div className="meta-icon"><Package size={18}/></div>
+              <div className="meta-content"><span className="meta-label">Referencia</span><span className="meta-value">{product.sku}</span></div>
+            </div>
+            <div className="meta-item">
+              <div className="meta-icon"><Tag size={18}/></div>
+              <div className="meta-content"><span className="meta-label">Marca</span><span className="meta-value">{product.brand || 'Joa Baby Shop'}</span></div>
+            </div>
+            <div className="meta-item">
+              <div className="meta-icon"><Calendar size={18}/></div>
+              <div className="meta-content"><span className="meta-label">Edad Recom.</span><span className="meta-value">{product.ageRange || 'Todas'}</span></div>
+            </div>
+            <div className="meta-item">
+              <div className="meta-icon" style={{ background: product.stock > 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)' }}>
+                <CheckCircle size={18} style={{ color: product.stock > 0 ? '#10B981' : '#EF4444' }} />
+              </div>
+              <div className="meta-content">
+                <span className="meta-label">Disponibilidad</span>
+                <span className="meta-value" style={{ color: product.stock > 0 ? '#10B981' : '#EF4444' }}>
+                  {product.stock > 0 ? `${product.stock} unidades` : 'Agotado'}
+                </span>
+              </div>
             </div>
           </div>
 
