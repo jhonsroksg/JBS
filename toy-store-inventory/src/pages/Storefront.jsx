@@ -403,16 +403,7 @@ const Storefront = () => {
               <button className="btn-close-sidebar" onClick={() => setIsMobileFiltersOpen(false)}><X size={20}/></button>
             </div>
 
-            <div className="sidebar-section">
-              <h4 className="sidebar-title"><Search size={14} /> Refinar Búsqueda</h4>
-              <div className="search-input-wrapper">
-                <Search className="search-icon-inline" size={16} />
-                <input 
-                  type="text" placeholder="Escribe para buscar..." 
-                  value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
+
 
             <div className="sidebar-section">
               <h4 className="sidebar-title"><Filter size={14}/> Categorías</h4>

@@ -105,6 +105,86 @@
   }
 }
 
+/* --- DRAWER DE FILTROS MÓVIL --- */
+.sidebar-filters {
+  position: fixed;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  max-width: 380px;
+  height: 100vh;
+  background: white;
+  z-index: 2000;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 20px 0 50px rgba(0,0,0,0.1);
+  overflow-y: auto;
+}
+
+.sidebar-filters.open {
+  left: 0;
+}
+
+/* En desktop, el sidebar no se muestra porque ya tenemos la Filter Bar horizontal */
+@media (min-width: 769px) {
+  .sidebar-filters {
+    display: none;
+  }
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-section {
+  margin-bottom: 32px;
+}
+
+.sidebar-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+}
+
+.category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.category-item-btn {
+  text-align: left;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.category-item-btn.active {
+  background: var(--accent-light);
+  color: var(--accent-primary);
+  font-weight: 600;
+  border-color: rgba(34, 193, 195, 0.2);
+}
+
+.sidebar-select {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
 .product-card {
   display: flex;
   flex-direction: column;
