@@ -344,6 +344,7 @@ const Storefront = () => {
         onSelect={setSearchTerm}
         products={products}
         categories={categories}
+        onFilterClick={() => setIsMobileFiltersOpen(true)}
       />
 
       <div className="filter-bar">
@@ -384,12 +385,6 @@ const Storefront = () => {
           </button>
         </div>
 
-        <div className="mobile-filter-trigger">
-          <button className="btn-filter-toggle" onClick={() => setIsMobileFiltersOpen(true)}>
-            <SlidersHorizontal size={20} />
-            <span>Filtros y Categorías</span>
-          </button>
-        </div>
       </div>
 
       <main>

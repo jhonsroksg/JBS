@@ -91,40 +91,6 @@
 @media (max-width: 768px) {
   .filter-bar { padding: 10px 0; border: none; background: transparent; backdrop-filter: none; }
   .filter-bar-inner { display: none; }
-  
-  .mobile-filter-trigger {
-    display: block;
-    position: fixed;
-    bottom: 30px;
-    left: 30px;
-    z-index: 1100;
-    animation: slideUpIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .btn-filter-toggle {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 0 24px;
-    height: 56px;
-    background: white;
-    border: 1px solid rgba(34, 193, 195, 0.3);
-    color: var(--text-primary);
-    border-radius: 28px;
-    font-weight: 700;
-    font-size: 0.95rem;
-    cursor: pointer;
-    box-shadow: 0 15px 35px rgba(34, 193, 195, 0.25);
-    transition: all 0.3s ease;
-  }
-  
-  .btn-filter-toggle:active {
-    transform: scale(0.92);
-  }
-
-  .btn-filter-toggle svg {
-    color: var(--accent-primary);
-  }
 }
 
 @keyframes slideUpIn {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, X, History, TrendingUp, Package, Tag } from 'lucide-react';
+import { Search, X, History, TrendingUp, Package, Tag, SlidersHorizontal } from 'lucide-react';
 import './SearchBar.css';
 
 /**
@@ -10,7 +10,8 @@ export const SearchBar = ({
   onChange, 
   onSelect, 
   products = [], 
-  categories = [] 
+  categories = [],
+  onFilterClick
 }) => {
   const [inputValue, setInputValue] = useState(value);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -132,8 +133,13 @@ export const SearchBar = ({
           onKeyDown={handleKeyDown}
           aria-label="Barra de búsqueda global"
         />
+        {onFilterClick && (
+          <button className="btn-filter-trigger-inline" onClick={onFilterClick} aria-label="Abrir filtros">
+            <SlidersHorizontal size={18} />
+          </button>
+        )}
         {inputValue && (
-          <button className="btn-clear-search" onClick={() => handleSelect('')} aria-label="Limpiar búsqueda">
+          <button className="btn-clear-search" onClick={() => handleSelect('')} aria-label="Limpiar búsqueda" style={{ right: onFilterClick ? '45px' : '12px' }}>
             <X size={16} />
           </button>
         )}
