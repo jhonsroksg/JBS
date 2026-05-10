@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { ShoppingCart, X, Zap, Search, Filter, MessageCircle, Package, Users, CheckCircle, Truck, Share2, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
+import { ShoppingCart, X, Zap, Search, Filter, MessageCircle, Package, Users, CheckCircle, Truck, Share2, ChevronLeft, ChevronRight, Maximize2, RotateCcw } from 'lucide-react';
 import { productRepository, db } from '../services/db';
 import { OptimizedImage } from '../components/OptimizedImage';
 import { SkeletonGrid } from '../components/SkeletonLoader';
