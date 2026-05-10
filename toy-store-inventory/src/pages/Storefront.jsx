@@ -368,20 +368,19 @@ const Storefront = () => {
             </select>
           </div>
 
-          <div className="filter-item" style={{ minWidth: '150px' }}>
-            <span className="filter-label">Precio máx</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+          <div className="filter-item" style={{ minWidth: '180px' }}>
+            <span className="filter-label">Precio Máximo</span>
+            <div className="price-slider-container">
               <input 
                 type="range" min="0" max={5000} step="50" 
                 value={priceRange} onChange={(e) => setPriceRange(Number(e.target.value))}
-                style={{ padding: 0, height: '6px' }}
               />
-              <span style={{ fontSize: '0.8rem', fontWeight: '700', whiteSpace: 'nowrap' }}>L. {priceRange}</span>
+              <span className="price-display">L. {priceRange.toLocaleString()}</span>
             </div>
           </div>
 
           <button className="btn-clear-inline" onClick={() => { setActiveCategory('all'); setActiveAgeRange('all'); setSearchTerm(''); setPriceRange(2500); }}>
-            Limpiar
+            <RotateCcw size={14} style={{ marginRight: '6px' }} /> Limpiar
           </button>
         </div>
 
