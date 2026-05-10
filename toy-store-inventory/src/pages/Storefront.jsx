@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { ShoppingCart, X, Zap, Search, Filter, MessageCircle, Package, Users, CheckCircle, Truck, Share2, ChevronLeft, ChevronRight, Maximize2, RotateCcw, SlidersHorizontal } from 'lucide-react';
+import { ShoppingCart, X, Zap, Search, Filter, MessageCircle, Package, Users, CheckCircle, Truck, Share2, ChevronLeft, ChevronRight, Maximize2, RotateCcw, SlidersHorizontal, Plus } from 'lucide-react';
 import { productRepository, db } from '../services/db';
 import { OptimizedImage } from '../components/OptimizedImage';
 import { SkeletonGrid } from '../components/SkeletonLoader';
@@ -509,9 +509,16 @@ const Storefront = () => {
         </div>
 
         {hasMore && (
-          <div className="load-more-container" style={{ textAlign: 'center', padding: '40px 0' }}>
-            <button className="btn-secondary" onClick={loadMore} disabled={isLoadingMore} style={{ minWidth: '200px' }}>
-              {isLoadingMore ? 'Cargando más...' : 'Cargar más productos'}
+          <div className="load-more-container">
+            <button className="btn-load-more" onClick={loadMore} disabled={isLoadingMore}>
+              {isLoadingMore ? (
+                <>Cargando más...</>
+              ) : (
+                <>
+                  <Plus size={20} />
+                  <span>Cargar más productos</span>
+                </>
+              )}
             </button>
           </div>
         )}

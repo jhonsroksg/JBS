@@ -201,6 +201,40 @@
   min-width: 60px;
 }
 
+.load-more-container {
+  display: flex;
+  justify-content: center;
+  padding: 60px 0 100px 0;
+}
+
+.btn-load-more {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 40px;
+  background: white;
+  border: 1.5px solid var(--accent-primary);
+  color: var(--accent-primary);
+  border-radius: 30px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(34, 193, 195, 0.1);
+}
+
+.btn-load-more:hover:not(:disabled) {
+  background: var(--accent-primary);
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(34, 193, 195, 0.3);
+}
+
+.btn-load-more:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* --- DRAWER DE FILTROS MÓVIL --- */
 .sidebar-filters {
   position: fixed;
