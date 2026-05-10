@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { ShoppingCart, X, Zap, Search, Filter, MessageCircle, Package, Users, CheckCircle, Truck, Share2, ChevronLeft, ChevronRight, Maximize2, RotateCcw } from 'lucide-react';
+import { ShoppingCart, X, Zap, Search, Filter, MessageCircle, Package, Users, CheckCircle, Truck, Share2, ChevronLeft, ChevronRight, Maximize2, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { productRepository, db } from '../services/db';
 import { OptimizedImage } from '../components/OptimizedImage';
 import { SkeletonGrid } from '../components/SkeletonLoader';
@@ -386,11 +386,9 @@ const Storefront = () => {
 
         <div className="mobile-filter-trigger">
           <button className="btn-filter-toggle" onClick={() => setIsMobileFiltersOpen(true)}>
-            <Filter size={18} /> Filtros y Búsqueda
+            <SlidersHorizontal size={20} />
+            <span>Filtros y Categorías</span>
           </button>
-          <div className="active-filters-summary">
-            {products.length} productos
-          </div>
         </div>
       </div>
 
