@@ -282,7 +282,34 @@
   .modal-content {
     flex-direction: column;
     max-height: 90vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
-  .modal-gallery-side { border-right: none; }
-  .modal-info-side { padding: 24px; }
+  .modal-gallery-side { 
+    border-right: none;
+    flex: none;
+    height: auto;
+  }
+  .modal-main-image {
+    max-height: 300px;
+  }
+  .modal-info-side { 
+    padding: 24px;
+    overflow: visible;
+  }
+  .close-modal {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 1050;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border: 1px solid rgba(0,0,0,0.05);
+    border-radius: 50%;
+  }
+  .product-meta-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
 }

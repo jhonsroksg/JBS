@@ -513,4 +513,32 @@
   .floating-whatsapp-btn .tooltip {
     display: none; /* Hide text on mobile to keep it clean */
   }
+
+  /* --- PRODUCT CARDS MOBILE FIXES --- */
+  .products-grid {
+    gap: 12px;
+  }
+  .product-info {
+    padding: 12px;
+    min-height: 150px;
+  }
+  .product-title {
+    font-size: 0.8rem;
+  }
+  .product-price-current {
+    font-size: 1rem;
+  }
+  .card-actions-icons {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 12px;
+  }
+  .icon-action-btn {
+    width: 36px;
+    height: 36px;
+  }
+  .icon-action-btn svg {
+    width: 18px;
+    height: 18px;
+  }
 }
