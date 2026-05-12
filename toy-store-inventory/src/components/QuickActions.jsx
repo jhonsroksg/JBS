@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Zap, ShoppingCart, Share2 } from 'lucide-react';
+import { MessageCircle, ShoppingCart, Share2 } from 'lucide-react';
 import './QuickActions.css';
 
 const QuickActions = () => {
@@ -24,11 +24,7 @@ const QuickActions = () => {
         window.dispatchEvent(new Event('open_chat_support'));
         // If there's a floating button, we can trigger its click or state
         break;
-      case 'offers':
-        // Scroll to deals or navigate
-        const dealsSection = document.getElementById('deals-section');
-        if (dealsSection) dealsSection.scrollIntoView({ behavior: 'smooth' });
-        break;
+
       case 'cart':
         window.dispatchEvent(new Event('open_cart'));
         break;
@@ -61,13 +57,7 @@ const QuickActions = () => {
           <span className="action-label">Chat en vivo</span>
         </button>
 
-        {/* Ofertas del Día */}
-        <button className="quick-action-item" onClick={() => handleAction('offers')}>
-          <div className="icon-circle">
-            <Zap size={28} strokeWidth={2} />
-          </div>
-          <span className="action-label">Ofertas del día</span>
-        </button>
+
 
         {/* Mi Carrito */}
         <button className="quick-action-item" onClick={() => handleAction('cart')}>
