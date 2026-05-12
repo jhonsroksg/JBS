@@ -17,6 +17,7 @@ const Products = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
+  const [draggedImageIndex, setDraggedImageIndex] = useState(null);
 
   const [formData, setFormData] = useState({
     sku: '', name: '', categoryId: '', costPrice: '', sellingPrice: '', discountPrice: '', stock: '', minStock: '', imageUrl: '', images: [], ageRange: '', description: '', brand: '',
@@ -89,7 +90,7 @@ const Products = () => {
         costPrice: product.costPrice ? Number(product.costPrice).toFixed(2) : '',
         sellingPrice: product.sellingPrice ? Number(product.sellingPrice).toFixed(2) : '',
         discountPrice: product.discountPrice ? Number(product.discountPrice).toFixed(2) : '',
-        images: product.images || (product.imageUrl ? [product.imageUrl] : []),
+        images: (product.images || (product.imageUrl ? [product.imageUrl] : [])).map(url => ({ id: Math.random().toString(), url, isNew: false })),
         newImageFiles: []
       });
       setIsModalOpen(true);
@@ -104,7 +105,7 @@ const Products = () => {
             costPrice: fullProduct.costPrice ? Number(fullProduct.costPrice).toFixed(2) : '',
             sellingPrice: fullProduct.sellingPrice ? Number(fullProduct.sellingPrice).toFixed(2) : '',
             discountPrice: fullProduct.discountPrice ? Number(fullProduct.discountPrice).toFixed(2) : '',
-            images: fullProduct.images || (fullProduct.imageUrl ? [fullProduct.imageUrl] : []),
+            images: (fullProduct.images || (fullProduct.imageUrl ? [fullProduct.imageUrl] : [])).map(url => ({ id: Math.random().toString(), url, isNew: false })),
             newImageFiles: []
           });
         }
@@ -153,17 +154,36 @@ const Products = () => {
 
 
   const handleRemoveImage = (index) => {
-    const isNew = index >= (formData.images.length - formData.newImageFiles.length);
-    if (isNew) {
-      const newFileIndex = index - (formData.images.length - formData.newImageFiles.length);
-      setFormData(prev => ({
-        ...prev,
-        images: prev.images.filter((_, i) => i !== index),
-        newImageFiles: prev.newImageFiles.filter((_, i) => i !== newFileIndex)
-      }));
-    } else {
-      setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }));
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleDragStart = (e, index) => {
+    setDraggedImageIndex(index);
+    if(e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', index);
     }
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    if(e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e, targetIndex) => {
+    e.preventDefault();
+    if (draggedImageIndex === null || draggedImageIndex === targetIndex) return;
+    setFormData(prev => {
+      const newImages = [...prev.images];
+      const draggedItem = newImages[draggedImageIndex];
+      newImages.splice(draggedImageIndex, 1);
+      newImages.splice(targetIndex, 0, draggedItem);
+      return { ...prev, images: newImages };
+    });
+    setDraggedImageIndex(null);
   };
 
   const resizeImage = (dataUrl) => {
@@ -217,12 +237,15 @@ const Products = () => {
     }));
 
     Promise.all(readers).then(results => {
-      const previews = results.map(r => r.preview);
-      const optimizedFiles = results.map(r => r.file);
+      const newImgs = results.map(r => ({
+        id: Math.random().toString(),
+        url: r.preview,
+        isNew: true,
+        file: r.file
+      }));
       setFormData(prev => ({ 
         ...prev, 
-        images: [...(prev.images || []), ...previews],
-        newImageFiles: [...(prev.newImageFiles || []), ...optimizedFiles]
+        images: [...(prev.images || []), ...newImgs]
       }));
     }).catch(err => {
       console.error('Error al procesar imágenes:', err);
@@ -235,21 +258,18 @@ const Products = () => {
     setLoading(true);
     try {
       // 1. Subir nuevos archivos a Storage si existen
-      let finalImages = [...(formData.images || [])];
-      
-      if (formData.newImageFiles && formData.newImageFiles.length > 0) {
-        // Encontramos qué imágenes en 'images' son las verdaderas URLs de Supabase
-        const baseImages = formData.images.filter(img => img && img.startsWith('http'));
-        
-        const uploadPromises = formData.newImageFiles.map((file, idx) => {
-          const fileExt = file.name.split('.').pop();
+      const finalImages = [];
+      for (let i = 0; i < (formData.images || []).length; i++) {
+        const img = formData.images[i];
+        if (img.isNew) {
+          const fileExt = img.file.name.split('.').pop();
           const safeSku = (formData.sku || 'prod').replace(/[^a-zA-Z0-9]/g, '_');
-          const fileName = `${safeSku}_${Date.now()}_${idx}.${fileExt}`;
-          return db.uploadFile('product-images', fileName, file);
-        });
-        
-        const uploadedUrls = await Promise.all(uploadPromises);
-        finalImages = [...baseImages, ...uploadedUrls];
+          const fileName = `${safeSku}_${Date.now()}_${i}.${fileExt}`;
+          const uploadedUrl = await db.uploadFile('product-images', fileName, img.file);
+          finalImages.push(uploadedUrl);
+        } else {
+          finalImages.push(img.url);
+        }
       }
 
       // 2. Preparar datos para BD
@@ -621,9 +641,22 @@ const Products = () => {
                 <label>Imágenes del Producto (Máx. 5 - Recomendado: Cuadradas 1080x1080px)</label>
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '8px' }}>
                   {(formData.images || []).map((img, idx) => (
-                    <div key={idx} style={{ position: 'relative', width: '80px', height: '80px' }}>
-                      <img src={img} alt={`Preview ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border-color)' }} />
-                      <button type="button" onClick={() => handleRemoveImage(idx)} style={{ position: 'absolute', top: '-6px', right: '-6px', background: 'var(--danger)', color: 'white', border: 'none', borderRadius: '50%', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0, boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+                    <div 
+                      key={img.id || idx} 
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, idx)}
+                      onDragOver={(e) => handleDragOver(e, idx)}
+                      onDrop={(e) => handleDrop(e, idx)}
+                      onDragEnd={() => setDraggedImageIndex(null)}
+                      style={{ 
+                        position: 'relative', width: '80px', height: '80px', cursor: 'grab',
+                        opacity: draggedImageIndex === idx ? 0.5 : 1,
+                        transition: 'opacity 0.2s',
+                        transform: draggedImageIndex === idx ? 'scale(0.95)' : 'scale(1)'
+                      }}
+                    >
+                      <img src={img.url} alt={`Preview ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border-color)', pointerEvents: 'none' }} />
+                      <button type="button" onClick={() => handleRemoveImage(idx)} style={{ position: 'absolute', top: '-6px', right: '-6px', background: 'var(--danger)', color: 'white', border: 'none', borderRadius: '50%', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0, boxShadow: '0 2px 4px rgba(0,0,0,0.2)', zIndex: 10 }}>
                         <X size={14} />
                       </button>
                     </div>
