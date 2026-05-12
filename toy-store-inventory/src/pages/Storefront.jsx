@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { ShoppingCart, X, Zap, Search, Filter, MessageCircle, Package, Users, CheckCircle, Truck, Share2, ChevronLeft, ChevronRight, Maximize2, RotateCcw, SlidersHorizontal, Plus } from 'lucide-react';
+import { ShoppingCart, X, Search, Filter, MessageCircle, Package, Users, CheckCircle, Truck, Share2, ChevronLeft, ChevronRight, Maximize2, RotateCcw, SlidersHorizontal, Plus } from 'lucide-react';
 import { productRepository, db } from '../services/db';
 import { OptimizedImage } from '../components/OptimizedImage';
 import { SkeletonGrid } from '../components/SkeletonLoader';
@@ -496,7 +496,6 @@ const Storefront = () => {
                       </div>
                       <div className="card-actions-icons">
                         <button className="icon-action-btn" onClick={() => handleWhatsAppContact(product)} title="WhatsApp"><MessageCircle size={22} /></button>
-                        <button className="icon-action-btn" onClick={() => handleBuyNow(product)} title="Comprar"><Zap size={22} /></button>
                         <button className="icon-action-btn" onClick={() => handleAddToCart(product)} title="Carrito"><ShoppingCart size={22} /></button>
                         <button className="icon-action-btn share-btn" onClick={(e) => handleShareProduct(e, product)} title="Compartir"><Share2 size={20} /></button>
                       </div>
