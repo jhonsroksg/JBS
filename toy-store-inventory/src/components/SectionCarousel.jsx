@@ -58,7 +58,6 @@ export const SectionCarousel = ({
                 <Icon size={28} strokeWidth={2.5} />
               </div>
               <span className="section-label">{section.label}</span>
-              {isActive && <div className="active-indicator" />}
             </button>
           );
         })}

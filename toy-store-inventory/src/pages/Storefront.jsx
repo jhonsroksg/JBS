@@ -342,11 +342,6 @@ const Storefront = () => {
         <div className="hero-content">
           <h1>{storeInfo.name}</h1>
           <p>{storeInfo.welcomeMessage}</p>
-          
-          <SectionCarousel 
-            activeSection={activeSection} 
-            onSectionChange={setActiveSection} 
-          />
         </div>
       </div>
 
@@ -357,6 +352,11 @@ const Storefront = () => {
         products={products}
         categories={categories}
         onFilterClick={() => setIsMobileFiltersOpen(true)}
+      />
+
+      <SectionCarousel 
+        activeSection={activeSection} 
+        onSectionChange={setActiveSection} 
       />
 
       <div className="filter-bar">

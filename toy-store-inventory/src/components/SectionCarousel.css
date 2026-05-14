@@ -26,50 +26,45 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  width: 110px;
-  height: 110px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1.5px solid rgba(255, 255, 255, 0.1);
-  border-radius: 24px;
+  width: 105px;
+  height: 105px;
+  background: var(--bg-secondary, #ffffff);
+  border: 1px solid var(--border-color, #E2E8F0);
+  border-radius: 20px;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: var(--text-primary, #ffffff);
+  color: var(--text-primary, #2D3748);
   position: relative;
   outline: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
 .section-card:hover {
-  transform: translateY(-8px);
-  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-5px);
   border-color: var(--section-color);
-  box-shadow: 0 15px 30px -10px var(--section-color);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
 }
 
 .section-card.active {
   background: var(--section-color);
   border-color: var(--section-color);
-  box-shadow: 0 20px 40px -12px var(--section-color);
+  box-shadow: 0 10px 25px -5px var(--section-color);
   color: #ffffff;
-  transform: translateY(-4px) scale(1.02);
 }
 
 .section-icon-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.05);
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: transparent;
   color: var(--section-color);
   transition: all 0.3s ease;
-  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.05);
 }
 
 .section-card.active .section-icon-wrapper {
-  background: rgba(255, 255, 255, 0.25);
   color: #ffffff;
   transform: scale(1.1);
 }
@@ -79,8 +74,7 @@
   font-weight: 800;
   letter-spacing: 1px;
   text-transform: uppercase;
-  font-family: 'Outfit', 'Inter', sans-serif;
-  opacity: 0.9;
+  font-family: 'Outfit', 'Quicksand', sans-serif;
 }
 
 .active-indicator {
