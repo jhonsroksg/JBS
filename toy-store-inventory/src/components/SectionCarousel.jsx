@@ -7,11 +7,11 @@ import './SectionCarousel.css';
  * DEFAULT_SECTIONS define las secciones principales con sus iconos y colores.
  */
 const DEFAULT_SECTIONS = [
-  { id: 'mama', label: 'MAMÁ', icon: Heart, color: '#FF6B6B' },
-  { id: 'papa', label: 'PAPÁ', icon: User, color: '#4D96FF' },
-  { id: 'bebe', label: 'BEBÉ', icon: Baby, color: '#FFD93D' },
-  { id: 'accesorios', label: 'ACCESORIOS', icon: ShoppingBag, color: '#6BCB77' },
-  { id: 'ofertas', label: 'OFERTAS', icon: Tag, color: '#FF9F43' },
+  { id: 'MAMÁ', label: 'MAMÁ', icon: Heart, color: '#FF6B6B' },
+  { id: 'PAPÁ', label: 'PAPÁ', icon: User, color: '#4D96FF' },
+  { id: 'BEBÉ', label: 'BEBÉ', icon: Baby, color: '#FFD93D' },
+  { id: 'ACCESORIOS', label: 'ACCESORIOS', icon: ShoppingBag, color: '#6BCB77' },
+  { id: 'OFERTAS', label: 'OFERTAS', icon: Tag, color: '#FF9F43' },
 ];
 
 /**
@@ -29,13 +29,12 @@ export const SectionCarousel = ({
   const navigate = useNavigate();
 
   const handleSectionClick = (sectionId) => {
-    // Ejecutar callback si existe para manejar estado interno
-    if (onSectionChange) {
-      onSectionChange(sectionId);
-    }
+    // Si ya está activa, la desactivamos (volvemos a 'all')
+    const nextSection = activeSection === sectionId ? 'all' : sectionId;
     
-    // Navegar a la ruta correspondiente (ej: /mama, /papa)
-    navigate(`/${sectionId}`);
+    if (onSectionChange) {
+      onSectionChange(nextSection);
+    }
   };
 
   return (
