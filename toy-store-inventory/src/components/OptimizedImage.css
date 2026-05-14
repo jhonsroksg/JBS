@@ -26,9 +26,31 @@
   filter: blur(0);
 }
 
-.optimized-image-lqip {
+.optimized-image-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
   z-index: 1;
+  transition: opacity 0.5s ease-out;
+}
+
+.optimized-image-placeholder.blur {
+  filter: blur(10px);
   transform: scale(1.1); /* Evita bordes blancos por el blur */
+}
+
+.optimized-image-placeholder.svg {
+  background-color: #f3f4f6;
+  background-repeat: no-repeat;
+}
+
+.loaded .optimized-image-placeholder {
+  opacity: 0 !important;
+  pointer-events: none;
 }
 
 .optimized-image-shimmer {
@@ -58,8 +80,7 @@
   }
 }
 
-.loaded .optimized-image-shimmer,
-.loaded .optimized-image-lqip {
+.loaded .optimized-image-shimmer {
   opacity: 0 !important;
   pointer-events: none;
   transition: opacity 0.5s ease-out;
