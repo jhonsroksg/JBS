@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../services/db';
 import { supabase } from '../lib/supabaseClient';
-import { Plus, Trash2, Edit2, Check, X, Save, Image as ImageIcon, Upload, Shield } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, Save, Image as ImageIcon, Upload, Shield, HelpCircle } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 
 const Settings = () => {
   const [methods, setMethods] = useState([]);
@@ -43,6 +44,15 @@ const Settings = () => {
     store_address: '',
     store_email: ''
   });
+  const [mainSections, setMainSections] = useState([]);
+  const [newSectionName, setNewSectionName] = useState('');
+  const [newSectionIcon, setNewSectionIcon] = useState('Heart');
+  const [newSectionColor, setNewSectionColor] = useState('#1FB7B9');
+  const [editingSectionId, setEditingSectionId] = useState(null);
+  const [editingSectionName, setEditingSectionName] = useState('');
+  const [editingSectionIcon, setEditingSectionIcon] = useState('');
+  const [editingSectionColor, setEditingSectionColor] = useState('');
+
   const [activeTab, setActiveTab] = useState('general');
 
   // MFA States
@@ -55,18 +65,20 @@ const Settings = () => {
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
-    const [pay, del, coup, statuses, info] = await Promise.all([
+    const [pay, del, coup, statuses, info, sections] = await Promise.all([
       db.getAll('payment_methods'),
       db.getAll('delivery_methods'),
       db.getAll('coupons'),
       db.getAll('order_statuses'),
       db.getStoreInfo(),
+      db.getAll('main_sections').catch(() => [])
     ]);
     setMethods(pay);
     setDeliveryMethods(del);
     setCoupons(coup);
     setOrderStatuses(statuses);
     if (info) setStoreInfo(info);
+    if (sections) setMainSections(sections);
     await loadMFAStatus();
   };
 
@@ -292,6 +304,55 @@ const Settings = () => {
     } catch (error) { alert('Error al eliminar estado.'); }
   };
 
+  // Main Sections CRUD
+  const handleAddSection = async (e) => {
+    e.preventDefault();
+    if (!newSectionName.trim()) return;
+    try {
+      await db.insert('main_sections', {
+        name: newSectionName.trim().toUpperCase(),
+        icon: newSectionIcon,
+        color: newSectionColor
+      });
+      setNewSectionName('');
+      await loadData();
+    } catch (error) { alert('Error al agregar sección.'); }
+  };
+
+  const handleEditSection = (section) => {
+    setEditingSectionId(section.id);
+    setEditingSectionName(section.name);
+    setEditingSectionIcon(section.icon);
+    setEditingSectionColor(section.color);
+  };
+
+  const handleSaveEditSection = async () => {
+    if (!editingSectionName.trim()) return;
+    try {
+      await db.update('main_sections', editingSectionId, {
+        name: editingSectionName.trim().toUpperCase(),
+        icon: editingSectionIcon,
+        color: editingSectionColor
+      });
+      setEditingSectionId(null);
+      await loadData();
+    } catch (error) { alert('Error al actualizar sección.'); }
+  };
+
+  const handleDeleteSection = async (id, name) => {
+    if (confirm(`¿Seguro que deseas eliminar la sección "${name}"? Esto no eliminará los productos, pero ya no aparecerán filtrados por esta sección.`)) {
+      try {
+        await db.delete('main_sections', id);
+        await loadData();
+      } catch (error) { alert('Error al eliminar sección.'); }
+    }
+  };
+
+  const availableIcons = [
+    'Heart', 'User', 'Baby', 'ShoppingBag', 'Tag', 'Gift', 'Star', 'Truck', 'Home', 'Settings', 
+    'Search', 'ShoppingBasket', 'Smile', 'Sun', 'Moon', 'Package', 'ShoppingCard', 'Zap', 'Flame'
+  ];
+
   const inputStyle = {
     padding: '12px', borderRadius: '12px', border: '1px solid var(--border-color)',
     background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none',
@@ -317,6 +378,7 @@ const Settings = () => {
           { id: 'logistica', label: 'Logística', icon: '🚚' },
           { id: 'pagos', label: 'Pagos', icon: '💳' },
           { id: 'promociones', label: 'Promociones', icon: '🏷️' },
+          { id: 'secciones', label: 'Secciones', icon: '🎡' },
           { id: 'seguridad', label: 'Seguridad', icon: '🛡️' }
         ].map(tab => (
           <button 
@@ -672,6 +734,83 @@ const Settings = () => {
                 </button>
               </div>
             )}
+        </div>
+      )}
+
+      {/* Secciones Tab */}
+      {activeTab === 'secciones' && (
+        <div className="glass-panel" style={{ padding: '30px' }}>
+          <h2 style={{ fontSize: '1.4rem', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>Configuración de Secciones Principales</h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.9rem' }}>
+            Gestiona las secciones que aparecen en el carrusel de la página principal (MAMÁ, PAPÁ, etc.).
+          </p>
+          
+          <form onSubmit={handleAddSection} style={{ display: 'flex', gap: '12px', marginBottom: '30px', flexWrap: 'wrap', background: 'var(--bg-tertiary)', padding: '20px', borderRadius: '16px' }}>
+            <div style={{ flex: 1, minWidth: '200px' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px' }}>Nombre de Sección</label>
+              <input type="text" placeholder="EJ. RECIÉN NACIDO" value={newSectionName} onChange={e => setNewSectionName(e.target.value)} style={inputStyle} />
+            </div>
+            <div style={{ width: '150px' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px' }}>Icono</label>
+              <select value={newSectionIcon} onChange={e => setNewSectionIcon(e.target.value)} style={inputStyle}>
+                {availableIcons.map(icon => <option key={icon} value={icon}>{icon}</option>)}
+              </select>
+            </div>
+            <div style={{ width: '100px' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px' }}>Color</label>
+              <input type="color" value={newSectionColor} onChange={e => setNewSectionColor(e.target.value)} style={{ ...inputStyle, padding: '5px', height: '45px' }} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+              <button type="submit" className="btn-primary" style={{ height: '45px', padding: '0 24px' }}><Plus size={20} /> Agregar</button>
+            </div>
+          </form>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+            {mainSections.map(s => (
+              <div key={s.id} style={{ 
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+                padding: '16px', background: 'var(--bg-tertiary)', borderRadius: '16px',
+                borderLeft: `6px solid ${s.color}`,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
+              }}>
+                {editingSectionId === s.id ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+                    <input type="text" value={editingSectionName} onChange={e => setEditingSectionName(e.target.value)} style={inputStyle} />
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <select value={editingSectionIcon} onChange={e => setEditingSectionIcon(e.target.value)} style={{ ...inputStyle, flex: 1 }}>
+                        {availableIcons.map(icon => <option key={icon} value={icon}>{icon}</option>)}
+                      </select>
+                      <input type="color" value={editingSectionColor} onChange={e => setEditingSectionColor(e.target.value)} style={{ ...inputStyle, width: '60px', padding: '2px' }} />
+                      <button onClick={handleSaveEditSection} className="btn-icon" style={{ color: 'var(--success)' }}><Check /></button>
+                      <button onClick={() => setEditingSectionId(null)} className="btn-icon"><X /></button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                      <div style={{ 
+                        width: '44px', height: '44px', borderRadius: '10px', 
+                        background: `${s.color}15`, color: s.color,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                      }}>
+                        {(() => {
+                          const IconComp = LucideIcons[s.icon] || LucideIcons.HelpCircle;
+                          return <IconComp size={20} />;
+                        })()}
+                      </div>
+                      <div>
+                        <strong style={{ fontSize: '1rem', color: 'var(--text-primary)' }}>{s.name}</strong>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Icono: {s.icon}</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button onClick={() => handleEditSection(s)} className="btn-icon"><Edit2 size={16} /></button>
+                      <button onClick={() => handleDeleteSection(s.id, s.name)} className="btn-icon danger"><Trash2 size={16} /></button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}

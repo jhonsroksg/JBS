@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, User, Baby, ShoppingBag, Tag } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import './SectionCarousel.css';
 
 /**
@@ -41,22 +41,28 @@ export const SectionCarousel = ({
     <div className="section-carousel-container">
       <div className="section-carousel-scroll">
         {sections.map((section) => {
-          const Icon = section.icon;
-          const isActive = activeSection === section.id;
+          // Resolve icon: if it's a string, find it in LucideIcons; otherwise use it directly
+          const Icon = typeof section.icon === 'string' 
+            ? LucideIcons[section.icon] || LucideIcons.HelpCircle 
+            : section.icon || LucideIcons.HelpCircle;
+            
+          const isActive = activeSection === section.id || activeSection === section.name;
+          const sectionId = section.id || section.name;
+          const label = section.label || section.name;
           
           return (
             <button
-              key={section.id}
+              key={sectionId}
               className={`section-card ${isActive ? 'active' : ''}`}
-              onClick={() => handleSectionClick(section.id)}
+              onClick={() => handleSectionClick(sectionId)}
               style={{ '--section-color': section.color }}
-              aria-label={`Ver sección ${section.label}`}
-              title={section.label}
+              aria-label={`Ver sección ${label}`}
+              title={label}
             >
               <div className="section-icon-wrapper">
                 <Icon size={28} strokeWidth={2.5} />
               </div>
-              <span className="section-label">{section.label}</span>
+              <span className="section-label">{label}</span>
             </button>
           );
         })}

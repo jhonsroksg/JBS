@@ -120,6 +120,7 @@ const Storefront = () => {
 
   const [products, setProducts] = useState(getCache('products:all:0') || []);
   const [categories, setCategories] = useState(getCache('categories') || []);
+  const [sections, setSections] = useState(getCache('main_sections') || []);
   const [storeInfo, setStoreInfo] = useState(getCache('storeInfo') || { name: 'Joa Baby Shop' });
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -217,6 +218,7 @@ const Storefront = () => {
     try {
       const info = await db.getStoreInfo();
       const categoriesData = await db.getCategories();
+      const sectionsData = await db.getAll('main_sections').catch(() => []);
       if (info) {
         setStoreInfo(info);
         setCache('storeInfo', info);
@@ -224,6 +226,10 @@ const Storefront = () => {
       if (categoriesData) {
         setCategories(categoriesData);
         setCache('categories', categoriesData);
+      }
+      if (sectionsData && sectionsData.length > 0) {
+        setSections(sectionsData);
+        setCache('main_sections', sectionsData);
       }
     } catch (error) {
       console.error('Error revalidating static data:', error);
@@ -355,6 +361,7 @@ const Storefront = () => {
       />
 
       <SectionCarousel 
+        sections={sections.length > 0 ? sections : undefined}
         activeSection={activeSection} 
         onSectionChange={setActiveSection} 
       />
