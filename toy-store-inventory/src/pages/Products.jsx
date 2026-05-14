@@ -12,6 +12,7 @@ const Products = () => {
   const [categories, setCategories] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedSection, setSelectedSection] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -20,7 +21,7 @@ const Products = () => {
   const [draggedImageIndex, setDraggedImageIndex] = useState(null);
 
   const [formData, setFormData] = useState({
-    sku: '', name: '', categoryId: '', costPrice: '', sellingPrice: '', discountPrice: '', stock: '', minStock: '', imageUrl: '', images: [], ageRange: '', description: '', brand: '',
+    sku: '', name: '', categoryId: '', section: 'TODOS', costPrice: '', sellingPrice: '', discountPrice: '', stock: '', minStock: '', imageUrl: '', images: [], ageRange: '', description: '', brand: '',
     newImageFiles: []
   });
 
@@ -48,13 +49,14 @@ const Products = () => {
   // Reset page when filtering
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedCategory]);
+  }, [searchTerm, selectedCategory, selectedSection]);
 
   const filteredProducts = products.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          p.sku.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || p.categoryId === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesSection = selectedSection === 'all' || p.section === selectedSection;
+    return matchesSearch && matchesCategory && matchesSection;
   });
 
   // Pagination logic
@@ -90,6 +92,7 @@ const Products = () => {
         costPrice: product.costPrice ? Number(product.costPrice).toFixed(2) : '',
         sellingPrice: product.sellingPrice ? Number(product.sellingPrice).toFixed(2) : '',
         discountPrice: product.discountPrice ? Number(product.discountPrice).toFixed(2) : '',
+        section: product.section || 'TODOS',
         images: (product.images || (product.imageUrl ? [product.imageUrl] : [])).map(url => ({ id: Math.random().toString(), url, isNew: false })),
         newImageFiles: []
       });
@@ -105,6 +108,7 @@ const Products = () => {
             costPrice: fullProduct.costPrice ? Number(fullProduct.costPrice).toFixed(2) : '',
             sellingPrice: fullProduct.sellingPrice ? Number(fullProduct.sellingPrice).toFixed(2) : '',
             discountPrice: fullProduct.discountPrice ? Number(fullProduct.discountPrice).toFixed(2) : '',
+            section: fullProduct.section || 'TODOS',
             images: (fullProduct.images || (fullProduct.imageUrl ? [fullProduct.imageUrl] : [])).map(url => ({ id: Math.random().toString(), url, isNew: false })),
             newImageFiles: []
           });
@@ -126,6 +130,7 @@ const Products = () => {
         stock: '',
         minStock: '',
         imageUrl: '',
+        section: 'TODOS',
         images: [],
         ageRange: '',
         description: '',
@@ -287,6 +292,7 @@ const Products = () => {
           : null,
         stock: parseInt(formData.stock) || 0,
         minStock: parseInt(formData.minStock) || 0,
+        section: formData.section || 'TODOS',
         imageUrl: (finalImages && finalImages.length > 0) ? finalImages[0] : '',
         images: finalImages || []
       };
@@ -462,6 +468,20 @@ const Products = () => {
                 <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
             </select>
+            <select 
+              className="category-select"
+              value={selectedSection} 
+              onChange={(e) => setSelectedSection(e.target.value)}
+              style={{ padding: '0 12px', borderRadius: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', outline: 'none', cursor: 'pointer', minWidth: '120px' }}
+            >
+              <option value="all">Sección (Todas)</option>
+              <option value="TODOS">TODOS</option>
+              <option value="MAMÁ">MAMÁ</option>
+              <option value="PAPÁ">PAPÁ</option>
+              <option value="BEBÉ">BEBÉ</option>
+              <option value="ACCESORIOS">ACCESORIOS</option>
+              <option value="OFERTAS">OFERTAS</option>
+            </select>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <input type="file" id="import-excel-input" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleImportExcel} />
@@ -478,7 +498,7 @@ const Products = () => {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Producto</th><th>SKU</th><th>Categoría</th><th>Costo</th><th>Precio Venta</th><th>Stock</th>
+                <th>Producto</th><th>SKU</th><th>Categoría</th><th>Sección</th><th>Costo</th><th>Precio Venta</th><th>Stock</th>
                 <th className="badge-col-header">Nuevo</th>
                 <th className="badge-col-header">¡Solo<br/>quedan!</th>
                 <th className="badge-col-header">Últimas<br/>piezas</th>
@@ -496,6 +516,7 @@ const Products = () => {
                   </td>
                   <td data-label="SKU">{product.sku}</td>
                   <td data-label="Categoría"><span className="badge badge-info">{getCategoryName(product.categoryId)}</span></td>
+                  <td data-label="Sección"><span className="badge" style={{ background: 'rgba(255,255,255,0.1)' }}>{product.section || 'TODOS'}</span></td>
                   <td data-label="Costo" className="text-secondary" style={{ whiteSpace: 'nowrap' }}>L. {Number(product.costPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   <td data-label="Precio Venta" className="highlight-price" style={{ whiteSpace: 'nowrap' }}>L. {Number(product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   <td data-label="Stock">
@@ -591,6 +612,17 @@ const Products = () => {
                   <label>Categoría</label>
                   <select name="categoryId" value={formData.categoryId} onChange={handleChange} required>
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Sección</label>
+                  <select name="section" value={formData.section} onChange={handleChange} required>
+                    <option value="TODOS">TODOS</option>
+                    <option value="MAMÁ">MAMÁ</option>
+                    <option value="PAPÁ">PAPÁ</option>
+                    <option value="BEBÉ">BEBÉ</option>
+                    <option value="ACCESORIOS">ACCESORIOS</option>
+                    <option value="OFERTAS">OFERTAS</option>
                   </select>
                 </div>
               </div>

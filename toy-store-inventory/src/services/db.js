@@ -22,7 +22,7 @@ export const productRepository = {
     return data || [];
   },
 
-  async getPaginated({ page = 0, limit = 12, category = 'all', search = '', minPrice = 0, maxPrice = 10000, ageRange = 'all' }) {
+  async getPaginated({ page = 0, limit = 12, category = 'all', search = '', minPrice = 0, maxPrice = 10000, ageRange = 'all', section = 'all' }) {
     let query = supabase
       .from('products')
       .select('*', { count: 'exact' })
@@ -30,6 +30,7 @@ export const productRepository = {
 
     if (category !== 'all') query = query.eq('categoryId', category);
     if (ageRange !== 'all') query = query.eq('ageRange', ageRange);
+    if (section !== 'all') query = query.eq('section', section);
     if (search) {
       // Búsqueda en nombre o SKU
       query = query.or(`name.ilike.%${search}%,sku.ilike.%${search}%`);

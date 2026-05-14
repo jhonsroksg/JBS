@@ -8,21 +8,23 @@ import { OptimizedImage } from '../components/OptimizedImage';
 import { SkeletonGrid } from '../components/SkeletonLoader';
 
 import { SearchBar } from '../components/SearchBar';
+import { SectionCarousel } from '../components/SectionCarousel';
 const ProductModal = lazy(() => import('../components/ProductModal').then(module => ({ default: module.ProductModal })));
 import './Storefront.css';
 
 // Componente para manejar el SEO Dinámico
-const StorefrontSEO = ({ activeCategory, categories, totalProducts }) => {
+const StorefrontSEO = ({ activeCategory, categories, totalProducts, activeSection }) => {
   const currentCategory = categories.find(c => c.id === activeCategory);
   const categoryName = currentCategory ? currentCategory.name : 'Todas las Categorías';
+  const sectionLabel = activeSection !== 'all' ? ` | Sección ${activeSection.toUpperCase()}` : '';
   
   const title = activeCategory === 'all' 
-    ? 'Joa Baby Shop | Juguetería y Accesorios para Bebés' 
-    : `${categoryName} | Juguetes Premium | Joa Baby Shop`;
+    ? `Joa Baby Shop${sectionLabel} | Juguetería y Accesorios para Bebés` 
+    : `${categoryName}${sectionLabel} | Juguetes Premium | Joa Baby Shop`;
     
   const description = activeCategory === 'all'
-    ? `Explora más de ${totalProducts} juguetes y accesorios para bebés en San Pedro Sula. Calidad premium y envíos a toda Honduras.`
-    : `Encuentra los mejores artículos de ${categoryName} en Joa Baby Shop. Calidad garantizada para tu bebé.`;
+    ? `Explora más de ${totalProducts} juguetes y accesorios para bebés${activeSection !== 'all' ? ` en la sección ${activeSection}` : ''} en San Pedro Sula. Calidad premium y envíos a toda Honduras.`
+    : `Encuentra los mejores artículos de ${categoryName}${activeSection !== 'all' ? ` para ${activeSection}` : ''} en Joa Baby Shop. Calidad garantizada para tu bebé.`;
 
   return (
     <Helmet>
@@ -35,7 +37,7 @@ const StorefrontSEO = ({ activeCategory, categories, totalProducts }) => {
       <meta property="og:site_name" content="Joa Baby Shop" />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
-      <meta name="keywords" content={`juguetes, bebés, ${categoryName}, honduras, joa baby shop`} />
+      <meta name="keywords" content={`juguetes, bebés, ${categoryName}, ${activeSection}, honduras, joa baby shop`} />
     </Helmet>
   );
 };
@@ -124,6 +126,7 @@ const Storefront = () => {
   
   const [searchParams, setSearchParams] = useSearchParams();
   const activeCategory = searchParams.get('cat') || 'all';
+  const activeSection = searchParams.get('section') || 'all';
   const searchTerm = searchParams.get('q') || '';
   const selectedProductId = searchParams.get('producto');
 
@@ -141,6 +144,7 @@ const Storefront = () => {
   };
 
   const setActiveCategory = (cat) => updateParams({ cat });
+  const setActiveSection = (section) => updateParams({ section });
   const setSearchTerm = (q) => updateParams({ q });
   const setSelectedProduct = (product) => {
     updateParams({ producto: product ? product.id : null });
@@ -158,7 +162,7 @@ const Storefront = () => {
 
   // --- Estrategia de Carga Granular (Paginada) ---
   const fetchProducts = async (pageToFetch, isNewSearch = false) => {
-    const cacheKey = `products:${activeCategory}:${activeAgeRange}:${priceRange}:${searchTerm}:${pageToFetch}`;
+    const cacheKey = `products:${activeCategory}:${activeSection}:${activeAgeRange}:${priceRange}:${searchTerm}:${pageToFetch}`;
     const cachedData = getCache(cacheKey);
 
     if (cachedData && !isNewSearch) {
@@ -176,6 +180,7 @@ const Storefront = () => {
         page: pageToFetch,
         limit: 12,
         category: activeCategory,
+        section: activeSection,
         search: searchTerm,
         maxPrice: priceRange,
         ageRange: activeAgeRange
@@ -192,11 +197,12 @@ const Storefront = () => {
           page: pageToFetch + 1,
           limit: 12,
           category: activeCategory,
+          section: activeSection,
           search: searchTerm,
           maxPrice: priceRange,
           ageRange: activeAgeRange
         }).then(nextData => {
-          setCache(`products:${activeCategory}:${activeAgeRange}:${priceRange}:${searchTerm}:${pageToFetch + 1}`, nextData);
+          setCache(`products:${activeCategory}:${activeSection}:${activeAgeRange}:${priceRange}:${searchTerm}:${pageToFetch + 1}`, nextData);
         });
       }
     } catch (error) {
@@ -227,7 +233,7 @@ const Storefront = () => {
   useEffect(() => {
     setPage(0);
     fetchProducts(0, true);
-  }, [activeCategory, searchTerm, activeAgeRange, priceRange]);
+  }, [activeCategory, activeSection, searchTerm, activeAgeRange, priceRange]);
 
   const loadMore = () => {
     if (hasMore && !isLoadingMore) {
@@ -324,6 +330,7 @@ const Storefront = () => {
         activeCategory={activeCategory} 
         categories={categories} 
         totalProducts={products.length} 
+        activeSection={activeSection}
       />
       
       <div 
@@ -335,6 +342,11 @@ const Storefront = () => {
         <div className="hero-content">
           <h1>{storeInfo.name}</h1>
           <p>{storeInfo.welcomeMessage}</p>
+          
+          <SectionCarousel 
+            activeSection={activeSection} 
+            onSectionChange={setActiveSection} 
+          />
         </div>
       </div>
 
@@ -380,7 +392,7 @@ const Storefront = () => {
             </div>
           </div>
 
-          <button className="btn-clear-inline" onClick={() => { setActiveCategory('all'); setActiveAgeRange('all'); setSearchTerm(''); setPriceRange(2500); }}>
+          <button className="btn-clear-inline" onClick={() => { setActiveCategory('all'); setActiveSection('all'); setActiveAgeRange('all'); setSearchTerm(''); setPriceRange(2500); }}>
             <RotateCcw size={14} style={{ marginRight: '6px' }} /> Limpiar
           </button>
         </div>
@@ -451,7 +463,7 @@ const Storefront = () => {
               <button className="btn-primary" style={{ width: '100%', height: '48px' }} onClick={() => setIsMobileFiltersOpen(false)}>
                 Aplicar Filtros
               </button>
-              <button className="btn-clear-filters" style={{ width: '100%' }} onClick={() => { setActiveCategory('all'); setActiveAgeRange('all'); setSearchTerm(''); setPriceRange(2500); setIsMobileFiltersOpen(false); }}>
+              <button className="btn-clear-filters" style={{ width: '100%' }} onClick={() => { setActiveCategory('all'); setActiveSection('all'); setActiveAgeRange('all'); setSearchTerm(''); setPriceRange(2500); setIsMobileFiltersOpen(false); }}>
                 Limpiar todo
               </button>
             </div>
