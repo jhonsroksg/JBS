@@ -47,12 +47,12 @@ const SectionNavBar = () => {
   return (
     <nav className="section-navbar">
       <div className="section-navbar-inner">
-        <button 
-          className={`section-nav-link ${activeSection === 'all' ? 'active' : ''}`}
-          onClick={() => handleSectionClick('all')}
+        <a 
+          href="https://joababyshophn.com/"
+          className="section-nav-link section-nav-home"
         >
-          Todo
-        </button>
+          Joa Baby
+        </a>
         {sections.map((section) => (
           <button 
             key={section.id} 
