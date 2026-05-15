@@ -22,11 +22,12 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  border-radius: 0 0 24px 24px;
+  border-radius: 0;
   border-top: none;
-  margin-bottom: 24px;
+  margin-bottom: 0;
   background: rgba(255, 255, 255, 0.85) !important;
   backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid var(--border-color);
 }
 
 
@@ -108,7 +109,7 @@
   .store-header {
     padding: var(--safe-top) 20px 0;
     height: calc(70px + var(--safe-top));
-    border-radius: 0 0 16px 16px;
+    border-radius: 0;
   }
 
   .store-brand h2 {
