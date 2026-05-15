@@ -8,7 +8,6 @@ import { OptimizedImage } from '../components/OptimizedImage';
 import { SkeletonGrid } from '../components/SkeletonLoader';
 
 import { SearchBar } from '../components/SearchBar';
-import { SectionCarousel } from '../components/SectionCarousel';
 const ProductModal = lazy(() => import('../components/ProductModal').then(module => ({ default: module.ProductModal })));
 import './Storefront.css';
 
@@ -358,12 +357,6 @@ const Storefront = () => {
         products={products}
         categories={categories}
         onFilterClick={() => setIsMobileFiltersOpen(true)}
-      />
-
-      <SectionCarousel 
-        sections={sections.length > 0 ? sections : undefined}
-        activeSection={activeSection} 
-        onSectionChange={setActiveSection} 
       />
 
       <div className="filter-bar">

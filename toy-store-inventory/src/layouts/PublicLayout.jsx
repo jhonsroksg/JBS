@@ -6,6 +6,7 @@ import { db } from '../services/db';
 import './PublicLayout.css';
 import Footer from '../components/Footer';
 import CartSidebar from '../components/CartSidebar';
+import SectionNavBar from '../components/SectionNavBar';
 
 const PublicLayout = () => {
   const [cartCount, setCartCount] = useState(0);
@@ -60,6 +61,7 @@ const PublicLayout = () => {
           </button>
         </div>
       </header>
+      <SectionNavBar />
       <main className="store-main">
         <Outlet />
       </main>

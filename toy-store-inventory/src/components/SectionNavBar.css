@@ -1,0 +1,68 @@
+.section-navbar {
+  background-color: #232f3e;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 0 20px;
+  height: 40px;
+  overflow: hidden;
+  z-index: 900;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.section-navbar-inner {
+  max-width: var(--container-max, 1200px);
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE and Edge */
+}
+
+.section-navbar-inner::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+.section-nav-link {
+  background: none;
+  border: none;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0 10px;
+  height: 100%;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.section-nav-link:hover {
+  border: 1px solid #ffffff;
+  border-radius: 2px;
+}
+
+.section-nav-link.active {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+@media (max-width: 768px) {
+  .section-navbar {
+    padding: 0 10px;
+    height: 45px;
+  }
+  
+  .section-navbar-inner {
+    gap: 15px;
+  }
+  
+  .section-nav-link {
+    font-size: 13px;
+  }
+}
