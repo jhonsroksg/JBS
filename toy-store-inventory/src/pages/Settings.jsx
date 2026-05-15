@@ -734,6 +734,7 @@ const Settings = () => {
                 </button>
               </div>
             )}
+          </div>
         </div>
       )}
 
