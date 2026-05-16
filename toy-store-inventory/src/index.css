@@ -549,3 +549,79 @@ h1, h2, h3, h4, h5, h6 {
     align-items: flex-start;
   }
 }
+
+/* =============================================
+   Paletas dinámicas por sección – Joa Family
+   Activadas por data-section en .storefront
+   ============================================= */
+
+.storefront[data-section="mamá"],
+.storefront[data-section="mama"] {
+  --accent-primary: #D4537E;
+  --accent-hover: #993556;
+  --accent-gradient: linear-gradient(135deg, #D4537E 0%, #993556 100%);
+  --bg-primary: #FCF1F5;
+  --bg-tertiary: #F8EAF0;
+  --shadow-md: 0 10px 30px rgba(244, 192, 209, 0.5);
+  --shadow-sm: 0 4px 6px -1px rgba(212, 83, 126, 0.1);
+  --shadow-glow: 0 0 20px rgba(212, 83, 126, 0.3);
+}
+
+.storefront[data-section="papá"],
+.storefront[data-section="papa"] {
+  --accent-primary: #378ADD;
+  --accent-hover: #185FA5;
+  --accent-gradient: linear-gradient(135deg, #378AD0 0%, #185FA5 100%);
+  --bg-primary: #EEF4FB;
+  --bg-tertiary: #E6F1FB;
+  --shadow-md: 0 10px 30px rgba(181, 212, 244, 0.5);
+  --shadow-sm: 0 4px 6px -1px rgba(55, 138, 221, 0.1);
+  --shadow-glow: 0 0 20px rgba(55, 138, 221, 0.3);
+}
+
+.storefront[data-section="bebé"],
+.storefront[data-section="bebe"] {
+  --accent-primary: #E6A817;
+  --accent-hover: #C48F0E;
+  --accent-gradient: linear-gradient(135deg, #E6A817 0%, #C48F0E 100%);
+  --bg-primary: #FDF8ED;
+  --bg-tertiary: #FAF3E0;
+  --shadow-md: 0 10px 30px rgba(250, 220, 150, 0.5);
+  --shadow-sm: 0 4px 6px -1px rgba(230, 168, 23, 0.1);
+  --shadow-glow: 0 0 20px rgba(230, 168, 23, 0.3);
+}
+
+.storefront[data-section="accesorios"] {
+  --accent-primary: #2E9E5A;
+  --accent-hover: #1F7A42;
+  --accent-gradient: linear-gradient(135deg, #2E9E5A 0%, #1F7A42 100%);
+  --bg-primary: #EFF8F3;
+  --bg-tertiary: #E4F3EA;
+  --shadow-md: 0 10px 30px rgba(180, 230, 200, 0.5);
+  --shadow-sm: 0 4px 6px -1px rgba(46, 158, 90, 0.1);
+  --shadow-glow: 0 0 20px rgba(46, 158, 90, 0.3);
+}
+
+.storefront[data-section="ofertas"] {
+  --accent-primary: #E8722A;
+  --accent-hover: #C45A18;
+  --accent-gradient: linear-gradient(135deg, #E8722A 0%, #C45A18 100%);
+  --bg-primary: #FEF5EE;
+  --bg-tertiary: #FAEEE4;
+  --shadow-md: 0 10px 30px rgba(248, 200, 160, 0.5);
+  --shadow-sm: 0 4px 6px -1px rgba(232, 114, 42, 0.1);
+  --shadow-glow: 0 0 20px rgba(232, 114, 42, 0.3);
+}
+
+/* Transición suave al cambiar de sección */
+.storefront {
+  transition: background-color 0.4s ease;
+}
+
+.storefront .hero-section,
+.storefront .filter-bar,
+.storefront .product-card,
+.storefront .btn-primary {
+  transition: background 0.4s ease, color 0.4s ease,
+    border-color 0.4s ease, box-shadow 0.4s ease;
+}
