@@ -136,20 +136,6 @@ const CheckoutModal = ({ isOpen, onClose }) => {
 
     setIsSubmitting(true);
 
-    // --- VALIDACIÓN DE STOCK REAL-TIME ---
-    try {
-      for (const item of cart) {
-        const dbProduct = await db.getById('products', item.product.id);
-        if (!dbProduct || dbProduct.stock < item.quantity) {
-          showToast(`Lo sentimos, el producto "${item.product.name}" ya no tiene suficiente stock disponible.`, 'error');
-          setIsSubmitting(false);
-          return;
-        }
-      }
-    } catch (stockErr) {
-      console.error('Error validando stock:', stockErr);
-      // Continuamos si hay error de red, pero lo ideal es que pase la validación
-    }
 
     const currentSubtotal = cart.reduce((acc, item) => acc + ((item.product.discountPrice || item.product.sellingPrice) * item.quantity), 0);
     let currentDiscount = 0;
@@ -209,16 +195,34 @@ const CheckoutModal = ({ isOpen, onClose }) => {
         if (newOrder && newOrder.order_id_custom) {
           setCompletedOrderNumber(newOrder.order_id_custom);
         } else {
-          // Fallback por si el trigger no ha terminado o RLS bloquea lectura
           setCompletedOrderNumber('PROCESANDO...');
         }
       } catch (insertErr) {
         console.error('CRITICAL: Error al insertar el pedido en Supabase:', insertErr);
-        // Special diagnostic for common Supabase issues
+        
+        // Detectar error de stock insuficiente devuelto por el trigger SQL
+        const errMsg = insertErr.message || '';
+        if (errMsg.includes('STOCK_INSUFICIENTE')) {
+          // Formato del trigger: STOCK_INSUFICIENTE: <nombre>|disponible:<n>|solicitado:<n>
+          const match = errMsg.match(/STOCK_INSUFICIENTE:\s*([^|]+)\|disponible:(\d+)\|solicitado:(\d+)/);
+          if (match) {
+            const [, productName, available, requested] = match;
+            showToast(`Stock insuficiente para "${productName.trim()}". Disponible: ${available}, solicitado: ${requested}.`, 'error');
+          } else {
+            showToast('Stock insuficiente para uno de los productos. Refresca tu carrito.', 'error');
+          }
+          setIsSubmitting(false);
+          return;
+        }
+        
         if (insertErr.message?.includes('RLS') || insertErr.code === '42501') {
           console.warn('Posible problema de permisos RLS en la tabla "orders".');
+          showToast('Error de permisos al crear el pedido. Contacta al administrador.', 'error');
+          setIsSubmitting(false);
+          return;
         }
-        throw insertErr; // Re-throw to show alert
+        
+        throw insertErr;
       }
 
       // 4. Trigger Background Tasks (Secondary priority - NON-BLOCKING)
@@ -252,19 +256,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
             }
           })());
 
-          // Task C: Stock Update
-          sanitizedCart.forEach(item => {
-            bgTasks.push((async () => {
-              try {
-                const dbProduct = await db.getById('products', item.product.id);
-                if (dbProduct) {
-                  return db.update('products', dbProduct.id, { stock: Math.max(0, dbProduct.stock - item.quantity) });
-                }
-              } catch (stockErr) {
-                console.warn(`Actualización de stock para producto ${item.product.name} falló (no crítica):`, stockErr.message);
-              }
-            })());
-          });
+
 
           // Las tareas D (Correo) se manejan ahora vía Database Webhooks en Supabase
           // para mayor fiabilidad (no dependen del navegador del cliente).
