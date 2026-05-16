@@ -49,7 +49,7 @@ body {
     radial-gradient(ellipse 80% 50% at 50% 0%, color-mix(in srgb, var(--accent-primary) 12%, transparent), transparent 70%),
     radial-gradient(ellipse 60% 40% at 100% 100%, color-mix(in srgb, var(--accent-primary) 8%, transparent), transparent 60%);
   background-attachment: fixed;
-  transition: background-color 0.6s ease;
+  transition: background-color 0.6s ease, background-image 0.6s ease;
   min-height: 100vh;
   color: var(--text-primary);
   line-height: 1.5;
@@ -561,8 +561,8 @@ h1, h2, h3, h4, h5, h6 {
    Activadas por data-section en .store-container
    ============================================= */
 
-.store-container[data-section="mamá"],
-.store-container[data-section="mama"] {
+html[data-section="mamá"],
+html[data-section="mama"] {
   --accent-primary: #D4537E;
   --accent-hover: #993556;
   --accent-gradient: linear-gradient(135deg, #D4537E 0%, #993556 100%);
@@ -573,8 +573,8 @@ h1, h2, h3, h4, h5, h6 {
   --shadow-glow: 0 0 20px rgba(212, 83, 126, 0.3);
 }
 
-.store-container[data-section="papá"],
-.store-container[data-section="papa"] {
+html[data-section="papá"],
+html[data-section="papa"] {
   --accent-primary: #378ADD;
   --accent-hover: #185FA5;
   --accent-gradient: linear-gradient(135deg, #378AD0 0%, #185FA5 100%);
@@ -585,8 +585,8 @@ h1, h2, h3, h4, h5, h6 {
   --shadow-glow: 0 0 20px rgba(55, 138, 221, 0.3);
 }
 
-.store-container[data-section="bebé"],
-.store-container[data-section="bebe"] {
+html[data-section="bebé"],
+html[data-section="bebe"] {
   --accent-primary: #E6A817;
   --accent-hover: #C48F0E;
   --accent-gradient: linear-gradient(135deg, #E6A817 0%, #C48F0E 100%);
@@ -597,7 +597,7 @@ h1, h2, h3, h4, h5, h6 {
   --shadow-glow: 0 0 20px rgba(230, 168, 23, 0.3);
 }
 
-.store-container[data-section="accesorios"] {
+html[data-section="accesorios"] {
   --accent-primary: #2E9E5A;
   --accent-hover: #1F7A42;
   --accent-gradient: linear-gradient(135deg, #2E9E5A 0%, #1F7A42 100%);
@@ -608,7 +608,7 @@ h1, h2, h3, h4, h5, h6 {
   --shadow-glow: 0 0 20px rgba(46, 158, 90, 0.3);
 }
 
-.store-container[data-section="ofertas"] {
+html[data-section="ofertas"] {
   --accent-primary: #E8722A;
   --accent-hover: #C45A18;
   --accent-gradient: linear-gradient(135deg, #E8722A 0%, #C45A18 100%);
@@ -633,7 +633,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Halo decorativo flotante que refuerza la inmersión */
-.store-container::before {
+body::before {
   content: '';
   position: fixed;
   top: 0;
@@ -651,6 +651,10 @@ h1, h2, h3, h4, h5, h6 {
   transition: opacity 0.8s ease;
 }
 
-.store-container[data-section]:not([data-section="default"]):not([data-section="all"])::before {
+html[data-section]:not([data-section="default"]):not([data-section="all"]) body::before {
   opacity: 1;
+}
+
+html {
+  transition: background-color 0.6s ease;
 }

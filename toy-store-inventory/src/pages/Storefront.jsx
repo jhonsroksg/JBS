@@ -367,7 +367,7 @@ const Storefront = () => {
       <div 
         className="hero-section glass-panel" 
         style={{ 
-          backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.5), rgba(235, 245, 251, 0.95)), url("${heroImageUrl}")` 
+          backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.5), color-mix(in srgb, var(--bg-primary) 95%, transparent)), url("${heroImageUrl}")` 
         }}
       >
         <div className="hero-content">

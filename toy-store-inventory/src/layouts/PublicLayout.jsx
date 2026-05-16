@@ -74,14 +74,31 @@ const PublicLayout = () => {
     return match?.color || null;
   }, [sections, activeSection]);
 
-  const dynamicStyle = activeColor ? {
-    '--accent-primary': activeColor,
-    '--accent-hover': darkenHex(activeColor, 25),
-    '--accent-gradient': `linear-gradient(135deg, ${activeColor} 0%, ${darkenHex(activeColor, 25)} 100%)`
-  } : {};
+  useEffect(() => {
+    const html = document.documentElement;
+    html.setAttribute('data-section', activeSection);
+
+    if (activeColor) {
+      const hover = darkenHex(activeColor, 25);
+      html.style.setProperty('--accent-primary', activeColor);
+      html.style.setProperty('--accent-hover', hover);
+      html.style.setProperty('--accent-gradient', `linear-gradient(135deg, ${activeColor} 0%, ${hover} 100%)`);
+    } else {
+      html.style.removeProperty('--accent-primary');
+      html.style.removeProperty('--accent-hover');
+      html.style.removeProperty('--accent-gradient');
+    }
+
+    return () => {
+      html.removeAttribute('data-section');
+      html.style.removeProperty('--accent-primary');
+      html.style.removeProperty('--accent-hover');
+      html.style.removeProperty('--accent-gradient');
+    };
+  }, [activeSection, activeColor]);
 
   return (
-    <div className={`store-container ${isSidebarOpen ? 'cart-open' : ''}`} data-section={activeSection} style={dynamicStyle}>
+    <div className={`store-container ${isSidebarOpen ? 'cart-open' : ''}`}>
       <header className="store-header glass-panel">
 
         <div className="store-brand">
