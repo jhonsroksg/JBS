@@ -30,7 +30,14 @@ export const productRepository = {
 
     if (category !== 'all') query = query.eq('categoryId', category);
     if (ageRange !== 'all') query = query.eq('ageRange', ageRange);
-    if (section !== 'all') query = query.eq('section', section);
+    // Filtrado por sección con regla especial para 'all':
+    // - 'all' (home): mostrar solo BEBÉ y TODOS, excluir MAMÁ y PAPÁ
+    // - cualquier sección específica: filtrado estricto (igual a esa sección)
+    if (section === 'all') {
+      query = query.in('section', ['BEBÉ', 'TODOS']);
+    } else {
+      query = query.eq('section', section);
+    }
     if (search) {
       // Búsqueda en nombre o SKU
       query = query.or(`name.ilike.%${search}%,sku.ilike.%${search}%`);

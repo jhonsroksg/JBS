@@ -479,8 +479,6 @@ const Products = () => {
               <option value="MAMÁ">MAMÁ</option>
               <option value="PAPÁ">PAPÁ</option>
               <option value="BEBÉ">BEBÉ</option>
-              <option value="ACCESORIOS">ACCESORIOS</option>
-              <option value="OFERTAS">OFERTAS</option>
             </select>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
@@ -516,7 +514,19 @@ const Products = () => {
                   </td>
                   <td data-label="SKU">{product.sku}</td>
                   <td data-label="Categoría"><span className="badge badge-info">{getCategoryName(product.categoryId)}</span></td>
-                  <td data-label="Sección"><span className="badge" style={{ background: 'rgba(255,255,255,0.1)' }}>{product.section || 'TODOS'}</span></td>
+                  <td data-label="Sección">
+                    <span 
+                      className="badge" 
+                      style={{ background: 'rgba(255,255,255,0.1)' }}
+                      title={
+                        (product.section === 'TODOS' || !product.section)
+                          ? 'Aparece solo en la home Joa Baby Shop'
+                          : `Aparece solo en la sección ${product.section}`
+                      }
+                    >
+                      {product.section || 'TODOS'}
+                    </span>
+                  </td>
                   <td data-label="Costo" className="text-secondary" style={{ whiteSpace: 'nowrap' }}>L. {Number(product.costPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   <td data-label="Precio Venta" className="highlight-price" style={{ whiteSpace: 'nowrap' }}>L. {Number(product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   <td data-label="Stock">
@@ -621,8 +631,6 @@ const Products = () => {
                     <option value="MAMÁ">MAMÁ</option>
                     <option value="PAPÁ">PAPÁ</option>
                     <option value="BEBÉ">BEBÉ</option>
-                    <option value="ACCESORIOS">ACCESORIOS</option>
-                    <option value="OFERTAS">OFERTAS</option>
                   </select>
                 </div>
               </div>

@@ -257,6 +257,17 @@ const Storefront = () => {
   };
 
   useEffect(() => {
+    // Invalidación única tras migración de secciones (16 mayo 2026)
+    try {
+      const migrationKey = 'joa_section_migration_v1';
+      if (!localStorage.getItem(migrationKey)) {
+        Object.keys(localStorage)
+          .filter(k => k.startsWith('joa_cache_products:'))
+          .forEach(k => localStorage.removeItem(k));
+        localStorage.setItem(migrationKey, '1');
+      }
+    } catch {}
+
     revalidateData(true);
     let intervalId = setInterval(() => revalidateData(true), 60000);
 
