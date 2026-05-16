@@ -362,7 +362,10 @@ const Settings = () => {
       setNewSectionTitle('');
       setNewSectionSubtitle('');
       await loadData();
-    } catch (error) { alert('Error al agregar sección.'); }
+    } catch (error) { 
+      console.error('Error al agregar sección:', error);
+      alert('Error al agregar sección: ' + (error.message || JSON.stringify(error))); 
+    }
   };
 
   const handleEditSection = (section) => {
@@ -388,7 +391,10 @@ const Settings = () => {
       });
       setEditingSectionId(null);
       await loadData();
-    } catch (error) { alert('Error al actualizar sección.'); }
+    } catch (error) { 
+      console.error('Error al actualizar sección:', error);
+      alert('Error al actualizar sección: ' + (error.message || JSON.stringify(error))); 
+    }
   };
 
   const handleDeleteSection = async (id, name) => {
