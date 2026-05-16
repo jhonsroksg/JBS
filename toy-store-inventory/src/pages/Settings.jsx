@@ -48,10 +48,17 @@ const Settings = () => {
   const [newSectionName, setNewSectionName] = useState('');
   const [newSectionIcon, setNewSectionIcon] = useState('Heart');
   const [newSectionColor, setNewSectionColor] = useState('#1FB7B9');
+  const [newSectionImage, setNewSectionImage] = useState('');
+  const [newSectionTitle, setNewSectionTitle] = useState('');
+  const [newSectionSubtitle, setNewSectionSubtitle] = useState('');
   const [editingSectionId, setEditingSectionId] = useState(null);
   const [editingSectionName, setEditingSectionName] = useState('');
   const [editingSectionIcon, setEditingSectionIcon] = useState('');
   const [editingSectionColor, setEditingSectionColor] = useState('');
+  const [editingSectionImage, setEditingSectionImage] = useState('');
+  const [editingSectionTitle, setEditingSectionTitle] = useState('');
+  const [editingSectionSubtitle, setEditingSectionSubtitle] = useState('');
+  const [uploadingSectionImage, setUploadingSectionImage] = useState(false);
 
   const [activeTab, setActiveTab] = useState('general');
 
@@ -305,6 +312,39 @@ const Settings = () => {
   };
 
   // Main Sections CRUD
+  const handleSectionImageUpload = async (e, isEditing = false) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingSectionImage(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const resized = await resizeHeroImage(event.target.result);
+          // Convert dataURL to Blob
+          const response = await fetch(resized);
+          const blob = await response.blob();
+          const fileName = `sections/${Date.now()}.jpg`;
+          const publicUrl = await db.uploadFile('product-images', fileName, blob);
+          if (isEditing) {
+            setEditingSectionImage(publicUrl);
+          } else {
+            setNewSectionImage(publicUrl);
+          }
+        } catch (err) {
+          alert('Error al subir la imagen de sección.');
+          console.error(err);
+        } finally {
+          setUploadingSectionImage(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      alert('Error al procesar la imagen.');
+      setUploadingSectionImage(false);
+    }
+  };
+
   const handleAddSection = async (e) => {
     e.preventDefault();
     if (!newSectionName.trim()) return;
@@ -312,9 +352,15 @@ const Settings = () => {
       await db.insert('main_sections', {
         name: newSectionName.trim().toUpperCase(),
         icon: newSectionIcon,
-        color: newSectionColor
+        color: newSectionColor,
+        hero_image_url: newSectionImage || null,
+        hero_title: newSectionTitle.trim() || null,
+        hero_subtitle: newSectionSubtitle.trim() || null
       });
       setNewSectionName('');
+      setNewSectionImage('');
+      setNewSectionTitle('');
+      setNewSectionSubtitle('');
       await loadData();
     } catch (error) { alert('Error al agregar sección.'); }
   };
@@ -324,6 +370,9 @@ const Settings = () => {
     setEditingSectionName(section.name);
     setEditingSectionIcon(section.icon);
     setEditingSectionColor(section.color);
+    setEditingSectionImage(section.hero_image_url || '');
+    setEditingSectionTitle(section.hero_title || '');
+    setEditingSectionSubtitle(section.hero_subtitle || '');
   };
 
   const handleSaveEditSection = async () => {
@@ -332,7 +381,10 @@ const Settings = () => {
       await db.update('main_sections', editingSectionId, {
         name: editingSectionName.trim().toUpperCase(),
         icon: editingSectionIcon,
-        color: editingSectionColor
+        color: editingSectionColor,
+        hero_image_url: editingSectionImage || null,
+        hero_title: editingSectionTitle.trim() || null,
+        hero_subtitle: editingSectionSubtitle.trim() || null
       });
       setEditingSectionId(null);
       await loadData();
@@ -761,7 +813,31 @@ const Settings = () => {
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px' }}>Color</label>
               <input type="color" value={newSectionColor} onChange={e => setNewSectionColor(e.target.value)} style={{ ...inputStyle, padding: '5px', height: '45px' }} />
             </div>
-            <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+            {/* Hero Image, Title, Subtitle */}
+            <div style={{ width: '100%', display: 'flex', gap: '12px', flexWrap: 'wrap', borderTop: '1px solid var(--border-color)', paddingTop: '16px', marginTop: '4px' }}>
+              <div style={{ width: '200px' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px' }}>Imagen del Hero</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {newSectionImage && (
+                    <img src={newSectionImage} alt="Preview" style={{ width: '80px', height: '50px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border-color)' }} />
+                  )}
+                  <label style={{ ...inputStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', gap: '6px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    <Upload size={16} />
+                    {uploadingSectionImage ? 'Subiendo...' : 'Imagen'}
+                    <input type="file" accept="image/*" onChange={(e) => handleSectionImageUpload(e, false)} style={{ display: 'none' }} />
+                  </label>
+                </div>
+              </div>
+              <div style={{ flex: 1, minWidth: '180px' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px' }}>Título del Hero</label>
+                <input type="text" placeholder="Ej. Mamá Joa" value={newSectionTitle} onChange={e => setNewSectionTitle(e.target.value)} style={inputStyle} />
+              </div>
+              <div style={{ flex: 1, minWidth: '180px' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px' }}>Subtítulo del Hero</label>
+                <input type="text" placeholder="Ej. Todo lo que mamá necesita en un solo lugar" value={newSectionSubtitle} onChange={e => setNewSectionSubtitle(e.target.value)} style={inputStyle} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-end', width: '100%', justifyContent: 'flex-end' }}>
               <button type="submit" className="btn-primary" style={{ height: '45px', padding: '0 24px' }}><Plus size={20} /> Agregar</button>
             </div>
           </form>
@@ -776,12 +852,26 @@ const Settings = () => {
               }}>
                 {editingSectionId === s.id ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
-                    <input type="text" value={editingSectionName} onChange={e => setEditingSectionName(e.target.value)} style={inputStyle} />
+                    <input type="text" value={editingSectionName} onChange={e => setEditingSectionName(e.target.value)} style={inputStyle} placeholder="Nombre" />
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <select value={editingSectionIcon} onChange={e => setEditingSectionIcon(e.target.value)} style={{ ...inputStyle, flex: 1 }}>
                         {availableIcons.map(icon => <option key={icon} value={icon}>{icon}</option>)}
                       </select>
                       <input type="color" value={editingSectionColor} onChange={e => setEditingSectionColor(e.target.value)} style={{ ...inputStyle, width: '60px', padding: '2px' }} />
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      {editingSectionImage && (
+                        <img src={editingSectionImage} alt="Hero" style={{ width: '60px', height: '38px', objectFit: 'cover', borderRadius: '6px', border: '1px solid var(--border-color)' }} />
+                      )}
+                      <label style={{ ...inputStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', gap: '4px', fontSize: '0.8rem', color: 'var(--text-secondary)', flex: 1 }}>
+                        <Upload size={14} />
+                        {uploadingSectionImage ? 'Subiendo...' : 'Imagen Hero'}
+                        <input type="file" accept="image/*" onChange={(e) => handleSectionImageUpload(e, true)} style={{ display: 'none' }} />
+                      </label>
+                    </div>
+                    <input type="text" value={editingSectionTitle} onChange={e => setEditingSectionTitle(e.target.value)} style={inputStyle} placeholder="Título del Hero" />
+                    <input type="text" value={editingSectionSubtitle} onChange={e => setEditingSectionSubtitle(e.target.value)} style={inputStyle} placeholder="Subtítulo del Hero" />
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                       <button onClick={handleSaveEditSection} className="btn-icon" style={{ color: 'var(--success)' }}><Check /></button>
                       <button onClick={() => setEditingSectionId(null)} className="btn-icon"><X /></button>
                     </div>
@@ -802,7 +892,11 @@ const Settings = () => {
                       <div>
                         <strong style={{ fontSize: '1rem', color: 'var(--text-primary)' }}>{s.name}</strong>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Icono: {s.icon}</div>
+                        {s.hero_title && <div style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', marginTop: '2px' }}>{s.hero_title}</div>}
                       </div>
+                      {s.hero_image_url && (
+                        <img src={s.hero_image_url} alt="Hero" style={{ width: '50px', height: '32px', objectFit: 'cover', borderRadius: '6px', border: '1px solid var(--border-color)', marginLeft: 'auto' }} />
+                      )}
                     </div>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button onClick={() => handleEditSection(s)} className="btn-icon"><Edit2 size={16} /></button>
