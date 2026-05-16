@@ -356,7 +356,7 @@ const Storefront = () => {
     || storeInfo.welcomeMessage || '¡Bienvenido a nuestra tienda!';
 
   return (
-    <div className="storefront" data-section={activeSection === 'all' ? 'default' : activeSection.toLowerCase()}>
+    <div className="storefront">
       <StorefrontSEO 
         activeCategory={activeCategory} 
         categories={categories} 

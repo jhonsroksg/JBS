@@ -552,11 +552,11 @@ h1, h2, h3, h4, h5, h6 {
 
 /* =============================================
    Paletas dinámicas por sección – Joa Family
-   Activadas por data-section en .storefront
+   Activadas por data-section en .store-container
    ============================================= */
 
-.storefront[data-section="mamá"],
-.storefront[data-section="mama"] {
+.store-container[data-section="mamá"],
+.store-container[data-section="mama"] {
   --accent-primary: #D4537E;
   --accent-hover: #993556;
   --accent-gradient: linear-gradient(135deg, #D4537E 0%, #993556 100%);
@@ -567,8 +567,8 @@ h1, h2, h3, h4, h5, h6 {
   --shadow-glow: 0 0 20px rgba(212, 83, 126, 0.3);
 }
 
-.storefront[data-section="papá"],
-.storefront[data-section="papa"] {
+.store-container[data-section="papá"],
+.store-container[data-section="papa"] {
   --accent-primary: #378ADD;
   --accent-hover: #185FA5;
   --accent-gradient: linear-gradient(135deg, #378AD0 0%, #185FA5 100%);
@@ -579,8 +579,8 @@ h1, h2, h3, h4, h5, h6 {
   --shadow-glow: 0 0 20px rgba(55, 138, 221, 0.3);
 }
 
-.storefront[data-section="bebé"],
-.storefront[data-section="bebe"] {
+.store-container[data-section="bebé"],
+.store-container[data-section="bebe"] {
   --accent-primary: #E6A817;
   --accent-hover: #C48F0E;
   --accent-gradient: linear-gradient(135deg, #E6A817 0%, #C48F0E 100%);
@@ -591,7 +591,7 @@ h1, h2, h3, h4, h5, h6 {
   --shadow-glow: 0 0 20px rgba(230, 168, 23, 0.3);
 }
 
-.storefront[data-section="accesorios"] {
+.store-container[data-section="accesorios"] {
   --accent-primary: #2E9E5A;
   --accent-hover: #1F7A42;
   --accent-gradient: linear-gradient(135deg, #2E9E5A 0%, #1F7A42 100%);
@@ -602,7 +602,7 @@ h1, h2, h3, h4, h5, h6 {
   --shadow-glow: 0 0 20px rgba(46, 158, 90, 0.3);
 }
 
-.storefront[data-section="ofertas"] {
+.store-container[data-section="ofertas"] {
   --accent-primary: #E8722A;
   --accent-hover: #C45A18;
   --accent-gradient: linear-gradient(135deg, #E8722A 0%, #C45A18 100%);
@@ -614,14 +614,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Transición suave al cambiar de sección */
-.storefront {
-  transition: background-color 0.4s ease;
+.store-container {
+  transition: background 0.6s ease, color 0.6s ease;
 }
 
-.storefront .hero-section,
-.storefront .filter-bar,
-.storefront .product-card,
-.storefront .btn-primary {
+.store-container .hero-section,
+.store-container .filter-bar,
+.store-container .product-card,
+.store-container .btn-primary {
   transition: background 0.4s ease, color 0.4s ease,
     border-color 0.4s ease, box-shadow 0.4s ease;
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, Link } from 'react-router-dom';
+import { Outlet, Link, useSearchParams } from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
 import CheckoutModal from '../components/CheckoutModal';
 import { db } from '../services/db';
@@ -42,8 +42,11 @@ const PublicLayout = () => {
     setCartCount(count);
   };
 
+  const [searchParams] = useSearchParams();
+  const activeSection = (searchParams.get('section') || 'default').toLowerCase();
+
   return (
-    <div className={`store-container ${isSidebarOpen ? 'cart-open' : ''}`}>
+    <div className={`store-container ${isSidebarOpen ? 'cart-open' : ''}`} data-section={activeSection}>
       <header className="store-header glass-panel">
 
         <div className="store-brand">
