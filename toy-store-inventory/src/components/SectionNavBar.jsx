@@ -51,7 +51,7 @@ const SectionNavBar = () => {
           href="https://joababyshophn.com/"
           className="section-nav-link section-nav-home"
         >
-          Joa Baby
+          Joa Baby Shop
         </a>
         {sections.map((section) => (
           <button 
