@@ -33,7 +33,6 @@ const CheckoutModal = ({ isOpen, onClose }) => {
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState('');
-  const [activeCouponsCount, setActiveCouponsCount] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedOrderNumber, setCompletedOrderNumber] = useState(null);
 
@@ -49,15 +48,13 @@ const CheckoutModal = ({ isOpen, onClose }) => {
       setDeliveryMethodId('');
 
       const initData = async () => {
-        const [methods, dMethods, allCoupons] = await Promise.all([
+        const [methods, dMethods] = await Promise.all([
           db.getAll('payment_methods'),
           db.getAll('delivery_methods'),
-          db.getAll('coupons'),
         ]);
         setAvailableMethods(methods);
         if (methods.length > 0) setPaymentMethod(methods[0].name);
         setAvailableDeliveryMethods(dMethods);
-        setActiveCouponsCount(allCoupons.filter(c => c.isActive).length);
       };
       initData();
     }
@@ -90,15 +87,26 @@ const CheckoutModal = ({ isOpen, onClose }) => {
 
   const handleApplyCoupon = async (e) => {
     e?.preventDefault();
-    setCouponError('');
     if (!couponInput.trim()) return;
-    const allCoupons = await db.getAll('coupons');
-    const validCoupon = allCoupons.find(c => c.code === couponInput.trim().toUpperCase() && c.isActive);
-    if (validCoupon) {
-      setAppliedCoupon(validCoupon);
+    setCouponError('');
+    try {
+      const { data, error } = await supabase.rpc('validate_coupon', { 
+        coupon_code: couponInput.trim() 
+      });
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        setCouponError('Cupón inválido o expirado.');
+        setAppliedCoupon(null);
+        return;
+      }
+      setAppliedCoupon(data[0]);
       setCouponInput('');
-    } else {
-      setCouponError('Cupón inválido o expirado.');
+      setCouponError('');
+      showToast('¡Cupón aplicado correctamente!', 'success');
+    } catch (err) {
+      console.error('Error validando cupón:', err);
+      setCouponError('Error al validar el cupón. Intenta de nuevo.');
+      setAppliedCoupon(null);
     }
   };
 
