@@ -6,7 +6,9 @@ const Footer = ({ storeInfo }) => {
   const { name, footer_description, facebook_url, instagram_url, store_address, store_email, phone } = storeInfo;
   
   // Limpiamos el teléfono para el link de WhatsApp
-  const cleanPhone = phone ? phone.replace(/\D/g, '') : '50498927803';
+  const fallbackPhone = (import.meta.env.VITE_WHATSAPP_NUMBER || '').replace(/\D/g, '');
+  const cleanPhone = phone ? phone.replace(/\D/g, '') : fallbackPhone;
+  const hasPhone = cleanPhone.length > 0;
   const whatsappUrl = `https://wa.me/${cleanPhone.length === 8 ? '504' + cleanPhone : cleanPhone}`;
 
   return (
@@ -28,7 +30,9 @@ const Footer = ({ storeInfo }) => {
             {instagram_url && instagram_url !== '#' && (
               <a href={instagram_url} target="_blank" rel="noopener noreferrer" className="btn-icon" style={{ borderRadius: '50%' }}><Instagram size={20} /></a>
             )}
-            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="btn-icon" style={{ borderRadius: '50%', color: '#25D366', borderColor: '#25D366' }}><MessageCircle size={20} /></a>
+            {hasPhone && (
+              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="btn-icon" style={{ borderRadius: '50%', color: '#25D366', borderColor: '#25D366' }}><MessageCircle size={20} /></a>
+            )}
           </div>
         </div>
 
@@ -63,7 +67,7 @@ const Footer = ({ storeInfo }) => {
             </li>
             <li style={{ display: 'flex', gap: '10px', color: 'var(--text-secondary)' }}>
               <Phone size={20} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
-              <span>{phone || '+504 9892-7803'}</span>
+              <span>{phone || (fallbackPhone ? `+${fallbackPhone}` : 'Configurar teléfono')}</span>
             </li>
             <li style={{ display: 'flex', gap: '10px', color: 'var(--text-secondary)' }}>
               <Mail size={20} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
