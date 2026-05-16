@@ -155,6 +155,14 @@ const Storefront = () => {
     products.find(p => p.id === selectedProductId) || null, 
   [products, selectedProductId]);
 
+  const activeSectionData = useMemo(() => {
+    if (activeSection === 'all' || !sections || sections.length === 0)
+      return null;
+    return sections.find(
+      s => (s.name || '').toLowerCase() === activeSection.toLowerCase()
+    ) || null;
+  }, [sections, activeSection]);
+
   const [activeAgeRange, setActiveAgeRange] = useState('all');
   const [priceRange, setPriceRange] = useState(2500); 
   const [mainImageIndex, setMainImageIndex] = useState(0);
@@ -329,8 +337,15 @@ const Storefront = () => {
     });
   };
 
+  const heroImageUrl = activeSectionData?.hero_image_url
+    || storeInfo.hero_image_url || '/hero.png';
+  const heroTitle = activeSectionData?.hero_title || storeInfo.name
+    || 'Joa Baby Shop';
+  const heroSubtitle = activeSectionData?.hero_subtitle
+    || storeInfo.welcomeMessage || '¡Bienvenido a nuestra tienda!';
+
   return (
-    <div className="storefront">
+    <div className="storefront" data-section={activeSection === 'all' ? 'default' : activeSection.toLowerCase()}>
       <StorefrontSEO 
         activeCategory={activeCategory} 
         categories={categories} 
@@ -341,12 +356,12 @@ const Storefront = () => {
       <div 
         className="hero-section glass-panel" 
         style={{ 
-          backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.5), rgba(235, 245, 251, 0.95)), url('${storeInfo.hero_image_url || '/hero.png'}')` 
+          backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.5), rgba(235, 245, 251, 0.95)), url("${heroImageUrl}")` 
         }}
       >
         <div className="hero-content">
-          <h1>{storeInfo.name}</h1>
-          <p>{storeInfo.welcomeMessage}</p>
+          <h1>{heroTitle}</h1>
+          <p>{heroSubtitle}</p>
         </div>
       </div>
 
