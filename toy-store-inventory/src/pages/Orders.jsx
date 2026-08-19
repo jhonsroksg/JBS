@@ -847,6 +847,17 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
       </div>
 
       <div className="export-row">
+        <button onClick={async () => {
+          const testIds = ['16MAY26PED0038', '02MAY26PED0037', '09ABR26PED0036', '09ABR26PED0035', '09ABR26PED0034'];
+          for (let customId of testIds) {
+            const order = orders.find(o => o.order_id_custom === customId);
+            if (order) await db.delete('orders', order.id);
+          }
+          alert('Pedidos de prueba eliminados correctamente.');
+          loadData();
+        }} style={{ background: 'var(--danger)', color: 'white', padding: '8px 12px', borderRadius: '8px', marginRight: '15px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>
+          🗑️ ELIMINAR PEDIDOS DE PRUEBA
+        </button>
         <span style={{alignSelf: 'center', fontSize: '0.9rem', color: 'var(--text-secondary)', marginRight: '8px', fontWeight: 600}}>Exportar Lista:</span>
         <button className="btn-secondary" style={{fontSize: '0.9rem', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px', color: '#e74c3c', borderColor: 'rgba(231, 76, 60, 0.3)'}} onClick={exportToPDFReport}>
           📄 PDF
