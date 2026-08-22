@@ -4,6 +4,7 @@ import { X, Trash2, CheckCircle, User, Mail, Phone, MapPin, Truck, CreditCard, C
 import { hondurasLocations } from '../data/hondurasLocations';
 import { supabase } from '../lib/supabaseClient';
 import { useToast } from '../hooks/useToast';
+import { getOptimizedSupabaseUrl } from './OptimizedImage';
 import './CheckoutModal.css';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -485,7 +486,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                       <div className="cart-items-list">
                         {cart.map((item, index) => (
                           <div key={item.product.id} className="cart-item-card">
-                            <img src={item.product.imageUrl} alt={item.product.name} className="item-card-img" />
+                            <img src={getOptimizedSupabaseUrl(item.product.imageUrl, 150, 70, 'webp')} alt={item.product.name} className="item-card-img" loading="lazy" decoding="async" />
                             <div className="item-card-details">
                               <div className="item-card-header">
                                 <h4>{item.product.name}</h4>

@@ -510,6 +510,7 @@ const Storefront = () => {
                         className="product-image" 
                         priority={index < 3}
                         width="400" height="300"
+                        quality={75}
                       />
                       <div className="product-badges">
                         {product.isNewBadge && <span className="product-badge new">NUEVO</span>}

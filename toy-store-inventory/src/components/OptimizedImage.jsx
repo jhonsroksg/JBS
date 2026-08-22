@@ -12,6 +12,29 @@ const getPlaceholderSvg = (width = 100, height = 100) => {
 };
 
 /**
+ * Generador de URLs optimizadas para Supabase con soporte para formato y calidad.
+ */
+export const getOptimizedSupabaseUrl = (url, w, q = 80, format = 'webp') => {
+  if (!url || typeof url !== 'string' || url.startsWith('data:')) return url;
+  
+  if (url.includes('supabase.co/storage/v1/object/public/')) {
+    try {
+      const urlObj = new URL(url);
+      const finalWidth = w || 800;
+      urlObj.searchParams.set('width', finalWidth.toString());
+      urlObj.searchParams.set('quality', q.toString());
+      urlObj.searchParams.set('format', format);
+      return urlObj.toString();
+    } catch (e) {
+      const base = url.split('?')[0];
+      const finalWidth = w || 800;
+      return `${base}?width=${finalWidth}&quality=${q}&format=${format}`;
+    }
+  }
+  return url;
+};
+
+/**
  * Componente de Imagen Optimizada con Lazy Loading, SVG Placeholder y Soporte AVIF.
  * Mejora el LCP (Largest Contentful Paint) entre un 15-20%.
  */
@@ -22,6 +45,7 @@ export const OptimizedImage = ({
   priority = false, 
   width, 
   height,
+  quality = 80,
   lazy = true,
   placeholderType = 'svg', // Opciones: 'svg' (estático) o 'blur' (LQIP)
   sizes = "(max-width: 640px) 300px, (max-width: 1024px) 600px, 1200px",
@@ -51,37 +75,13 @@ export const OptimizedImage = ({
   }, [priority, lazy, isInView]);
 
   /**
-   * Generador de URLs optimizadas para Supabase con soporte para AVIF.
-   */
-  const getOptimizedUrl = (url, w, q = 80, format = 'avif') => {
-    if (!url || typeof url !== 'string' || url.startsWith('data:')) return url;
-    
-    if (url.includes('supabase.co/storage/v1/object/public/')) {
-      try {
-        const urlObj = new URL(url);
-        // Priorizamos el ancho solicitado por srcset o el prop width
-        const finalWidth = w || width || 800;
-        urlObj.searchParams.set('width', finalWidth.toString());
-        urlObj.searchParams.set('quality', q.toString());
-        urlObj.searchParams.set('format', format);
-        return urlObj.toString();
-      } catch (e) {
-        const base = url.split('?')[0];
-        const finalWidth = w || width || 800;
-        return `${base}?width=${finalWidth}&quality=${q}&format=${format}`;
-      }
-    }
-    return url;
-  };
-
-  /**
    * Genera el atributo srcset con múltiples resoluciones para diseño responsivo.
    * Resoluciones: 300px, 600px, 1200px.
    */
   const generateSrcSet = (url, format = 'avif') => {
     if (!url || !url.includes('supabase.co')) return null;
     return [300, 600, 1200]
-      .map(w => `${getOptimizedUrl(url, w, 80, format)} ${w}w`)
+      .map(w => `${getOptimizedSupabaseUrl(url, w, quality, format)} ${w}w`)
       .join(', ');
   };
 
@@ -90,7 +90,7 @@ export const OptimizedImage = ({
   const srcSetWebp = generateSrcSet(src, 'webp');
   
   // Determinar placeholders según la configuración
-  const lqipSrc = placeholderType === 'blur' ? getOptimizedUrl(src, 50, 20, 'webp') : null;
+  const lqipSrc = placeholderType === 'blur' ? getOptimizedSupabaseUrl(src, 50, 20, 'webp') : null;
   const svgPlaceholder = placeholderType === 'svg' ? getPlaceholderSvg(width || 400, height || 300) : null;
 
   return (
@@ -116,7 +116,7 @@ export const OptimizedImage = ({
           {!error && srcSetAvif && <source srcSet={srcSetAvif} type="image/avif" sizes={sizes} />}
           {!error && srcSetWebp && <source srcSet={srcSetWebp} type="image/webp" sizes={sizes} />}
           <img
-            src={error ? 'https://via.placeholder.com/300?text=Error' : getOptimizedUrl(src, width || 800, 80, 'webp')}
+            src={error ? 'https://via.placeholder.com/300?text=Error' : getOptimizedSupabaseUrl(src, width, quality, 'webp')}
             alt={alt}
             className={`optimized-image-element ${isLoaded ? 'visible' : 'hidden'}`}
             onLoad={() => setIsLoaded(true)}

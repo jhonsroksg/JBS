@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useToast } from '../hooks/useToast';
 import { Gift, Calendar, AlertCircle, ArrowLeft, Clock } from 'lucide-react';
+import { getOptimizedSupabaseUrl } from '../components/OptimizedImage';
 import './LayawayView.css';
 
 const LayawayView = () => {
@@ -197,7 +198,7 @@ const LayawayView = () => {
               return (
                 <div key={item.id} className={`layaway-item-card ${isCompleted ? 'completed' : ''}`}>
                   <div className="card-image-wrapper">
-                    <img src={product.imageUrl || 'https://joababyshophn.com/placeholder-toy.png'} alt={product.name} className="card-image" />
+                    <img src={getOptimizedSupabaseUrl(product.imageUrl || 'https://joababyshophn.com/placeholder-toy.png', 400, 75, 'webp')} alt={product.name} className="card-image" loading="lazy" decoding="async" />
                     {isCompleted && <div className="completed-overlay">¡Ya comprado! 🎉</div>}
                   </div>
                   <div className="card-info">

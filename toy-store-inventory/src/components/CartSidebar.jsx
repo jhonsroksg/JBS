@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, ShoppingBag, Trash2, Plus, Minus, ArrowRight } from 'lucide-react';
+import { getOptimizedSupabaseUrl } from './OptimizedImage';
 import './CartSidebar.css';
 
 const CartSidebar = ({ isOpen, onClose, onCheckout }) => {
@@ -107,7 +108,7 @@ const CartSidebar = ({ isOpen, onClose, onCheckout }) => {
           ) : (
             cart.map((item, index) => (
               <div key={item.product.id} className="cart-sidebar-item">
-                <img src={item.product.imageUrl} alt={item.product.name} className="sidebar-item-img" />
+                <img src={getOptimizedSupabaseUrl(item.product.imageUrl, 150, 70, 'webp')} alt={item.product.name} className="sidebar-item-img" loading="lazy" decoding="async" />
                 <div className="sidebar-item-info">
                   <h4 className="sidebar-item-name">{item.product.name}</h4>
                   <div className="sidebar-item-price">
