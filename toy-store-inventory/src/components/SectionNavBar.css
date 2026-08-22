@@ -8,10 +8,8 @@
   display: flex;
   justify-content: center;
   padding: 0 24px;
-  background: color-mix(in srgb, var(--accent-primary) 6%, transparent);
+  background: color-mix(in srgb, var(--accent-primary) 6%, #ffffff);
   border-bottom: 1px solid color-mix(in srgb, var(--accent-primary) 15%, var(--border-color));
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   position: sticky;
   top: calc(80px + var(--safe-top, 0px));
   z-index: 45;

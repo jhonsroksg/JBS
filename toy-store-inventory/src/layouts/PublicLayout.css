@@ -25,8 +25,7 @@
   border-radius: 0;
   border-top: none;
   margin-bottom: 0;
-  background: color-mix(in srgb, var(--accent-primary) 4%, rgba(255, 255, 255, 0.92)) !important;
-  backdrop-filter: blur(12px) !important;
+  background: #ffffff !important;
   border-bottom: 1px solid color-mix(in srgb, var(--accent-primary) 18%, var(--border-color));
   transition: background 0.6s ease, border-color 0.6s ease;
 }
