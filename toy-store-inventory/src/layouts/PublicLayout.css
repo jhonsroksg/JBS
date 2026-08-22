@@ -121,3 +121,249 @@
     padding: 0 16px;
   }
 }
+
+/* --- ESTILOS DE APARTADOS --- */
+
+.store-nav-btn {
+  background: none;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Indicador de Modo Apartado */
+.layaway-banner-indicator {
+  background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
+  border-bottom: 1px solid #fbcfe8;
+  color: #db2777;
+  padding: 10px 24px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  animation: slideDown 0.3s ease-out;
+}
+
+.btn-exit-layaway {
+  background: #db2777;
+  color: white;
+  border: none;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-exit-layaway:hover {
+  background: #be185d;
+  transform: scale(1.05);
+}
+
+/* Modal de Apartados */
+.layaway-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.layaway-modal-content {
+  background: white;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  border: 1px solid #f3f4f6;
+  animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.layaway-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 28px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.layaway-modal-header h3 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.btn-close-modal {
+  background: #f1f5f9;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-close-modal:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.layaway-modal-body {
+  padding: 28px;
+}
+
+.layaway-option-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px;
+  transition: all var(--transition-fast);
+}
+
+.layaway-option-card:hover {
+  border-color: #fbcfe8;
+  background: #fffdfd;
+}
+
+.layaway-option-card h4 {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.layaway-option-card p {
+  margin: 0 0 16px;
+  font-size: 0.9rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.btn-action-primary {
+  width: 100%;
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: 0 4px 6px -1px rgba(236, 72, 153, 0.2);
+}
+
+.btn-action-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(236, 72, 153, 0.3);
+}
+
+.layaway-modal-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  margin: 16px 0;
+  font-weight: 600;
+}
+
+.layaway-modal-divider::before,
+.layaway-modal-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.layaway-modal-divider span {
+  padding: 0 12px;
+}
+
+.layaway-search-form {
+  display: flex;
+  gap: 10px;
+}
+
+.layaway-input {
+  flex: 1;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: border-color var(--transition-fast);
+  background: white;
+}
+
+.layaway-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.btn-action-secondary {
+  background: #0f172a;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-action-secondary:hover:not(:disabled) {
+  background: #1e293b;
+}
+
+.btn-action-secondary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.layaway-search-error {
+  margin: 10px 0 0;
+  color: #ef4444;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Animaciones */
+@keyframes slideDown {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+

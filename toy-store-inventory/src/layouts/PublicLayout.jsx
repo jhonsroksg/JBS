@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Outlet, Link, useSearchParams } from 'react-router-dom';
-import { ShoppingCart } from 'lucide-react';
+import { Outlet, Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { ShoppingCart, X } from 'lucide-react';
 import CheckoutModal from '../components/CheckoutModal';
 import { db } from '../services/db';
+import { supabase } from '../lib/supabaseClient';
 import './PublicLayout.css';
 import Footer from '../components/Footer';
 import CartSidebar from '../components/CartSidebar';
@@ -23,6 +24,17 @@ const PublicLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [storeInfo, setStoreInfo] = useState({ name: 'Joa Baby Shop' });
   const [sections, setSections] = useState([]);
+  
+  // Estados para apartados
+  const [isLayawayModalOpen, setIsLayawayModalOpen] = useState(false);
+  const [isLayawayMode, setIsLayawayMode] = useState(
+    localStorage.getItem('toy_store_layaway_mode') === 'true'
+  );
+  const [searchCode, setSearchCode] = useState('');
+  const [searchError, setSearchError] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     updateCartCount();
@@ -31,10 +43,10 @@ const PublicLayout = () => {
     // Al añadir un producto o abrir el carrito, mostramos la barra lateral
     const openSidebar = () => setIsSidebarOpen(true);
     window.addEventListener('open_cart', openSidebar);
-    
+
     const loadStoreInfo = async () => {
       const info = await db.getStoreInfo();
-      setStoreInfo(info);
+      if (info) setStoreInfo(info);
     };
     loadStoreInfo();
 
@@ -51,11 +63,18 @@ const PublicLayout = () => {
     window.addEventListener('store_info_updated', loadStoreInfo);
     window.addEventListener('store_info_updated', loadSections);
     
+    // Escuchar cambios de estado para el modo apartado
+    const handleCartUpdate = () => {
+      setIsLayawayMode(localStorage.getItem('toy_store_layaway_mode') === 'true');
+    };
+    window.addEventListener('cart_updated', handleCartUpdate);
+
     return () => {
       window.removeEventListener('cart_updated', updateCartCount);
       window.removeEventListener('open_cart', openSidebar);
       window.removeEventListener('store_info_updated', loadStoreInfo);
       window.removeEventListener('store_info_updated', loadSections);
+      window.removeEventListener('cart_updated', handleCartUpdate);
     };
   }, []);
 
@@ -97,10 +116,65 @@ const PublicLayout = () => {
     };
   }, [activeSection, activeColor]);
 
+  const enableLayawayMode = () => {
+    localStorage.setItem('toy_store_layaway_mode', 'true');
+    setIsLayawayMode(true);
+    setIsLayawayModalOpen(false);
+    window.dispatchEvent(new Event('cart_updated'));
+  };
+
+  const disableLayawayMode = () => {
+    localStorage.removeItem('toy_store_layaway_mode');
+    setIsLayawayMode(false);
+    window.dispatchEvent(new Event('cart_updated'));
+  };
+
+  const handleSearchCode = async (e) => {
+    e.preventDefault();
+    const code = searchCode.trim().toUpperCase();
+    if (!code) return;
+    
+    setIsSearching(true);
+    setSearchError('');
+    
+    try {
+      const { data, error } = await supabase
+        .from('layaways')
+        .select('id, code, status')
+        .eq('code', code)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data) {
+        setSearchError('El código de apartado no existe.');
+      } else if (data.status !== 'active') {
+        setSearchError('Este apartado ya no está activo.');
+      } else {
+        setIsLayawayModalOpen(false);
+        setSearchCode('');
+        navigate(`/apartado/${data.code}`);
+      }
+    } catch (err) {
+      console.error('Error buscando apartado:', err);
+      setSearchError('Error de red. Intenta de nuevo.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   return (
     <div className={`store-container ${isSidebarOpen ? 'cart-open' : ''}`}>
+      {isLayawayMode && (
+        <div className="layaway-banner-indicator">
+          <span>🎉 Modo Lista de Regalos / Apartado Activo</span>
+          <button onClick={disableLayawayMode} className="btn-exit-layaway">
+            Desactivar
+          </button>
+        </div>
+      )}
+      
       <header className="store-header glass-panel">
-
         <div className="store-brand">
           <Link to="/">
             <h2>{storeInfo.name}</h2>
@@ -108,6 +182,11 @@ const PublicLayout = () => {
         </div>
         <nav className="store-nav">
           <Link to="/" className="store-link">Tienda</Link>
+          <Link to="/papa" className="store-link">PAPÁ</Link>
+          <Link to="/mama" className="store-link">MAMÁ</Link>
+          <button onClick={() => setIsLayawayModalOpen(true)} className="store-link store-nav-btn">
+            APARTADOS
+          </button>
         </nav>
         <div className="store-actions">
           <button className="cart-btn" id="open-cart-btn" onClick={() => setIsSidebarOpen(true)}>
@@ -117,16 +196,64 @@ const PublicLayout = () => {
         </div>
       </header>
       <SectionNavBar />
+      
       <main className="store-main">
         <Outlet />
       </main>
       <Footer storeInfo={storeInfo} />
+      
       <CartSidebar 
         isOpen={isSidebarOpen} 
         onClose={() => setIsSidebarOpen(false)} 
         onCheckout={() => setIsCartOpen(true)} 
       />
       <CheckoutModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+
+      {/* Modal de Apartados */}
+      {isLayawayModalOpen && (
+        <div className="layaway-modal-overlay" onClick={() => setIsLayawayModalOpen(false)}>
+          <div className="layaway-modal-content" onClick={e => e.stopPropagation()}>
+            <div className="layaway-modal-header">
+              <h3>Apartados para Fiestas</h3>
+              <button className="btn-close-modal" onClick={() => setIsLayawayModalOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="layaway-modal-body">
+              <div className="layaway-option-card">
+                <h4>Crear mi lista de Apartados / Cumpleaños</h4>
+                <p>Reserva los juguetes para tu fiesta y comparte el código con tus invitados.</p>
+                <button className="btn-action-primary" onClick={enableLayawayMode}>
+                  Crear Nueva Lista
+                </button>
+              </div>
+              
+              <div className="layaway-modal-divider">
+                <span>o</span>
+              </div>
+
+              <div className="layaway-option-card">
+                <h4>Buscar lista con código de invitado</h4>
+                <p>¿Fuiste invitado a un cumpleaños? Ingresa el código para ver los juguetes elegidos.</p>
+                <form onSubmit={handleSearchCode} className="layaway-search-form">
+                  <input 
+                    type="text" 
+                    placeholder="Ej. AP-1001" 
+                    value={searchCode}
+                    onChange={e => setSearchCode(e.target.value)}
+                    className="layaway-input"
+                  />
+                  <button type="submit" className="btn-action-secondary" disabled={isSearching}>
+                    {isSearching ? 'Buscando...' : 'Buscar Lista'}
+                  </button>
+                </form>
+                {searchError && <p className="layaway-search-error">{searchError}</p>}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

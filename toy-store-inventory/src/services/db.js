@@ -248,3 +248,51 @@ export const db = {
     return `${publicUrl}?t=${Date.now()}`;
   }
 };
+
+// --- 5. LAYAWAY REPOSITORY ---
+export const layawayRepository = {
+  async create(layawayData, itemsData) {
+    const { data: newLayaway, error: layawayErr } = await supabase
+      .from('layaways')
+      .insert([layawayData])
+      .select()
+      .single();
+
+    if (layawayErr) throw layawayErr;
+
+    const layawayItems = itemsData.map(item => ({
+      layaway_id: newLayaway.id,
+      product_id: item.product.id,
+      quantity_reserved: item.quantity,
+      quantity_bought: 0
+    }));
+
+    const { error: itemsErr } = await supabase
+      .from('layaway_items')
+      .insert(layawayItems);
+
+    if (itemsErr) throw itemsErr;
+
+    return newLayaway;
+  },
+
+  async getByCode(code) {
+    const { data, error } = await supabase
+      .from('layaways')
+      .select(`
+        *,
+        items:layaway_items(
+          id,
+          quantity_reserved,
+          quantity_bought,
+          product:products(*)
+        )
+      `)
+      .eq('code', code)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  }
+};
+
