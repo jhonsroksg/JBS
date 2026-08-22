@@ -223,9 +223,11 @@ const Storefront = () => {
 
   const revalidateData = async (silent = false) => {
     try {
-      const info = await db.getStoreInfo();
-      const categoriesData = await db.getCategories();
-      const sectionsData = await db.getAll('main_sections').catch(() => []);
+      const [info, categoriesData, sectionsData] = await Promise.all([
+        db.getStoreInfo(),
+        db.getCategories(),
+        db.getAll('main_sections').catch(() => [])
+      ]);
       if (info) {
         setStoreInfo(info);
         setCache('storeInfo', info);
