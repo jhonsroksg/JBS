@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useToast } from '../hooks/useToast';
 import { Gift, Calendar, AlertCircle, ArrowLeft, Clock } from 'lucide-react';
-import './GuestLayaway.css'; // Reutilizamos los estilos del apartado de invitados por consistencia estética
+import './LayawayView.css';
 
 const LayawayView = () => {
   const { code } = useParams();
