@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { db } from '../services/db';
 import './SectionNavBar.css';
 
-const SectionNavBar = () => {
+const SectionNavBar = ({ onOpenLayawayModal }) => {
   const [sections, setSections] = useState([]);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -42,29 +42,76 @@ const SectionNavBar = () => {
     setSearchParams(newParams);
   };
 
-  if (sections.length === 0) return null;
+  const hasDbSection = (name) => {
+    return sections.some(s => {
+      const cleanS = s.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+      const cleanName = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+      return cleanS === cleanName;
+    });
+  };
 
   return (
     <nav className="section-navbar">
       <div className="section-navbar-inner">
-        <a 
-          href="https://joababyshophn.com/"
+        <Link 
+          to="/"
           className="section-nav-link section-nav-home"
+          onClick={() => {
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete('section');
+            setSearchParams(newParams);
+          }}
         >
           Joa Baby Shop
-        </a>
-        {sections.map((section) => (
-          <button 
-            key={section.id} 
-            className={`section-nav-link ${activeSection === section.name ? 'active' : ''}`}
-            onClick={() => handleSectionClick(section.name)}
-          >
-            {section.name}
-          </button>
-        ))}
+        </Link>
+
+        {/* Enlace estático PAPÁ */}
+        <button 
+          className={`section-nav-link ${
+            activeSection.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase() === 'PAPA' ? 'active' : ''
+          }`}
+          onClick={() => handleSectionClick(hasDbSection('PAPÁ') ? (sections.find(s => s.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase() === 'PAPA')?.name || 'PAPÁ') : 'PAPÁ')}
+        >
+          PAPÁ
+        </button>
+
+        {/* Enlace estático MAMÁ */}
+        <button 
+          className={`section-nav-link ${
+            activeSection.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase() === 'MAMA' ? 'active' : ''
+          }`}
+          onClick={() => handleSectionClick(hasDbSection('MAMÁ') ? (sections.find(s => s.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase() === 'MAMA')?.name || 'MAMÁ') : 'MAMÁ')}
+        >
+          MAMÁ
+        </button>
+
+        {/* Enlace estático APARTADOS */}
+        <button 
+          className="section-nav-link"
+          onClick={onOpenLayawayModal}
+        >
+          APARTADOS
+        </button>
+
+        {/* Otras secciones dinámicas (excluyendo PAPÁ y MAMÁ para evitar duplicados) */}
+        {sections
+          .filter(s => {
+            const nameUpper = s.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+            return nameUpper !== 'PAPA' && nameUpper !== 'MAMA';
+          })
+          .map((section) => (
+            <button 
+              key={section.id} 
+              className={`section-nav-link ${activeSection === section.name ? 'active' : ''}`}
+              onClick={() => handleSectionClick(section.name)}
+            >
+              {section.name}
+            </button>
+          ))}
       </div>
     </nav>
   );
 };
 
 export default SectionNavBar;
+

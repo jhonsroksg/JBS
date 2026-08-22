@@ -182,11 +182,6 @@ const PublicLayout = () => {
         </div>
         <nav className="store-nav">
           <Link to="/" className="store-link">Tienda</Link>
-          <Link to="/papa" className="store-link">PAPÁ</Link>
-          <Link to="/mama" className="store-link">MAMÁ</Link>
-          <button onClick={() => setIsLayawayModalOpen(true)} className="store-link store-nav-btn">
-            APARTADOS
-          </button>
         </nav>
         <div className="store-actions">
           <button className="cart-btn" id="open-cart-btn" onClick={() => setIsSidebarOpen(true)}>
@@ -195,7 +190,7 @@ const PublicLayout = () => {
           </button>
         </div>
       </header>
-      <SectionNavBar />
+      <SectionNavBar onOpenLayawayModal={() => setIsLayawayModalOpen(true)} />
       
       <main className="store-main">
         <Outlet />
