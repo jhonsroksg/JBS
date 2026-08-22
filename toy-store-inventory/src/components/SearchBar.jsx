@@ -139,7 +139,7 @@ export const SearchBar = ({
           </button>
         )}
         {inputValue && (
-          <button className="btn-clear-search" onClick={() => handleSelect('')} aria-label="Limpiar búsqueda" style={{ right: onFilterClick ? '45px' : '12px' }}>
+          <button className="btn-clear-search" onClick={() => handleSelect('')} aria-label="Limpiar búsqueda">
             <X size={16} />
           </button>
         )}

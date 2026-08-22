@@ -524,6 +524,12 @@
     padding: 16px 12px;
   }
 
+  .search-and-filter-container {
+    padding: 12px 16px;
+    margin: 16px auto 24px auto;
+    border-radius: 16px;
+  }
+
   .hero-section {
     padding: 40px 20px;
     border-radius: 16px;
