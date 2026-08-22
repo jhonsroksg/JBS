@@ -12,7 +12,7 @@ const Products = React.lazy(() => import('./pages/Products'));
 const Categories = React.lazy(() => import('./pages/Categories'));
 const Orders = React.lazy(() => import('./pages/Orders'));
 const Customers = React.lazy(() => import('./pages/Customers'));
-const Storefront = React.lazy(() => import('./pages/Storefront'));
+import Storefront from './pages/Storefront';
 const ProductPage = React.lazy(() => import('./pages/ProductPage'));
 const LayawayView = React.lazy(() => import('./pages/LayawayView'));
 const Settings = React.lazy(() => import('./pages/Settings'));
