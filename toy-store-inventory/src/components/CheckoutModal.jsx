@@ -615,17 +615,17 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                               <MapPin size={14} />
                               <h4>DETALLES DE ENVÍO</h4>
                             </div>
-                            <div className="form-row-nested">
+                            <div className="form-row-nested location-row">
                               <div className="form-input-group">
                                 <MapPin className="input-icon" size={18} />
-                                <select required value={customerInfo.department} onChange={e => setCustomerInfo({ ...customerInfo, department: e.target.value, municipality: '' })}>
+                                <select className="ellipsis-select" required value={customerInfo.department} onChange={e => setCustomerInfo({ ...customerInfo, department: e.target.value, municipality: '' })}>
                                   <option value="" disabled>Departamento</option>
                                   {Object.keys(hondurasLocations).sort().map(dept => <option key={dept} value={dept}>{dept}</option>)}
                                 </select>
                               </div>
                               <div className="form-input-group">
                                 <MapPin className="input-icon" size={18} />
-                                <select required onChange={e => {
+                                <select className="ellipsis-select" required onChange={e => {
                                   const newMuni = e.target.value;
                                   setCustomerInfo({ ...customerInfo, municipality: newMuni });
                                 }} disabled={!customerInfo.department} value={customerInfo.municipality}>
@@ -674,55 +674,54 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                     )}
                   </form>
                 </div>
-
-                {cart.length > 0 && (
-                  <div className="summary-section">
-                    <div className="summary-line">
-                      <span>Subtotal</span>
-                      <span>L. {cartSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    </div>
-                    {!isLayawayMode && appliedCoupon && (
-                      <div className="summary-line discount">
-                        <span>Cupón ({appliedCoupon.code})</span>
-                        <span>- L. {cartDiscountAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                      </div>
-                    )}
-                    {!isLayawayMode && selectedDelivery && (
-                      <div className="summary-line">
-                        <span>Envío</span>
-                        <span>{deliveryCostUI > 0 ? `L. ${deliveryCostUI.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Gratis'}</span>
-                      </div>
-                    )}
-                    <div className="summary-line total-line">
-                      <span>{isLayawayMode ? 'Total a Reservar' : 'Total de Compra'}</span>
-                      <span className="summary-total-value">
-                        {isLayawayMode 
-                          ? cartSubtotal.toLocaleString('en-US', { style: 'currency', currency: 'LPS' }).replace('LPS', 'L.')
-                          : cartTotalAmount.toLocaleString('en-US', { style: 'currency', currency: 'LPS' }).replace('LPS', 'L.')
-                        }
-                      </span>
-                    </div>
-
-                    <button 
-                      type="submit" 
-                      form="checkout-form-data" 
-                      className="confirm-order-btn" 
-                      disabled={isSubmitting}
-                      style={isSubmitting ? { pointerEvents: 'none' } : {}}
-                    >
-                      {isSubmitting ? (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <div className="spinner"></div>
-                          Procesando...
-                        </div>
-                      ) : (isLayawayMode ? 'Confirmar Apartado' : 'Confirmar Pedido')}
-                    </button>
-                  </div>
-                )}
               </div>
             </>
           )}
         </div>
+        {cart.length > 0 && !orderComplete && (
+          <div className="modal-footer checkout-summary-footer">
+            <div className="summary-line">
+              <span>Subtotal</span>
+              <span>L. {cartSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+            {!isLayawayMode && appliedCoupon && (
+              <div className="summary-line discount">
+                <span>Cupón ({appliedCoupon.code})</span>
+                <span>- L. {cartDiscountAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+            )}
+            {!isLayawayMode && selectedDelivery && (
+              <div className="summary-line">
+                <span>Envío</span>
+                <span>{deliveryCostUI > 0 ? `L. ${deliveryCostUI.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : 'Gratis'}</span>
+              </div>
+            )}
+            <div className="summary-line total-line">
+              <span>{isLayawayMode ? 'Total a Reservar' : 'Total de Compra'}</span>
+              <span className="summary-total-value">
+                {isLayawayMode 
+                  ? cartSubtotal.toLocaleString('en-US', { style: 'currency', currency: 'LPS' }).replace('LPS', 'L.')
+                  : cartTotalAmount.toLocaleString('en-US', { style: 'currency', currency: 'LPS' }).replace('LPS', 'L.')
+                }
+              </span>
+            </div>
+
+            <button 
+              type="submit" 
+              form="checkout-form-data" 
+              className="confirm-order-btn" 
+              disabled={isSubmitting}
+              style={isSubmitting ? { pointerEvents: 'none' } : {}}
+            >
+              {isSubmitting ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div className="spinner"></div>
+                  Procesando...
+                </div>
+              ) : (isLayawayMode ? 'Confirmar Apartado' : 'Confirmar Pedido')}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

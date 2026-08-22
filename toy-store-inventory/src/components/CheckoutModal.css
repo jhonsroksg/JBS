@@ -81,9 +81,7 @@
 .checkout-content {
   display: grid;
   grid-template-columns: 1.2fr 1fr;
-  grid-template-areas: 
-    "cart form"
-    "summary form";
+  grid-template-areas: "cart form";
   gap: 0;
   min-height: min-content;
 }
@@ -387,20 +385,19 @@
   opacity: 0.8;
 }
 
-/* Summary Card Premium */
-.summary-section {
-  grid-area: summary;
-  margin: 0 24px 24px 24px;
-  padding: 14px;
-  background: linear-gradient(135deg, #f8faff 0%, #f1f5f9 100%);
-  border-radius: 16px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+/* Checkout Summary Footer */
+.checkout-summary-footer {
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 20px 40px;
+  background: white;
+  border-top: 1px solid #edf2f7;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.04);
   z-index: 20;
-  align-self: end;
 }
 
-.summary-section h3 {
+.checkout-summary-footer h3 {
   font-size: 1.2rem;
   font-weight: 800;
   color: #1a202c;
@@ -510,16 +507,33 @@
     margin-left: 0;
   }
 
-  .summary-section {
-    order: 3;
-    margin: 16px;
-    position: sticky;
-    bottom: 0;
-    box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
-    background: white;
-    border-radius: 20px;
-    border: 1px solid #edf2f7;
-    padding: 20px;
+  .checkout-summary-footer {
+    padding: 16px 20px;
+    border-radius: 0;
+    margin: 0;
+  }
+  
+  .location-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  
+  .ellipsis-select {
+    width: 100% !important;
+    min-width: 0 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    padding-right: 20px !important;
+  }
+
+  @media (max-width: 380px) {
+    .location-row {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
   }
 
   .total-line {
