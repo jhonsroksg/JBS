@@ -376,53 +376,54 @@ const Storefront = () => {
         </div>
       </div>
 
-      <SearchBar 
-        value={searchTerm} 
-        onChange={setSearchTerm} 
-        onSelect={setSearchTerm}
-        products={products}
-        categories={categories}
-        onFilterClick={() => setIsMobileFiltersOpen(true)}
-      />
+      <div className="search-and-filter-container glass-panel">
+        <SearchBar 
+          value={searchTerm} 
+          onChange={setSearchTerm} 
+          onSelect={setSearchTerm}
+          products={products}
+          categories={categories}
+          onFilterClick={() => setIsMobileFiltersOpen(true)}
+        />
 
-      <div className="filter-bar">
-        <div className="filter-bar-inner">
-          <div className="filter-item">
-            <span className="filter-label">Categoría</span>
-            <select value={activeCategory} onChange={(e) => setActiveCategory(e.target.value)}>
-              <option value="all">Todas</option>
-              {categories.map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="filter-item">
-            <span className="filter-label">Edad</span>
-            <select value={activeAgeRange} onChange={(e) => setActiveAgeRange(e.target.value)}>
-              <option value="all">Cualquier edad</option>
-              {ageRanges.map(age => (
-                <option key={age} value={age}>{age}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="filter-item" style={{ minWidth: '180px' }}>
-            <span className="filter-label">Precio Máximo</span>
-            <div className="price-slider-container">
-              <input 
-                type="range" min="0" max={5000} step="50" 
-                value={priceRange} onChange={(e) => setPriceRange(Number(e.target.value))}
-              />
-              <span className="price-display">L. {priceRange.toLocaleString()}</span>
+        <div className="filter-bar">
+          <div className="filter-bar-inner">
+            <div className="filter-item">
+              <span className="filter-label">Categoría</span>
+              <select value={activeCategory} onChange={(e) => setActiveCategory(e.target.value)}>
+                <option value="all">Todas</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
             </div>
+
+            <div className="filter-item">
+              <span className="filter-label">Edad</span>
+              <select value={activeAgeRange} onChange={(e) => setActiveAgeRange(e.target.value)}>
+                <option value="all">Cualquier edad</option>
+                {ageRanges.map(age => (
+                  <option key={age} value={age}>{age}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="filter-item" style={{ minWidth: '180px' }}>
+              <span className="filter-label">Precio Máximo</span>
+              <div className="price-slider-container">
+                <input 
+                  type="range" min="0" max={5000} step="50" 
+                  value={priceRange} onChange={(e) => setPriceRange(Number(e.target.value))}
+                />
+                <span className="price-display">L. {priceRange.toLocaleString()}</span>
+              </div>
+            </div>
+
+            <button className="btn-clear-inline" onClick={() => { setActiveCategory('all'); setActiveSection('all'); setActiveAgeRange('all'); setSearchTerm(''); setPriceRange(2500); }}>
+              <RotateCcw size={14} style={{ marginRight: '6px' }} /> Limpiar
+            </button>
           </div>
-
-          <button className="btn-clear-inline" onClick={() => { setActiveCategory('all'); setActiveSection('all'); setActiveAgeRange('all'); setSearchTerm(''); setPriceRange(2500); }}>
-            <RotateCcw size={14} style={{ marginRight: '6px' }} /> Limpiar
-          </button>
         </div>
-
       </div>
 
       <main>
