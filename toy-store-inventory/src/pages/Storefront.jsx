@@ -351,7 +351,7 @@ const Storefront = () => {
   };
 
   const heroImageUrl = activeSectionData?.hero_image_url
-    || storeInfo.hero_image_url || '/hero.png';
+    || storeInfo.hero_image_url || '/hero.webp';
   const heroTitle = activeSectionData?.hero_title || storeInfo.name
     || 'Joa Baby Shop';
   const heroSubtitle = activeSectionData?.hero_subtitle
@@ -366,12 +366,16 @@ const Storefront = () => {
         activeSection={activeSection}
       />
       
-      <div 
-        className="hero-section glass-panel" 
-        style={{ 
-          backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.5), color-mix(in srgb, var(--bg-primary) 95%, transparent)), url("${heroImageUrl}")` 
-        }}
-      >
+      <div className="hero-section glass-panel">
+        <img 
+          src={getOptimizedSupabaseUrl(heroImageUrl, 1200, 85, 'webp')} 
+          alt={heroTitle}
+          className="hero-background-img"
+          fetchpriority="high"
+          loading="eager"
+          decoding="sync"
+        />
+        <div className="hero-overlay"></div>
         <div className="hero-content">
           <h1>{heroTitle}</h1>
           <p>{heroSubtitle}</p>
