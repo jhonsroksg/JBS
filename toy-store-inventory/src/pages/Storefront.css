@@ -518,6 +518,30 @@
   50% { transform: translateY(-5px); }
 }
 
+/* --- HERO SECTION MOBILE FIXES --- */
+@media (max-width: 768px) {
+  .storefront {
+    padding: 16px 12px;
+  }
+
+  .hero-section {
+    padding: 40px 20px;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    background-size: cover;
+  }
+
+  .hero-content h1 {
+    font-size: clamp(1.2rem, 5vw, 1.8rem);
+  }
+
+  .hero-content p {
+    font-size: clamp(0.9rem, 4vw, 1rem);
+  }
+}
+
 /* Responsive fixes for WhatsApp button */
 @media (max-width: 768px) {
   .floating-whatsapp-btn {

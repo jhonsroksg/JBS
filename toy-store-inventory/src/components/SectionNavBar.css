@@ -104,18 +104,19 @@
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
   .section-navbar {
-    padding: 0 16px;
-    top: calc(70px + var(--safe-top, 0px));
+    padding: 0;
+    top: calc(64px + var(--safe-top, 0px));
   }
 
   .section-navbar-inner {
-    gap: 2px;
-    padding: 6px 0;
+    gap: 8px;
+    padding: 10px 16px;
+    -webkit-overflow-scrolling: touch;
   }
 
   .section-nav-link {
-    font-size: 0.82rem;
-    padding: 7px 14px;
+    font-size: 0.85rem;
+    padding: 8px 12px;
   }
 
   .section-nav-link.active::after {

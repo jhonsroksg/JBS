@@ -219,8 +219,18 @@
 
 @media (max-width: 768px) {
   .global-search-wrapper {
-    margin-bottom: 20px;
-    padding: 0 8px;
+    box-sizing: border-box;
+    width: calc(100% - 32px);
+    margin: 16px auto;
+    padding: 0;
+  }
+  
+  .search-input-box {
+    width: 100%;
+  }
+
+  .search-input-box input {
+    padding-right: 48px;
   }
 }
 
