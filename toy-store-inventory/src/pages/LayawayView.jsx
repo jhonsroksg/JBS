@@ -11,10 +11,20 @@ const LayawayView = () => {
   const [layaway, setLayaway] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [cartState, setCartState] = useState([]);
 
   useEffect(() => {
     loadLayaway();
   }, [code]);
+
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      setCartState(JSON.parse(localStorage.getItem('toy_store_cart') || '[]'));
+    };
+    handleCartUpdate();
+    window.addEventListener('cart_updated', handleCartUpdate);
+    return () => window.removeEventListener('cart_updated', handleCartUpdate);
+  }, []);
 
   const loadLayaway = async () => {
     setLoading(true);
@@ -177,7 +187,11 @@ const LayawayView = () => {
               if (!product) return null;
               
               const remaining = item.quantity_reserved - item.quantity_bought;
+              const inCartItem = cartState.find(c => c.product.id === product.id && c.isLayawayItem && c.layawayId === layaway.id);
+              const itemsInCart = inCartItem ? inCartItem.quantity : 0;
+              const available = remaining - itemsInCart;
               const isCompleted = remaining <= 0;
+              const isFullyAddedToCart = available <= 0 && remaining > 0;
               const price = product.discountPrice || product.sellingPrice;
 
               return (
@@ -206,14 +220,23 @@ const LayawayView = () => {
                           }}
                         ></div>
                       </div>
+                      {!isCompleted && (
+                        <div style={{ marginTop: '6px', fontSize: '0.8rem', color: isFullyAddedToCart ? 'var(--accent-primary)' : 'var(--text-secondary)' }}>
+                          {itemsInCart > 0 ? (
+                            <strong>En tu carrito: {itemsInCart} de {remaining}</strong>
+                          ) : (
+                            <span>Disponibles: {remaining}</span>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <button 
                       onClick={() => handleAddGiftToCart(item)}
-                      className={`btn-gift-action ${isCompleted ? 'btn-disabled' : ''}`}
-                      disabled={isCompleted}
+                      className={`btn-gift-action ${isCompleted || isFullyAddedToCart ? 'btn-disabled' : ''}`}
+                      disabled={isCompleted || isFullyAddedToCart}
                     >
-                      <Gift size={16} /> {isCompleted ? 'Completado' : 'Regalar este juguete'}
+                      <Gift size={16} /> {isCompleted ? 'Completado' : (isFullyAddedToCart ? 'En tu carrito' : 'Regalar este juguete')}
                     </button>
                   </div>
                 </div>

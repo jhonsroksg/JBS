@@ -173,7 +173,11 @@ export const orderRepository = {
 export const db = {
   // Mantener compatibilidad con llamadas genéricas si es necesario
   async getAll(collection) {
-    const { data, error } = await supabase.from(collection).select('*');
+    let query = supabase.from(collection).select('*');
+    if (collection === 'layaways') {
+      query = query.order('created_at', { ascending: false });
+    }
+    const { data, error } = await query;
     if (error) throw error;
     return data;
   },
@@ -249,12 +253,49 @@ export const db = {
   }
 };
 
+// Helper para generar código aleatorio y amigable (AP- + 5 caracteres alfanuméricos en mayúsculas)
+function generateRandomCode() {
+  const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let result = '';
+  for (let i = 0; i < 5; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `AP-${result}`;
+}
+
 // --- 5. LAYAWAY REPOSITORY ---
 export const layawayRepository = {
   async create(layawayData, itemsData) {
+    let uniqueCode = '';
+    let isUnique = false;
+    let attempts = 0;
+
+    while (!isUnique && attempts < 10) {
+      uniqueCode = generateRandomCode();
+      const { data, error } = await supabase
+        .from('layaways')
+        .select('id')
+        .eq('code', uniqueCode)
+        .maybeSingle();
+
+      if (!error && !data) {
+        isUnique = true;
+      }
+      attempts++;
+    }
+
+    if (!isUnique) {
+      throw new Error("No se pudo generar un código único para el apartado después de varios intentos.");
+    }
+
+    const finalLayawayData = {
+      ...layawayData,
+      code: uniqueCode
+    };
+
     const { data: newLayaway, error: layawayErr } = await supabase
       .from('layaways')
-      .insert([layawayData])
+      .insert([finalLayawayData])
       .select()
       .single();
 
@@ -274,6 +315,15 @@ export const layawayRepository = {
     if (itemsErr) throw itemsErr;
 
     return newLayaway;
+  },
+
+  async getAll() {
+    const { data, error } = await supabase
+      .from('layaways')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
   },
 
   async getByCode(code) {

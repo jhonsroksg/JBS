@@ -48,6 +48,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     if (isOpen) {
+      document.body.style.overflow = 'hidden';
       loadCart();
       setOrderComplete(false);
       setCompletedOrderNumber(null);
@@ -74,7 +75,13 @@ const CheckoutModal = ({ isOpen, onClose }) => {
         setActiveCouponsCount(allCoupons.filter(c => c.isActive).length);
       };
       initData();
+    } else {
+      document.body.style.overflow = 'unset';
     }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
   }, [isOpen]);
 
   const loadCart = () => {

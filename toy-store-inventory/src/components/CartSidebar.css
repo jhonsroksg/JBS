@@ -95,6 +95,7 @@
 .cart-sidebar-items {
   flex: 1;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 20px;
   display: flex;
   flex-direction: column;
