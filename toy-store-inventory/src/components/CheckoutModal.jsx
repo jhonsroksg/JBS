@@ -89,7 +89,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
 
   const loadCart = () => {
     const savedCart = JSON.parse(localStorage.getItem('toy_store_cart') || '[]');
-    setCart(savedCart);
+    setCart(sanitizeCartForStorage(savedCart));
   };
 
   const updateQuantity = (index, delta) => {
