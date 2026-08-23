@@ -458,7 +458,7 @@ const Orders = () => {
         alert('Apartado cancelado y stock devuelto exitosamente.');
       } catch (err) {
         console.error('Error al cancelar el apartado:', err);
-        alert('Hubo un error al cancelar el apartado. Reintenta.');
+        alert(`Hubo un error al cancelar el apartado: ${err.message || JSON.stringify(err)}`);
       }
     }
   };
