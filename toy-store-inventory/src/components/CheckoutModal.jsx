@@ -207,12 +207,46 @@ const CheckoutModal = ({ isOpen, onClose }) => {
       }
 
       for (const item of Object.values(aggregatedCart)) {
-        // Skip stock validation for layaway items, as their stock is already reserved
-        if (item.isLayawayItem) continue;
-
+        console.log(`[Frontend Validation] Validating item:`, item.product.name, `ID:`, item.product.id);
         const dbProduct = await productRepository.getById(item.product.id);
-        if (!dbProduct || dbProduct.stock < item.quantity) {
-          showToast(`Lo sentimos, el producto "${item.product.name}" ya no tiene suficiente stock disponible.`, 'error');
+        
+        if (!dbProduct) {
+          showToast(`El producto "${item.product.name}" ya no existe en el sistema. Por favor, elimínalo de tu carrito.`, 'error');
+          setIsSubmitting(false);
+          return;
+        }
+
+        console.log(`[Frontend Validation] DB Stock for ${item.product.name} is:`, dbProduct.stock);
+
+        if (item.isLayawayItem && item.layawayId) {
+          // Check layaway_items for reserved stock
+          const { data: layawayItemData } = await supabase
+            .from('layaway_items')
+            .select('quantity_reserved, quantity_bought')
+            .eq('layaway_id', item.layawayId)
+            .eq('product_id', item.product.id)
+            .maybeSingle();
+
+          if (layawayItemData) {
+            const remainingReserved = layawayItemData.quantity_reserved - layawayItemData.quantity_bought;
+            console.log(`[Frontend Validation] Layaway remaining reserved:`, remainingReserved);
+            
+            let extraNeeded = 0;
+            if (item.quantity > remainingReserved) {
+              extraNeeded = item.quantity - remainingReserved;
+            }
+
+            if (extraNeeded > 0 && dbProduct.stock < extraNeeded) {
+               showToast(`El artículo "${item.product.name}" ya fue comprado por alguien más y no hay más stock general disponible.`, 'error');
+               setIsSubmitting(false);
+               return;
+            }
+            continue; // Passes layaway validation
+          }
+        }
+
+        if (dbProduct.stock < item.quantity) {
+          showToast(`Lo sentimos, el producto "${item.product.name}" ya no tiene suficiente stock disponible. (En carrito: ${item.quantity}, Disponible: ${dbProduct.stock})`, 'error');
           setIsSubmitting(false);
           return;
         }
