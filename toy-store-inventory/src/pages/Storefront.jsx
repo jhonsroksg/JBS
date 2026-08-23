@@ -302,10 +302,14 @@ const Storefront = () => {
     return [...new Set(rawRanges)].sort();
   }, [products]);
 
-  const filteredProducts = products;
+  const filteredProducts = products.filter(p => p.stock > 0);
   const maxPriceAvailable = 5000;
 
   const handleAddToCart = (product) => {
+    if (product.stock <= 0) {
+      showToast('Este producto está agotado.', 'error');
+      return;
+    }
     const currentCart = JSON.parse(localStorage.getItem('toy_store_cart') || '[]');
     const existing = currentCart.find(item => item.product.id === product.id);
     if (existing) {

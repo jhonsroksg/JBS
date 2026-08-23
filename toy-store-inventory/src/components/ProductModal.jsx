@@ -120,11 +120,21 @@ export const ProductModal = ({
           </div>
 
           <div className="modal-actions-container">
-            <button className="btn-primary buy-now" onClick={() => onBuyNow(product)}>
+            <button 
+              className="btn-primary buy-now" 
+              onClick={() => onBuyNow(product)}
+              disabled={product.stock <= 0}
+              style={product.stock <= 0 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+            >
               <Zap size={20} fill="currentColor" /> Comprar ahora
             </button>
             <div className="secondary-actions">
-              <button className="btn-secondary add-cart" onClick={() => onAddToCart(product)}>
+              <button 
+                className="btn-secondary add-cart" 
+                onClick={() => onAddToCart(product)}
+                disabled={product.stock <= 0}
+                style={product.stock <= 0 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+              >
                 <ShoppingCart size={20} /> Carrito
               </button>
               <button className="btn-secondary whatsapp" onClick={() => onWhatsApp(product)}>

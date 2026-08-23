@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, layawayRepository, orderRepository } from '../services/db';
+import { db, layawayRepository, orderRepository, productRepository } from '../services/db';
 import { X, Trash2, CheckCircle, User, Mail, Phone, MapPin, Truck, CreditCard, Copy } from 'lucide-react';
 import { hondurasLocations } from '../data/hondurasLocations';
 import { supabase } from '../lib/supabaseClient';
@@ -198,7 +198,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
 
     try {
       for (const item of cart) {
-        const dbProduct = await db.getById('products', item.product.id);
+        const dbProduct = await productRepository.getById(item.product.id);
         if (!dbProduct || dbProduct.stock < item.quantity) {
           showToast(`Lo sentimos, el producto "${item.product.name}" ya no tiene suficiente stock disponible.`, 'error');
           setIsSubmitting(false);
@@ -233,7 +233,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
             if (fullLayaway && fullLayaway.items) {
               const itemsWithProduct = await Promise.all(
                 fullLayaway.items.map(async (item) => {
-                  const prod = cart.find(c => c.product.id === item.product_id)?.product || await db.getById('products', item.product_id);
+                  const prod = cart.find(c => c.product.id === item.product_id)?.product || await productRepository.getById(item.product_id);
                   return {
                     ...item,
                     product_name: prod?.name || 'Producto',
@@ -390,7 +390,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
               }
               bgTasks.push((async () => {
                 try {
-                  const dbProduct = await db.getById('products', item.productId);
+                  const dbProduct = await productRepository.getById(item.productId);
                   if (dbProduct) {
                     return db.update('products', dbProduct.id, { stock: Math.max(0, dbProduct.stock - item.quantity) });
                   }
