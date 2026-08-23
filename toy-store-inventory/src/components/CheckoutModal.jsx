@@ -208,8 +208,14 @@ const CheckoutModal = ({ isOpen, onClose }) => {
 
       for (const item of Object.values(aggregatedCart)) {
         console.log(`[Frontend Validation] Validating item:`, item.product.name, `ID:`, item.product.id);
-        const dbProduct = await productRepository.getById(item.product.id);
+        const { data: dbProduct, error: productError } = await supabase
+          .from('products')
+          .select('stock')
+          .eq('id', item.product.id)
+          .maybeSingle();
         
+        if (productError) throw productError;
+
         if (!dbProduct) {
           showToast(`El producto "${item.product.name}" ya no existe en el sistema. Por favor, elimínalo de tu carrito.`, 'error');
           setIsSubmitting(false);
