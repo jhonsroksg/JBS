@@ -134,12 +134,9 @@ BEGIN
         LOOP
             remaining_reserved := item.quantity_reserved - item.quantity_bought;
             IF remaining_reserved > 0 THEN
-                -- Devolver inventario no comprado al stock
-                UPDATE products
-                SET stock = stock + remaining_reserved
-                WHERE id = item.product_id;
-                
-                -- Ajustar quantity_reserved para que coincida con quantity_bought (liberar reserva)
+                -- Ajustar quantity_reserved para que coincida con quantity_bought (liberar reserva).
+                -- ESTO disparará el trigger "trg_update_product_stock_on_layaway_item_update" 
+                -- el cual se encargará automáticamente de devolver el stock sobrante al inventario.
                 UPDATE layaway_items
                 SET quantity_reserved = quantity_bought
                 WHERE id = item.id;
