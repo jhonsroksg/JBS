@@ -196,32 +196,6 @@ export const orderRepository = {
       
     if (orderError) throw orderError;
 
-    // Inserción manual en order_items usando el mismo finalId
-    if (formattedItems && formattedItems.length > 0) {
-      const orderItemsPayload = formattedItems.map(item => ({
-        order_id: newOrder.id,
-        product_id: item.product_id,
-        product_name: item.name,
-        product_sku: item.sku,
-        quantity: item.quantity,
-        price: item.price,
-        total: item.total,
-        wrap_gift: item.wrap_gift
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItemsPayload);
-
-      if (itemsError) {
-        console.error("Error insertando order_items manualmente:", itemsError);
-        // Si el error NO es llave duplicada (23505) lanzamos el error real
-        if (itemsError.code !== '23505') {
-          throw new Error(`Error en order_items: ${itemsError.message}`);
-        }
-      }
-    }
-
     return newOrder;
   },
 
