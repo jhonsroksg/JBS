@@ -82,6 +82,9 @@ export const productRepository = {
   },
 
   async update(id, updates) {
+    if (updates.updated_at !== undefined) {
+      delete updates.updated_at;
+    }
     const { data, error } = await supabase
       .from('products')
       .update(updates)
@@ -241,6 +244,9 @@ export const db = {
   },
 
   async update(collection, id, updates) {
+    if (collection === 'products' && updates.updated_at !== undefined) {
+      delete updates.updated_at;
+    }
     const { data, error } = await supabase.from(collection).update(updates).eq('id', id).select().single();
     if (error) throw error;
     return data;
