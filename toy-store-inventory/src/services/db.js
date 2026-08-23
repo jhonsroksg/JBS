@@ -488,3 +488,22 @@ export const layawayRepository = {
   }
 };
 
+export const deleteLayaway = async (layawayId) => {
+  // Eliminar primero los ítems asociados
+  const { error: itemsError } = await supabase
+    .from('layaway_items')
+    .delete()
+    .eq('layaway_id', layawayId);
+  
+  if (itemsError) throw itemsError;
+
+  // Eliminar el registro principal
+  const { error: layawayError } = await supabase
+    .from('layaways')
+    .delete()
+    .eq('id', layawayId);
+
+  if (layawayError) throw layawayError;
+  return true;
+};
+

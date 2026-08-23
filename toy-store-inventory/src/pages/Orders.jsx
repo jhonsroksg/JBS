@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, layawayRepository } from '../services/db';
+import { db, layawayRepository, deleteLayaway } from '../services/db';
 import { Eye, X, Download, Send, Edit, Save, Trash2, List, Archive, Truck, Package, CheckCircle, XCircle, Calendar } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 import './Products.css';
@@ -500,6 +500,19 @@ const Orders = () => {
       } catch (err) {
         console.error('Error eliminando artículo:', err);
         alert('Error eliminando artículo: ' + (err.message || 'Desconocido'));
+      }
+    }
+  };
+
+  const handleDeleteLayaway = async (layawayId, code) => {
+    if (window.confirm(`¿Estás seguro de que deseas eliminar permanentemente el apartado ${code}? Esta acción no se puede deshacer.`)) {
+      try {
+        await deleteLayaway(layawayId);
+        setLayaways(prev => prev.filter(l => l.id !== layawayId));
+        alert("Apartado eliminado correctamente");
+      } catch (error) {
+        console.error(error);
+        alert("Error al eliminar");
       }
     }
   };
@@ -1072,6 +1085,25 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
                     </td>
                     <td data-label="Acciones" className="actions-cell">
                       <button className="btn-icon" title="Ver Detalle" onClick={() => openLayawayModal(layaway, false)}><Eye size={20} strokeWidth={2.5} /></button>
+                      <button
+                        className="action-btn delete-btn"
+                        title="Eliminar Apartado"
+                        onClick={() => handleDeleteLayaway(layaway.id, layaway.code)}
+                        style={{
+                          backgroundColor: '#fee2e2',
+                          color: '#ef4444',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '8px',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginLeft: '6px'
+                        }}
+                      >
+                        <Trash2 size={18}/>
+                      </button>
                       {layaway.status !== 'cancelled' && (
                         <>
                           <button className="btn-icon" title="Editar" onClick={() => openLayawayModal(layaway, true)}><Edit size={20} strokeWidth={2.5} /></button>
