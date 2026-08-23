@@ -292,7 +292,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
         }
 
         if (dbProduct.stock < item.quantity) {
-          showToast(`Stock insuficiente para "${item.product.name}". Disponible: ${dbProduct.stock}, solicitado: ${item.quantity}.`, 'error');
+          showToast(`[Frontend] Stock insuficiente para "${item.product.name}". Disponible en DB: ${dbProduct.stock}, solicitado: ${item.quantity}.`, 'error');
           setIsSubmitting(false);
           return;
         }
@@ -452,7 +452,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
             const nameMatch = errMsg.match(/para\s+"([^"]+)"|STOCK_INSUFICIENTE:\s*([^|]+)/i);
             const productName = nameMatch ? (nameMatch[1] || nameMatch[2]) : 'el producto';
             
-            showToast(`Stock insuficiente para "${productName.trim()}". Disponible: ${available}, solicitado: ${requested}.`, 'error');
+            showToast(`[Backend] Stock insuficiente para "${productName.trim()}". Disponible: ${available}, solicitado: ${requested}.`, 'error');
             setIsSubmitting(false);
             return;
           }
