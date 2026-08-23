@@ -458,6 +458,81 @@ const Orders = () => {
         event_date: editedLayaway.event_date
       });
       await loadData();
+      alert('Apartado actualizado exitosamente.');
+    } catch (err) {
+      console.error('Error al editar el apartado:', err);
+      alert('Hubo un error al editar el apartado. Reintenta.');
+    }
+  };
+
+  const handleUpdateLayawayItemQty = async (item, delta) => {
+    try {
+      const newQty = item.quantity_reserved + delta;
+      if (newQty < item.quantity_bought) {
+        alert(`No puedes reservar menos de lo que ya se compró (${item.quantity_bought}).`);
+        return;
+      }
+      await layawayRepository.updateLayawayItemQty(item.id, newQty);
+      
+      // Update local state without full reload if possible, or just full reload
+      await loadData();
+      
+      // Update selectedLayaway so modal refreshes
+      const updatedLays = await layawayRepository.getLayaways();
+      const updatedLayaway = updatedLays.find(l => l.id === selectedLayaway.id);
+      setSelectedLayaway(updatedLayaway);
+    } catch (err) {
+      console.error('Error actualizando cantidad:', err);
+      alert('Error actualizando cantidad: ' + (err.message || 'Desconocido'));
+    }
+  };
+
+  const handleRemoveLayawayItem = async (item) => {
+    if (item.quantity_bought > 0) {
+      alert('No puedes eliminar un artículo que ya tiene unidades compradas.');
+      return;
+    }
+    if (confirm('¿Estás seguro de eliminar este artículo del apartado?')) {
+      try {
+        await layawayRepository.removeLayawayItem(item.id);
+        await loadData();
+        const updatedLays = await layawayRepository.getLayaways();
+        setSelectedLayaway(updatedLays.find(l => l.id === selectedLayaway.id));
+      } catch (err) {
+        console.error('Error eliminando artículo:', err);
+        alert('Error eliminando artículo: ' + (err.message || 'Desconocido'));
+      }
+    }
+  };
+
+  const handleAddLayawayItem = async (productId) => {
+    // Verificar si ya existe
+    const exists = selectedLayaway.layaway_items?.find(i => i.product_id === productId);
+    if (exists) {
+      handleUpdateLayawayItemQty(exists, 1);
+      return;
+    }
+
+    try {
+      await layawayRepository.addLayawayItem(selectedLayaway.id, productId, 1);
+      await loadData();
+      const updatedLays = await layawayRepository.getLayaways();
+      setSelectedLayaway(updatedLays.find(l => l.id === selectedLayaway.id));
+    } catch (err) {
+      console.error('Error añadiendo artículo:', err);
+      alert('Error añadiendo artículo: ' + (err.message || 'Desconocido'));
+    }
+  };
+
+  // Funciones del Modal de Pedido
+
+  const saveLayawayEdit = async () => {
+    try {
+        await layawayRepository.updateLayaway(editedLayaway.id, {
+        event_name: editedLayaway.event_name,
+        event_date: editedLayaway.event_date
+      });
+      await loadData();
       closeLayawayModal();
     } catch (err) {
       console.error('Error al actualizar apartado:', err);
@@ -1573,7 +1648,36 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
                 <div><label style={{color: 'var(--text-secondary)', fontSize: '0.9rem'}}>Vencimiento</label><div style={{fontWeight: 'bold', fontSize: '1.05rem', color: selectedLayaway.status === 'cancelled' ? 'var(--danger)' : 'var(--text-primary)'}}>{new Date(selectedLayaway.expires_at).toLocaleString()}</div></div>
               </div>
               
-              <h3 style={{marginBottom: '0'}}>Lista de Artículos</h3>
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', marginTop: '24px'}}>
+                <h3 style={{marginBottom: 0}}>Lista de Artículos</h3>
+                <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+                  <select 
+                    id="addLayawayProductSelect"
+                    style={{...inputStyle, padding: '8px', minWidth: '250px'}}
+                    defaultValue=""
+                  >
+                    <option value="" disabled>Seleccionar producto para añadir...</option>
+                    {products.filter(p => !selectedLayaway.layaway_items?.find(i => i.product_id === p.id)).map(p => (
+                      <option key={p.id} value={p.id} disabled={p.stock <= 0}>
+                        {p.name} - L. {Number(p.sellingPrice).toLocaleString('en-US', {minimumFractionDigits: 2})} {p.stock <= 0 ? '(Agotado)' : `(Stock: ${p.stock})`}
+                      </option>
+                    ))}
+                  </select>
+                  <button 
+                    className="btn-primary" 
+                    style={{padding: '8px 16px'}}
+                    onClick={() => {
+                      const sel = document.getElementById('addLayawayProductSelect');
+                      if (sel.value) {
+                        handleAddLayawayItem(sel.value);
+                        sel.value = '';
+                      }
+                    }}
+                  >
+                    Añadir
+                  </button>
+                </div>
+              </div>
               <div style={{border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden'}}>
                 <table className="data-table" style={{margin: 0}}>
                   <thead style={{background: 'var(--bg-tertiary)'}}>
@@ -1583,6 +1687,7 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
                       <th>Comprados</th>
                       <th>Pendientes</th>
                       <th>Subtotal Reservado</th>
+                      <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1600,14 +1705,46 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
                               </div>
                             </div>
                           </td>
-                          <td style={{fontWeight: 'bold'}}>{item.quantity_reserved}</td>
+                          <td style={{fontWeight: 'bold'}}>
+                            <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                              <button 
+                                className="btn-icon" 
+                                style={{background: 'var(--bg-secondary)', width: '28px', height: '28px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-color)'}}
+                                onClick={() => handleUpdateLayawayItemQty(item, -1)}
+                                disabled={item.quantity_reserved <= item.quantity_bought}
+                                title={item.quantity_reserved <= item.quantity_bought ? "No puedes reservar menos de lo comprado" : "Disminuir reserva"}
+                              >
+                                -
+                              </button>
+                              <span style={{minWidth: '24px', textAlign: 'center'}}>{item.quantity_reserved}</span>
+                              <button 
+                                className="btn-icon" 
+                                style={{background: 'var(--bg-secondary)', width: '28px', height: '28px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-color)'}}
+                                onClick={() => handleUpdateLayawayItemQty(item, 1)}
+                                disabled={item.products?.stock <= 0}
+                                title={item.products?.stock <= 0 ? "Sin stock disponible" : "Aumentar reserva"}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </td>
                           <td style={{fontWeight: 'bold', color: item.quantity_bought > 0 ? 'var(--success)' : 'inherit'}}>{item.quantity_bought}</td>
                           <td style={{fontWeight: 'bold', color: pending > 0 ? 'var(--warning)' : 'inherit'}}>{pending}</td>
                           <td style={{fontWeight: 'bold'}}>L. {(price * item.quantity_reserved).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                          <td>
+                            <button 
+                              className="btn-icon danger" 
+                              onClick={() => handleRemoveLayawayItem(item)}
+                              disabled={item.quantity_bought > 0}
+                              title={item.quantity_bought > 0 ? "No puedes eliminar un artículo parcialmente comprado" : "Eliminar artículo"}
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </td>
                         </tr>
                       );
                     }) : (
-                      <tr><td colSpan="5" className="empty-state">No hay artículos en este apartado.</td></tr>
+                      <tr><td colSpan="6" className="empty-state">No hay artículos en este apartado.</td></tr>
                     )}
                   </tbody>
                 </table>

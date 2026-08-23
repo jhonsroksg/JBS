@@ -420,6 +420,40 @@ export const layawayRepository = {
 
     if (error) throw error;
     return data;
+  },
+
+  async addLayawayItem(layawayId, productId, quantity) {
+    const { data, error } = await supabase
+      .from('layaway_items')
+      .insert([{
+        layaway_id: layawayId,
+        product_id: productId,
+        quantity_reserved: quantity,
+        quantity_bought: 0
+      }])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async updateLayawayItemQty(itemId, quantityReserved) {
+    const { data, error } = await supabase
+      .from('layaway_items')
+      .update({ quantity_reserved: quantityReserved })
+      .eq('id', itemId)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async removeLayawayItem(itemId) {
+    const { error } = await supabase
+      .from('layaway_items')
+      .delete()
+      .eq('id', itemId);
+    if (error) throw error;
   }
 };
 
