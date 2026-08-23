@@ -42,16 +42,16 @@ BEGIN
     -- El payload de orders tiene un campo 'items' que es un JSONB array
     -- Formato esperado: [{"productId": "...", "quantity": 2, "product": {"name": "..."}}, ...]
     
-    FOR item IN SELECT * FROM jsonb_to_recordset(NEW.items) AS x(productId UUID, quantity INT)
+    FOR item IN SELECT * FROM jsonb_to_recordset(NEW.items) AS x(product_id UUID, quantity INT)
     LOOP
         -- Obtener stock actual y nombre del producto
         SELECT stock, name INTO current_stock, product_name
         FROM products
-        WHERE id = item.productId
+        WHERE id = item.product_id
         FOR UPDATE; -- Bloquear la fila para evitar condiciones de carrera
 
         IF NOT FOUND THEN
-            RAISE EXCEPTION 'Producto con ID % no encontrado.', item.productId;
+            RAISE EXCEPTION 'Producto con ID % no encontrado.', item.product_id;
         END IF;
 
         IF current_stock < item.quantity THEN
@@ -61,7 +61,7 @@ BEGIN
         -- Descontar stock
         UPDATE products
         SET stock = stock - item.quantity
-        WHERE id = item.productId;
+        WHERE id = item.product_id;
     END LOOP;
 
     RETURN NEW;

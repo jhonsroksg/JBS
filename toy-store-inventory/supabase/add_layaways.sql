@@ -171,13 +171,13 @@ BEGIN
     -- El payload de orders tiene un campo 'items' que es un JSONB array
     -- Formato esperado: [{"productId": "...", "quantity": 2, "product": {"name": "..."}}, ...]
     
-    FOR item IN SELECT * FROM jsonb_to_recordset(NEW.items) AS x(productId UUID, quantity INT)
+    FOR item IN SELECT * FROM jsonb_to_recordset(NEW.items) AS x(product_id UUID, quantity INT)
     LOOP
         -- Validar si es una orden de apartado y el producto está en el apartado
         IF NEW.is_layaway_order = TRUE AND NEW.layaway_id IS NOT NULL THEN
             SELECT * INTO layaway_item_rec 
             FROM layaway_items 
-            WHERE layaway_id = NEW.layaway_id AND product_id = item.productId;
+            WHERE layaway_id = NEW.layaway_id AND product_id = item.product_id;
             
             IF FOUND THEN
                 -- El producto está en la lista de apartados
@@ -197,11 +197,11 @@ BEGIN
                 IF extra_to_deduct > 0 THEN
                     SELECT stock, name INTO current_stock, product_name
                     FROM products
-                    WHERE id = item.productId
+                    WHERE id = item.product_id
                     FOR UPDATE;
                     
                     IF NOT FOUND THEN
-                        RAISE EXCEPTION 'Producto con ID % no encontrado.', item.productId;
+                        RAISE EXCEPTION 'Producto con ID % no encontrado.', item.product_id;
                     END IF;
                     
                     IF current_stock < extra_to_deduct THEN
@@ -210,7 +210,7 @@ BEGIN
                     
                     UPDATE products
                     SET stock = stock - extra_to_deduct
-                    WHERE id = item.productId;
+                    WHERE id = item.product_id;
                 END IF;
                 
                 -- Registrar la compra en layaway_items
@@ -225,11 +225,11 @@ BEGIN
         -- Flujo normal (si no es apartado o si el item no estaba en el apartado)
         SELECT stock, name INTO current_stock, product_name
         FROM products
-        WHERE id = item.productId
+        WHERE id = item.product_id
         FOR UPDATE; -- Bloquear la fila para evitar condiciones de carrera
 
         IF NOT FOUND THEN
-            RAISE EXCEPTION 'Producto con ID % no encontrado.', item.productId;
+            RAISE EXCEPTION 'Producto con ID % no encontrado.', item.product_id;
         END IF;
 
         IF current_stock < item.quantity THEN
@@ -239,7 +239,7 @@ BEGIN
         -- Descontar stock
         UPDATE products
         SET stock = stock - item.quantity
-        WHERE id = item.productId;
+        WHERE id = item.product_id;
     END LOOP;
 
     RETURN NEW;
