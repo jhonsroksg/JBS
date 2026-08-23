@@ -74,7 +74,7 @@ export const productRepository = {
   async getById(id) {
     const { data, error } = await supabase
       .from('products')
-      .select('*, categories(*)')
+      .select('*')
       .eq('id', id)
       .single();
     if (error) throw error;
