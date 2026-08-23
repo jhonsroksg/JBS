@@ -197,7 +197,16 @@ const CheckoutModal = ({ isOpen, onClose }) => {
     setIsSubmitting(true);
 
     try {
+      // Aggregate quantities by product ID for accurate frontend validation
+      const aggregatedCart = {};
       for (const item of cart) {
+        if (!aggregatedCart[item.product.id]) {
+          aggregatedCart[item.product.id] = { ...item, quantity: 0 };
+        }
+        aggregatedCart[item.product.id].quantity += item.quantity;
+      }
+
+      for (const item of Object.values(aggregatedCart)) {
         const dbProduct = await productRepository.getById(item.product.id);
         if (!dbProduct || dbProduct.stock < item.quantity) {
           showToast(`Lo sentimos, el producto "${item.product.name}" ya no tiene suficiente stock disponible.`, 'error');
