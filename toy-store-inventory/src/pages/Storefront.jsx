@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { ShoppingCart, X, Search, Filter, MessageCircle, Package, Users, CheckCircle, Truck, Share2, ChevronLeft, ChevronRight, Maximize2, RotateCcw, SlidersHorizontal, Plus } from 'lucide-react';
 import { productRepository, db } from '../services/db';
-import { OptimizedImage } from '../components/OptimizedImage';
+import { OptimizedImage, getOptimizedSupabaseUrl } from '../components/OptimizedImage';
 import { SkeletonGrid } from '../components/SkeletonLoader';
 
 import { SearchBar } from '../components/SearchBar';
