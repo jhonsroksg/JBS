@@ -12,8 +12,13 @@ const Orders = () => {
   const [orderStatuses, setOrderStatuses] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
-
   
+  // Layaways state
+  const [layaways, setLayaways] = useState([]);
+  const [layawayModalOpen, setLayawayModalOpen] = useState(false);
+  const [layawayEditModalOpen, setLayawayEditModalOpen] = useState(false);
+  const [selectedLayaway, setSelectedLayaway] = useState(null);
+  const [editedLayaway, setEditedLayaway] = useState(null);
   // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -37,12 +42,13 @@ const Orders = () => {
   }, []);
 
   const loadData = async () => {
-    const [data, prods, delMethods, payMethods, statuses] = await Promise.all([
+    const [data, prods, delMethods, payMethods, statuses, lays] = await Promise.all([
       db.getAll('orders'),
       db.getAll('products'),
       db.getAll('delivery_methods'),
       db.getAll('payment_methods'),
       db.getAll('order_statuses'),
+      db.layawayRepository.getLayaways()
     ]);
     data.sort((a, b) => new Date(b.date) - new Date(a.date));
     setOrders(data);
@@ -50,6 +56,7 @@ const Orders = () => {
     setDeliveryMethods(delMethods);
     setPaymentMethods(payMethods);
     setOrderStatuses(statuses);
+    setLayaways(lays);
   };
 
 
@@ -400,6 +407,53 @@ const Orders = () => {
       }
     }
   };
+
+  // --- LAYAWAYS LOGIC ---
+  const openLayawayModal = (layaway, editMode = false) => {
+    setSelectedLayaway(layaway);
+    setEditedLayaway({ ...layaway });
+    if (editMode) {
+      setLayawayEditModalOpen(true);
+    } else {
+      setLayawayModalOpen(true);
+    }
+  };
+
+  const closeLayawayModal = () => {
+    setLayawayModalOpen(false);
+    setLayawayEditModalOpen(false);
+    setSelectedLayaway(null);
+    setEditedLayaway(null);
+  };
+
+  const handleCancelLayaway = async (layaway) => {
+    if (layaway.status === 'Cancelado') { alert('Este apartado ya está cancelado.'); return; }
+    if (confirm(`¿Estás seguro de cancelar el apartado de ${layaway.customer_name}?\n\nLos artículos reservados que NO han sido comprados serán devueltos al inventario general inmediatamente.`)) {
+      try {
+        await db.layawayRepository.cancelLayaway(layaway.id, layaway.items);
+        await loadData();
+        alert('Apartado cancelado y stock devuelto exitosamente.');
+      } catch (err) {
+        console.error('Error al cancelar el apartado:', err);
+        alert('Hubo un error al cancelar el apartado. Reintenta.');
+      }
+    }
+  };
+
+  const saveLayawayEdit = async () => {
+    try {
+      await db.layawayRepository.updateLayaway(editedLayaway.id, {
+        event_name: editedLayaway.event_name,
+        event_date: editedLayaway.event_date
+      });
+      await loadData();
+      closeLayawayModal();
+    } catch (err) {
+      console.error('Error al actualizar apartado:', err);
+      alert('Error al guardar los cambios.');
+    }
+  };
+
 
   const inputStyle = {
     width: '100%',
@@ -804,6 +858,16 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
           >
             <Archive size={18} style={{marginRight: '8px'}} /> Eliminados
           </button>
+          <button 
+            className="btn-secondary"
+            onClick={() => setActiveTab('layaways')}
+            style={activeTab === 'layaways' ? {background: 'rgba(233, 30, 99, 0.15)', color: '#e91e63', borderColor: '#e91e63', opacity: 1} : {opacity: 0.5, borderColor: 'transparent'}}
+          >
+            <span style={{marginRight: '8px'}}>🎁</span> Apartados / Fiestas
+            {layaways.length > 0 && (
+              <span style={{marginLeft: '6px', background: '#e91e63', color: 'white', borderRadius: '10px', padding: '1px 7px', fontSize: '0.75rem', fontWeight: 700}}>{layaways.length}</span>
+            )}
+          </button>
         </div>
       </div>
 
@@ -860,11 +924,92 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
       </div>
 
       <div className="products-content glass-panel" style={{ padding: '24px' }}>
-        <div className="table-responsive">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th style={{ whiteSpace: 'nowrap' }}>ID Pedido</th>
+        {activeTab === 'layaways' ? (
+          <div className="table-responsive">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th style={{ whiteSpace: 'nowrap' }}>Código</th>
+                  <th>Creador / Contacto</th>
+                  <th>Ocasión / Fecha</th>
+                  <th>Total Apartado</th>
+                  <th>Progreso</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {layaways.map(layaway => {
+                   // calculate total and progress
+                   let totalAmount = 0;
+                   let totalReserved = 0;
+                   let totalBought = 0;
+                   if (layaway.items) {
+                     layaway.items.forEach(i => {
+                       const price = Number(i.product?.sellingPrice || 0);
+                       totalAmount += price * i.quantity_reserved;
+                       totalReserved += i.quantity_reserved;
+                       totalBought += i.quantity_bought;
+                     });
+                   }
+                   const progressPercent = totalReserved > 0 ? Math.round((totalBought / totalReserved) * 100) : 0;
+                   
+                   return (
+                  <tr key={layaway.id}>
+                    <td data-label="Código" className="text-secondary" style={{ whiteSpace: 'nowrap', fontWeight: 'bold', color: 'var(--accent-primary)' }}>{layaway.code}</td>
+                    <td data-label="Creador / Contacto" style={{color: 'var(--text-primary)'}}>
+                      <div style={{fontWeight: 600}}>{layaway.customer_name}</div>
+                      <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px'}}>
+                        {layaway.customer_email} {layaway.customer_phone ? `| 📞 ${layaway.customer_phone}` : ''}
+                      </div>
+                    </td>
+                    <td data-label="Ocasión / Fecha">
+                      <div style={{fontWeight: 600}}>{layaway.event_name || 'Sin especificar'}</div>
+                      <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px'}}>
+                        {layaway.event_date ? new Date(layaway.event_date).toLocaleDateString() : 'N/A'}
+                      </div>
+                    </td>
+                    <td data-label="Total Apartado" className="highlight-price" style={{ whiteSpace: 'nowrap' }}>
+                      L. {totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    </td>
+                    <td data-label="Progreso">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ flex: 1, height: '8px', background: 'rgba(0,0,0,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
+                          <div style={{ width: `${progressPercent}%`, height: '100%', background: progressPercent === 100 ? 'var(--success)' : progressPercent > 0 ? 'var(--accent-primary)' : 'var(--text-secondary)' }}></div>
+                        </div>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>{totalBought}/{totalReserved}</span>
+                      </div>
+                    </td>
+                    <td data-label="Estado">
+                      <span className={`badge ${layaway.status === 'Completado' ? 'badge-success' : layaway.status === 'Cancelado' ? 'badge-danger' : 'badge-warning'}`}>
+                        {layaway.status === 'active' ? 'Activo' : layaway.status || 'Activo'}
+                      </span>
+                    </td>
+                    <td data-label="Acciones" className="actions-cell">
+                      <button className="btn-icon" title="Ver Detalle" onClick={() => openLayawayModal(layaway, false)}><Eye size={20} strokeWidth={2.5} /></button>
+                      {layaway.status !== 'Cancelado' && (
+                        <>
+                          <button className="btn-icon" title="Editar" onClick={() => openLayawayModal(layaway, true)}><Edit size={20} strokeWidth={2.5} /></button>
+                          <button className="btn-icon cancel-btn" title="Cancelar Apartado" onClick={() => handleCancelLayaway(layaway)}><XCircle size={20} strokeWidth={2.5} /></button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                )})}
+                {layaways.length === 0 && (
+                  <tr>
+                    <td colSpan="7" className="empty-state">No hay apartados o listas de regalos registradas.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="table-responsive">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th style={{ whiteSpace: 'nowrap' }}>ID Pedido</th>
                 <th>Cliente</th>
                 <th style={{ whiteSpace: 'nowrap' }}>Fecha</th>
                 <th style={{ whiteSpace: 'nowrap' }}>Hora</th>
@@ -1391,6 +1536,116 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
                   )}
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- LAYAWAY DETAILS MODAL --- */}
+      {layawayModalOpen && selectedLayaway && !layawayEditModalOpen && (
+        <div className="modal-overlay" onClick={closeLayawayModal} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', zIndex: 1000 }}>
+          <div className="modal-content glass-panel" onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '800px', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden', maxHeight: '90vh' }}>
+            <div className="modal-header" style={{ padding: '20px 24px 16px', borderBottom: '1px solid var(--border-color)', margin: 0, flexShrink: 0, background: 'var(--bg-tertiary)' }}>
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                <h2 style={{margin: 0}}>Detalles de Apartado {selectedLayaway.code}</h2>
+                <button className="btn-icon" onClick={closeLayawayModal}><X /></button>
+              </div>
+              <p style={{margin: '8px 0 0 0', color: 'var(--text-secondary)'}}>{selectedLayaway.event_name || 'Sin especificar'} - {selectedLayaway.event_date ? new Date(selectedLayaway.event_date).toLocaleDateString() : 'Fecha no especificada'}</p>
+            </div>
+            
+            <div className="modal-form" style={{ display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto', flex: 1, padding: '24px' }}>
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)'}}>
+                <div><label style={{color: 'var(--text-secondary)', fontSize: '0.9rem'}}>Creador / Contacto</label><div style={{fontWeight: 'bold', fontSize: '1.05rem'}}>{selectedLayaway.customer_name}</div><div style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>{selectedLayaway.customer_email} {selectedLayaway.customer_phone ? `| 📞 ${selectedLayaway.customer_phone}` : ''}</div></div>
+                <div><label style={{color: 'var(--text-secondary)', fontSize: '0.9rem'}}>Fecha de Creación</label><div style={{fontWeight: 'bold', fontSize: '1.05rem'}}>{new Date(selectedLayaway.created_at).toLocaleString()}</div></div>
+                <div><label style={{color: 'var(--text-secondary)', fontSize: '0.9rem'}}>Vencimiento</label><div style={{fontWeight: 'bold', fontSize: '1.05rem', color: selectedLayaway.status === 'Cancelado' ? 'var(--danger)' : 'var(--text-primary)'}}>{new Date(selectedLayaway.expires_at).toLocaleString()}</div></div>
+              </div>
+              
+              <h3 style={{marginBottom: '0'}}>Lista de Artículos</h3>
+              <div style={{border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden'}}>
+                <table className="data-table" style={{margin: 0}}>
+                  <thead style={{background: 'var(--bg-tertiary)'}}>
+                    <tr>
+                      <th>Producto</th>
+                      <th>Reservados</th>
+                      <th>Comprados</th>
+                      <th>Pendientes</th>
+                      <th>Subtotal Reservado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedLayaway.items && selectedLayaway.items.length > 0 ? selectedLayaway.items.map(item => {
+                      const price = Number(item.product?.sellingPrice || 0);
+                      const pending = item.quantity_reserved - item.quantity_bought;
+                      return (
+                        <tr key={item.id}>
+                          <td>
+                            <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                              {item.product?.imageUrl && <img src={item.product.imageUrl} alt={item.product.name} style={{width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px'}} />}
+                              <div>
+                                <div style={{fontWeight: 600}}>{item.product?.name || 'Producto'}</div>
+                                <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>SKU: {item.product?.sku || 'N/A'} | L. {price.toLocaleString('en-US', {minimumFractionDigits: 2})} c/u</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{fontWeight: 'bold'}}>{item.quantity_reserved}</td>
+                          <td style={{fontWeight: 'bold', color: item.quantity_bought > 0 ? 'var(--success)' : 'inherit'}}>{item.quantity_bought}</td>
+                          <td style={{fontWeight: 'bold', color: pending > 0 ? 'var(--warning)' : 'inherit'}}>{pending}</td>
+                          <td style={{fontWeight: 'bold'}}>L. {(price * item.quantity_reserved).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                        </tr>
+                      );
+                    }) : (
+                      <tr><td colSpan="5" className="empty-state">No hay artículos en este apartado.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <div className="modal-actions" style={{ padding: '16px 24px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-tertiary)', flexShrink: 0, margin: 0, display: 'flex', gap: '16px' }}>
+              <button className="btn-primary" style={{ flex: 1, padding: '14px', fontSize: '1.05rem', justifyContent: 'center' }} onClick={closeLayawayModal}>Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- LAYAWAY EDIT MODAL --- */}
+      {layawayEditModalOpen && editedLayaway && (
+        <div className="modal-overlay" onClick={closeLayawayModal} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', zIndex: 1000 }}>
+          <div className="modal-content glass-panel" onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '500px', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
+            <div className="modal-header" style={{ padding: '20px 24px 16px', borderBottom: '1px solid var(--border-color)', margin: 0, flexShrink: 0, background: 'var(--bg-tertiary)' }}>
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                <h2 style={{margin: 0, display: 'flex', alignItems: 'center', gap: '8px'}}><Edit size={24} style={{color: 'var(--accent-primary)'}}/> Editar Apartado</h2>
+                <button className="btn-icon" onClick={closeLayawayModal}><X /></button>
+              </div>
+            </div>
+            
+            <div className="modal-form" style={{ display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto', flex: 1, padding: '24px' }}>
+              <div>
+                <label style={{display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.95rem'}}>Ocasión / Nombre de la Fiesta</label>
+                <input 
+                  type="text"
+                  style={inputStyle}
+                  value={editedLayaway.event_name || ''}
+                  onChange={e => setEditedLayaway({...editedLayaway, event_name: e.target.value})}
+                  placeholder="Ej. Baby Shower de María"
+                />
+              </div>
+              <div>
+                <label style={{display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '0.95rem'}}>Fecha del Evento</label>
+                <input 
+                  type="date"
+                  style={inputStyle}
+                  value={editedLayaway.event_date || ''}
+                  onChange={e => setEditedLayaway({...editedLayaway, event_date: e.target.value})}
+                />
+              </div>
+            </div>
+            
+            <div className="modal-actions" style={{ padding: '16px 24px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-tertiary)', flexShrink: 0, margin: 0, display: 'flex', gap: '16px' }}>
+              <button className="btn-secondary" style={{ flex: 1, padding: '14px', fontSize: '1.05rem', justifyContent: 'center' }} onClick={closeLayawayModal}>Cancelar</button>
+              <button className="btn-primary" style={{ flex: 1, padding: '14px', fontSize: '1.05rem', justifyContent: 'center' }} onClick={saveLayawayEdit}>
+                <Save size={20} style={{marginRight: '8px'}} /> Guardar Cambios
+              </button>
             </div>
           </div>
         </div>

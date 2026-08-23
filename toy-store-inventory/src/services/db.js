@@ -362,13 +362,58 @@ export const layawayRepository = {
     return newLayaway;
   },
 
-  async getAll() {
+  async getLayaways() {
     const { data, error } = await supabase
       .from('layaways')
-      .select('*')
+      .select('*, items:layaway_items(*, product:products(*))')
       .order('created_at', { ascending: false });
     if (error) throw error;
     return data || [];
+  },
+
+  async updateLayaway(layawayId, updates) {
+    const { data, error } = await supabase
+      .from('layaways')
+      .update(updates)
+      .eq('id', layawayId)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async cancelLayaway(layawayId, items) {
+    // 1. Cambiar estado a 'Cancelado'
+    const { data, error } = await supabase
+      .from('layaways')
+      .update({ status: 'Cancelado' })
+      .eq('id', layawayId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+
+    // 2. Reintegrar inventario no comprado
+    if (items && items.length > 0) {
+      for (const item of items) {
+        const remaining = (item.quantity_reserved || 0) - (item.quantity_bought || 0);
+        if (remaining > 0 && item.product && item.product.id) {
+          try {
+            // Leer el stock actual directo de la BD para evitar sobrescribir con data vieja
+            const dbProduct = await db.getById('products', item.product.id);
+            if (dbProduct) {
+              await db.update('products', item.product.id, { 
+                stock: dbProduct.stock + remaining 
+              });
+            }
+          } catch (err) {
+            console.error(`Error devolviendo stock al producto ${item.product.id}:`, err);
+          }
+        }
+      }
+    }
+
+    return data;
   },
 
   async getByCode(code) {
