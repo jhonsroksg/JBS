@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../services/db';
+import { db, layawayRepository } from '../services/db';
 import { Eye, X, Download, Send, Edit, Save, Trash2, List, Archive, Truck, Package, CheckCircle, XCircle, Calendar } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 import './Products.css';
@@ -61,7 +61,7 @@ const Orders = () => {
     }
     
     try {
-      const lays = await db.layawayRepository.getLayaways();
+      const lays = await layawayRepository.getLayaways();
       setLayaways(lays || []);
     } catch (err) {
       console.error('Error al cargar apartados (getLayaways):', err);
@@ -441,7 +441,7 @@ const Orders = () => {
     if (layaway.status === 'cancelled') { alert('Este apartado ya está cancelado.'); return; }
     if (confirm(`¿Estás seguro de cancelar el apartado de ${layaway.customer_name}?\n\nLos artículos reservados que NO han sido comprados serán devueltos al inventario general inmediatamente.`)) {
       try {
-        await db.layawayRepository.cancelLayaway(layaway.id, layaway.items);
+        await layawayRepository.cancelLayaway(layaway.id, layaway.layaway_items);
         await loadData();
         alert('Apartado cancelado y stock devuelto exitosamente.');
       } catch (err) {
@@ -453,7 +453,7 @@ const Orders = () => {
 
   const saveLayawayEdit = async () => {
     try {
-      await db.layawayRepository.updateLayaway(editedLayaway.id, {
+        await layawayRepository.updateLayaway(editedLayaway.id, {
         event_name: editedLayaway.event_name,
         event_date: editedLayaway.event_date
       });
