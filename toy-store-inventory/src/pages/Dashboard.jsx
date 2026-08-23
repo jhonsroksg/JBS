@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { db, layawayRepository } from '../services/db';
 import {
+  DollarSign, ShoppingBag, Users, AlertTriangle,
   Package, TrendingUp, TrendingDown, Award, Clock, CheckCircle,
   Gift, Download, Plus
 } from 'lucide-react';
