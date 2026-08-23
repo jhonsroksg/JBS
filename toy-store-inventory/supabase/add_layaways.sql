@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS layaway_items (
     quantity_reserved INT NOT NULL,
     quantity_bought INT DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    CONSTRAINT chk_quantity_reserved CHECK (quantity_reserved > 0),
+    CONSTRAINT chk_quantity_reserved CHECK (quantity_reserved >= 0),
     CONSTRAINT chk_quantity_bought CHECK (quantity_bought >= 0)
 );
 

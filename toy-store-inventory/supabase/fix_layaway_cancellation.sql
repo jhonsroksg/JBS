@@ -100,3 +100,9 @@ CREATE TRIGGER trg_update_product_stock_on_layaway_item_update
 BEFORE UPDATE OF quantity_reserved ON layaway_items
 FOR EACH ROW
 EXECUTE FUNCTION update_product_stock_on_layaway_item_update();
+
+-- 3. CORRECCIÓN DEL RESTRICCIÓN DE CHECK EN LA TABLA
+-- La tabla original no permitía que las cantidades reservadas bajaran a 0.
+-- Cuando se cancela un apartado, las reservas pasan a 0, así que debemos permitir >= 0.
+ALTER TABLE layaway_items DROP CONSTRAINT IF EXISTS chk_quantity_reserved;
+ALTER TABLE layaway_items ADD CONSTRAINT chk_quantity_reserved CHECK (quantity_reserved >= 0);
