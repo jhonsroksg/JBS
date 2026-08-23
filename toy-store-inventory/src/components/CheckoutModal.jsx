@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, layawayRepository } from '../services/db';
+import { db, layawayRepository, orderRepository } from '../services/db';
 import { X, Trash2, CheckCircle, User, Mail, Phone, MapPin, Truck, CreditCard, Copy } from 'lucide-react';
 import { hondurasLocations } from '../data/hondurasLocations';
 import { supabase } from '../lib/supabaseClient';
@@ -22,6 +22,8 @@ const CheckoutModal = ({ isOpen, onClose }) => {
   const sanitizeCartForStorage = (cart) => {
     return cart.map(item => ({
       ...item,
+      id: item.id || item.product?.id,
+      product_id: item.product_id || item.product?.id,
       product: {
         id: item.product.id,
         name: item.product.name,
@@ -315,7 +317,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
         };
 
         try {
-          const newOrder = await db.insert('orders', orderData);
+          const newOrder = await orderRepository.create(orderData, cart);
           if (newOrder && newOrder.order_id_custom) {
             setCompletedOrderNumber(newOrder.order_id_custom);
           } else {

@@ -147,7 +147,29 @@ export const orderRepository = {
     return data || [];
   },
 
-  async create(order) {
+  async create(order, cartItems = []) {
+    if (cartItems && cartItems.length > 0) {
+      const invalidItem = cartItems.find(item => !(item.id || item.product_id || item.products?.id || item.product?.id));
+      if (invalidItem) {
+        console.error("Ítem inválido en el carrito:", invalidItem);
+        throw new Error("Hay un problema con uno de los artículos en el carrito (ID faltante). Por favor, vacía tu carrito y vuelve a intentarlo.");
+      }
+
+      // Aseguramos que el JSON lleve 'product_id' explícito para los triggers de base de datos
+      order.items = cartItems.map(item => ({
+        product_id: item.id || item.product_id || item.products?.id || item.product?.id,
+        quantity: item.quantity,
+        product: {
+          id: item.id || item.product_id || item.products?.id || item.product?.id,
+          sku: item.product?.sku || item.products?.sku,
+          name: item.product?.name || item.products?.name,
+          sellingPrice: item.product?.sellingPrice || item.products?.sellingPrice,
+          discountPrice: item.product?.discountPrice || item.products?.discountPrice,
+          imageUrl: item.product?.imageUrl || item.products?.imageUrl
+        }
+      }));
+    }
+
     const { data, error } = await supabase
       .from('orders')
       .insert([order])

@@ -91,6 +91,8 @@ const ProductPage = () => {
     const sanitizeCartForStorage = (cart) => {
       return cart.map(item => ({
         ...item,
+        id: item.id || item.product?.id,
+        product_id: item.product_id || item.product?.id,
         product: {
           id: item.product.id,
           name: item.product.name,

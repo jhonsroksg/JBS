@@ -102,6 +102,9 @@ const LayawayView = () => {
       cart[existingIndex].quantity += 1;
     } else {
       cart.push({
+        id: product.id,
+        product_id: product.id,
+        layaway_id: layaway.id,
         product: {
           id: product.id,
           name: product.name,
