@@ -42,21 +42,31 @@ const Orders = () => {
   }, []);
 
   const loadData = async () => {
-    const [data, prods, delMethods, payMethods, statuses, lays] = await Promise.all([
-      db.getAll('orders'),
-      db.getAll('products'),
-      db.getAll('delivery_methods'),
-      db.getAll('payment_methods'),
-      db.getAll('order_statuses'),
-      db.layawayRepository.getLayaways()
-    ]);
-    data.sort((a, b) => new Date(b.date) - new Date(a.date));
-    setOrders(data);
-    setProducts(prods);
-    setDeliveryMethods(delMethods);
-    setPaymentMethods(payMethods);
-    setOrderStatuses(statuses);
-    setLayaways(lays);
+    try {
+      const [data, prods, delMethods, payMethods, statuses] = await Promise.all([
+        db.getAll('orders'),
+        db.getAll('products'),
+        db.getAll('delivery_methods'),
+        db.getAll('payment_methods'),
+        db.getAll('order_statuses')
+      ]);
+      data.sort((a, b) => new Date(b.date) - new Date(a.date));
+      setOrders(data);
+      setProducts(prods);
+      setDeliveryMethods(delMethods);
+      setPaymentMethods(payMethods);
+      setOrderStatuses(statuses);
+    } catch (err) {
+      console.error('Error al cargar datos principales:', err);
+    }
+    
+    try {
+      const lays = await db.layawayRepository.getLayaways();
+      setLayaways(lays || []);
+    } catch (err) {
+      console.error('Error al cargar apartados (getLayaways):', err);
+      setLayaways([]);
+    }
   };
 
 
