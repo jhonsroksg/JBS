@@ -18,12 +18,40 @@ const LayawayView = React.lazy(() => import('./pages/LayawayView'));
 const Settings = React.lazy(() => import('./pages/Settings'));
 const Login = React.lazy(() => import('./pages/Login'));
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("ErrorBoundary atrapó un error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ textAlign: 'center', marginTop: '20%', padding: '20px', fontFamily: 'sans-serif' }}>
+          <h2>Ha ocurrido un error cargando la aplicación</h2>
+          <p>Por favor, recarga la página o contacta con soporte técnico.</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function App() {
   return (
-    <AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
       <ToastProvider>
         <BrowserRouter>
-          <React.Suspense fallback={<LoadingSpinner fullPage />}>
+          <React.Suspense fallback={<div style={{textAlign: 'center', marginTop: '20%'}}>Cargando tienda...</div>}>
             <Routes>
               {/* Rutas Públicas */}
               <Route path="/" element={<PublicLayout />}>
@@ -55,7 +83,8 @@ function App() {
           </React.Suspense>
         </BrowserRouter>
       </ToastProvider>
-    </AuthProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
