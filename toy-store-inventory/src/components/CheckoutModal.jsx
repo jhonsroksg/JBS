@@ -87,9 +87,55 @@ const CheckoutModal = ({ isOpen, onClose }) => {
     };
   }, [isOpen]);
 
-  const loadCart = () => {
-    const savedCart = JSON.parse(localStorage.getItem('toy_store_cart') || '[]');
-    setCart(sanitizeCartForStorage(savedCart));
+  const loadCart = async () => {
+    const savedCartStr = localStorage.getItem('toy_store_cart') || '[]';
+    const savedCart = JSON.parse(savedCartStr);
+    const sanitizedCart = sanitizeCartForStorage(savedCart);
+    
+    // Validar stock real en DB
+    let cartModified = false;
+    const validatedCart = [];
+    
+    for (const item of sanitizedCart) {
+      if (item.isLayawayItem && item.layawayId) {
+        // Ignoramos validación estricta de stock para artículos ya apartados
+        validatedCart.push(item);
+        continue;
+      }
+      
+      try {
+        const dbProduct = await productRepository.getById(item.product.id);
+        
+        if (!dbProduct || dbProduct.stock === 0) {
+          showToast(`El producto "${item.product.name}" ya no está disponible y fue removido de tu carrito.`, 'error');
+          cartModified = true;
+          continue;
+        }
+        
+        if (dbProduct.stock < item.quantity) {
+          showToast(`El stock de "${item.product.name}" disminuyó. Se ajustó tu cantidad a ${dbProduct.stock}.`, 'warning');
+          item.quantity = dbProduct.stock;
+          cartModified = true;
+        }
+        
+        // Actualizar datos de precio y stock por si cambiaron
+        item.product.stock = dbProduct.stock;
+        item.product.sellingPrice = dbProduct.sellingPrice;
+        item.product.discountPrice = dbProduct.discountPrice;
+        
+        validatedCart.push(item);
+      } catch (err) {
+        console.error("Error validando stock en loadCart:", err);
+        validatedCart.push(item); // En caso de error de red, lo dejamos para validarlo en el checkout
+      }
+    }
+
+    setCart(validatedCart);
+    
+    if (cartModified) {
+      localStorage.setItem('toy_store_cart', JSON.stringify(validatedCart));
+      window.dispatchEvent(new Event('cart_updated'));
+    }
   };
 
   const updateQuantity = (index, delta) => {
@@ -208,13 +254,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
 
       for (const item of Object.values(aggregatedCart)) {
         console.log(`[Frontend Validation] Validating item:`, item.product.name, `ID:`, item.product.id);
-        const { data: dbProduct, error: productError } = await supabase
-          .from('products')
-          .select('stock')
-          .eq('id', item.product.id)
-          .maybeSingle();
-        
-        if (productError) throw productError;
+        const dbProduct = await productRepository.getById(item.product.id);
 
         if (!dbProduct) {
           showToast(`El producto "${item.product.name}" ya no existe en el sistema. Por favor, elimínalo de tu carrito.`, 'error');
@@ -252,7 +292,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
         }
 
         if (dbProduct.stock < item.quantity) {
-          showToast(`Lo sentimos, el producto "${item.product.name}" ya no tiene suficiente stock disponible. (En carrito: ${item.quantity}, Disponible: ${dbProduct.stock})`, 'error');
+          showToast(`Stock insuficiente para "${item.product.name}". Disponible: ${dbProduct.stock}, solicitado: ${item.quantity}.`, 'error');
           setIsSubmitting(false);
           return;
         }

@@ -27,6 +27,24 @@ const Products = () => {
 
   useEffect(() => {
     loadData();
+
+    const handleFocus = () => {
+      loadData();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadData();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const loadData = async () => {
@@ -445,9 +463,19 @@ const Products = () => {
           <h1>Catálogo de Juguetes</h1>
           <p>Administra los productos de tu tienda.</p>
         </div>
-        <button className="btn-primary" onClick={() => handleOpenModal()}>
-          <Plus size={20} strokeWidth={3} /> Agregar Juguete
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button 
+            className="btn-secondary" 
+            onClick={loadData}
+            disabled={loading}
+            style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
+          >
+            ↻ Refrescar
+          </button>
+          <button className="btn-primary" onClick={() => handleOpenModal()}>
+            <Plus size={20} strokeWidth={3} /> Agregar Juguete
+          </button>
+        </div>
       </div>
 
       <div className="products-content glass-panel">
