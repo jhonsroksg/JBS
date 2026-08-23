@@ -253,6 +253,15 @@ const CheckoutModal = ({ isOpen, onClose }) => {
       }
     } catch (stockErr) {
       console.error('Error validando stock:', stockErr);
+      
+      // If the error is from .single() finding 0 rows
+      if (stockErr.code === 'PGRST116' || stockErr.message?.includes('0 rows')) {
+        showToast(`Uno de los productos en tu carrito ya no existe o fue eliminado del sistema. Por favor, elimínalo de tu carrito e intenta de nuevo.`, 'error');
+      } else {
+        showToast(`Error al verificar disponibilidad de productos: ${stockErr.message}`, 'error');
+      }
+      setIsSubmitting(false);
+      return; // CRITICAL: Stop submission if frontend validation throws an error
     }
 
     try {
