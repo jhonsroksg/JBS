@@ -13,7 +13,7 @@
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
+  gap: 16px;
 }
 
 .dashboard-main-grid,
@@ -32,12 +32,15 @@
   display: flex;
   align-items: center;
   gap: 20px;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .metric-card:hover {
-  transform: translateY(-5px);
-  box-shadow: var(--shadow-glow);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
 }
 
 .metric-icon-wrapper {
@@ -315,4 +318,80 @@
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+/* Tasks Section (Quick Actions & Pending Orders) */
+.dashboard-tasks-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-tasks-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.quick-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  border-color: rgba(0,0,0,0.1);
+}
+
+.qa-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quick-action-btn span {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.pending-orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pending-order-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(243, 156, 18, 0.05);
+  border: 1px solid rgba(243, 156, 18, 0.2);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.pending-order-item:hover {
+  background: rgba(243, 156, 18, 0.08);
 }

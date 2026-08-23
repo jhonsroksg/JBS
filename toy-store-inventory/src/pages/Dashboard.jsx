@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { db } from '../services/db';
+import { db, layawayRepository } from '../services/db';
 import {
-  DollarSign, ShoppingBag, Users, AlertTriangle,
-  Package, TrendingUp, TrendingDown, Award, Clock, CheckCircle
+  Package, TrendingUp, TrendingDown, Award, Clock, CheckCircle,
+  Gift, Download, Plus
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 
 const PERIODS = [
@@ -83,20 +84,24 @@ const Dashboard = () => {
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [orderStatuses, setOrderStatuses] = useState([]);
+  const [layaways, setLayaways] = useState([]);
+  const navigate = useNavigate();
 
 
   useEffect(() => {
     const loadData = async () => {
-      const [orders, prods, custs, statuses] = await Promise.all([
+      const [orders, prods, custs, statuses, lays] = await Promise.all([
         db.getAll('orders'),
         db.getAll('products'),
         db.getAll('customers'),
         db.getAll('order_statuses'),
+        layawayRepository.getLayaways(),
       ]);
       setAllOrders(orders);
       setProducts(prods);
       setCustomers(custs);
       setOrderStatuses(statuses);
+      setLayaways(lays);
     };
 
     loadData();
@@ -131,6 +136,13 @@ const Dashboard = () => {
   const avgTicket = completedOrders.length > 0
     ? completedOrders.reduce((a, o) => a + Number(o.total || 0), 0) / completedOrders.length
     : 0;
+
+  const activeLayaways = layaways.filter(l => l.status === 'active');
+  const layawaysReservedAmount = activeLayaways.reduce((acc, l) => {
+    return acc + (l.layaway_items || []).reduce((sum, item) => {
+      return sum + (item.quantity_reserved * (item.products?.discountPrice || item.products?.sellingPrice || 0));
+    }, 0);
+  }, 0);
 
   const lowStock = products.filter(p => p.stock <= (p.minStock || 0));
 
@@ -279,17 +291,28 @@ const Dashboard = () => {
           </div>
           <div>
             <div className="metric-label">Ingresos del período</div>
-            <div className="metric-value">{fmt(revenue)}</div>
+            <div className="metric-value" style={{ color: '#22C1C3' }}>{fmt(revenue)}</div>
           </div>
         </div>
+
         <div className="metric-card glass-panel" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
           <div className="metric-icon-wrapper" style={{ background: 'rgba(243,156,18,0.12)', color: '#f39c12' }}><ShoppingBag className="metric-icon" /></div>
           <div>
             <div className="metric-label">Pedidos totales</div>
             <div className="metric-value">{periodOrders.length}</div>
-            <div className="metric-status">✅ {completedOrders.length} completados · ⏳ {pendingOrders.length} pendientes</div>
+            <div className="metric-status" style={{ color: '#f39c12' }}>✅ {completedOrders.length} listos · ⏳ {pendingOrders.length} pendientes</div>
           </div>
         </div>
+
+        <div className="metric-card glass-panel" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+          <div className="metric-icon-wrapper" style={{ background: 'rgba(255,182,193,0.2)', color: '#e83e8c' }}><Gift className="metric-icon" /></div>
+          <div>
+            <div className="metric-label">Apartados / Fiestas Activas</div>
+            <div className="metric-value" style={{ color: '#e83e8c' }}>{activeLayaways.length}</div>
+            <div className="metric-status">Reserva total: {fmt(layawaysReservedAmount)}</div>
+          </div>
+        </div>
+
         <div className="metric-card glass-panel" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
           <div className="metric-icon-wrapper" style={{ background: 'rgba(155,89,182,0.12)', color: '#9b59b6' }}><Award className="metric-icon" /></div>
           <div>
@@ -297,30 +320,57 @@ const Dashboard = () => {
             <div className="metric-value">{fmt(avgTicket)}</div>
           </div>
         </div>
-        <div className="metric-card glass-panel" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
-          <div className="metric-icon-wrapper" style={{ background: 'rgba(52,152,219,0.12)', color: '#3498db' }}><Users className="metric-icon" /></div>
+
+        <div className="metric-card glass-panel" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', border: lowStock.length > 0 ? '1px solid rgba(231,76,60,0.3)' : '' }} onClick={() => navigate('/admin/products')}>
+          <div className="metric-icon-wrapper" style={{ background: lowStock.length > 0 ? 'rgba(231,76,60,0.12)' : 'rgba(243,156,18,0.12)', color: lowStock.length > 0 ? '#e74c3c' : '#f39c12' }}><AlertTriangle className="metric-icon" /></div>
           <div>
-            <div className="metric-label">Clientes registrados</div>
-            <div className="metric-value">{customers.length}</div>
+            <div className="metric-label">Alertas de Inventario</div>
+            <div className="metric-value" style={{ color: lowStock.length > 0 ? '#e74c3c' : '#f39c12' }}>{lowStock.length}</div>
+            <div className="metric-status" style={{ color: lowStock.length > 0 ? '#e74c3c' : '#f39c12' }}>Productos con stock bajo/crítico</div>
           </div>
         </div>
-        <div className="metric-card glass-panel" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
-          <div className="metric-icon-wrapper" style={{ background: 'rgba(39,174,96,0.12)', color: '#27ae60' }}><Package className="metric-icon" /></div>
-          <div>
-            <div className="metric-label">Productos activos</div>
-            <div className="metric-value">{products.length}</div>
-            {lowStock.length > 0 && <div className="metric-status" style={{ color: '#e74c3c' }}>⚠️ {lowStock.length} con stock crítico</div>}
-          </div>
-        </div>
-        <div className="metric-card glass-panel" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
-          <div className="metric-icon-wrapper" style={{ background: 'rgba(231,76,60,0.12)', color: '#e74c3c' }}><AlertTriangle className="metric-icon" /></div>
-          <div>
-            <div className="metric-label">Pedidos cancelados</div>
-            <div className="metric-value">{cancelledOrders.length}</div>
-            <div className="metric-status">Tasa de cancelación: {periodOrders.length > 0 ? ((cancelledOrders.length / periodOrders.length) * 100).toFixed(2) : 0}%</div>
+      </div>
+
+      <div className="dashboard-tasks-section">
+        <div className="dashboard-section glass-panel quick-actions-panel">
+          <div className="section-header"><h2>⚡ Acciones Rápidas</h2></div>
+          <div className="quick-actions-grid">
+            <button className="quick-action-btn" onClick={() => navigate('/admin/products')}>
+              <div className="qa-icon" style={{ background: '#e0f2fe', color: '#0ea5e9' }}><Plus size={20} /></div>
+              <span>Añadir Producto</span>
+            </button>
+            <button className="quick-action-btn" onClick={() => { localStorage.setItem('toy_store_layaway_mode', 'true'); navigate('/'); }}>
+              <div className="qa-icon" style={{ background: '#fce7f3', color: '#db2777' }}><Gift size={20} /></div>
+              <span>Nueva Fiesta / Apartado</span>
+            </button>
+            <button className="quick-action-btn" onClick={() => navigate('/admin/orders')}>
+              <div className="qa-icon" style={{ background: '#dcfce7', color: '#16a34a' }}><Download size={20} /></div>
+              <span>Exportar Pedidos</span>
+            </button>
           </div>
         </div>
 
+        <div className="dashboard-section glass-panel pending-orders-panel">
+          <div className="section-header">
+            <h2>⏳ Pedidos Pendientes de Atención</h2>
+            <span style={{ fontSize: '0.82rem', color: '#f39c12', fontWeight: 600 }}>{pendingOrders.length} por despachar</span>
+          </div>
+          <div className="pending-orders-list">
+            {pendingOrders.length === 0 ? <div className="empty-state">No hay pedidos pendientes. ¡Todo al día! 🎉</div> : null}
+            {pendingOrders.slice(0, 4).map(order => (
+              <div key={order.id} className="pending-order-item">
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{order.customerName}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{order.order_id_custom} · {fmt(order.total)}</div>
+                </div>
+                <button className="btn-text" style={{ background: 'rgba(243,156,18,0.1)', color: '#d68910', padding: '6px 12px' }} onClick={() => navigate('/admin/orders')}>Atender</button>
+              </div>
+            ))}
+            {pendingOrders.length > 4 && (
+              <button className="btn-text" style={{ width: '100%', textAlign: 'center', marginTop: '8px' }} onClick={() => navigate('/admin/orders')}>Ver {pendingOrders.length - 4} más...</button>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="dashboard-main-grid">
@@ -414,29 +464,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {lowStock.length > 0 && (
-        <div className="dashboard-section glass-panel" style={{ border: '1px solid rgba(231,76,60,0.3)' }}>
-          <div className="section-header">
-            <h2>⚠️ Alertas de Stock Crítico</h2>
-            <span style={{ fontSize: '0.82rem', color: '#e74c3c', fontWeight: 600 }}>{lowStock.length} productos</span>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
-            {lowStock.map(p => (
-              <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: 'rgba(231,76,60,0.06)', borderRadius: '10px', border: '1px solid rgba(231,76,60,0.2)' }}>
-                <img src={p.imageUrl || 'https://via.placeholder.com/36'} alt={p.name} style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>SKU: {p.sku}</div>
-                </div>
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <div style={{ color: '#e74c3c', fontWeight: 800, fontSize: '1rem' }}>{p.stock}</div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>mín. {p.minStock}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Low stock alerts removed here because it's now a card in the main grid */}
     </div>
   );
 };
