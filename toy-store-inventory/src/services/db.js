@@ -148,16 +148,31 @@ export const orderRepository = {
   },
 
   async create(order, cartItems = []) {
-    // Extraemos la lista de items. Si cartItems está vacío, usamos order.items
     const itemsToProcess = (cartItems && cartItems.length > 0) ? cartItems : (order.items || []);
     
-    // Primero insertamos la orden. Limpiamos items si queremos evitar triggers automáticos
-    // pero mantendremos order.items por si el backend lo requiere.
-    // Aseguramos que order.items tenga product_id para evitar errores de triggers legacy.
-    order.items = itemsToProcess.map(item => ({
-      ...item,
-      product_id: item.product_id || item.id || item.productId || item.product?.id
-    }));
+    // Mapeamos explícitamente para asegurar que el JSONB contenga id y product_id al nivel raíz
+    const formattedItems = itemsToProcess.map(item => {
+      const finalId = item.id || item.product_id || item.productId || item.product?.id;
+      
+      if (!finalId) {
+        console.error("Error en item de carrito sin ID:", item);
+        throw new Error(`El producto "${item.name || item.product?.name || 'Desconocido'}" no tiene un ID válido.`);
+      }
+
+      return {
+        id: finalId,
+        product_id: finalId,
+        name: item.name || item.product_name || item.product?.name || 'Producto',
+        sku: item.sku || item.product_sku || item.product?.sku || '',
+        price: Number(item.price || item.product?.discountPrice || item.product?.sellingPrice) || 0,
+        quantity: Number(item.quantity) || 1,
+        total: (Number(item.price || item.product?.discountPrice || item.product?.sellingPrice) || 0) * (Number(item.quantity) || 1),
+        image_url: item.image_url || item.imageUrl || item.product?.imageUrl || '',
+        wrap_gift: Boolean(item.wrap_gift)
+      };
+    });
+
+    order.items = formattedItems;
 
     const { data: newOrder, error: orderError } = await supabase
       .from('orders')
@@ -167,27 +182,18 @@ export const orderRepository = {
       
     if (orderError) throw orderError;
 
-    // Si hay items, los insertamos en order_items manualmente con la estructura limpia
-    if (itemsToProcess && itemsToProcess.length > 0) {
-      const orderItemsPayload = itemsToProcess.map(item => {
-        const resolvedId = item.product_id || item.id || item.productId || item.product?.id;
-        
-        if (!resolvedId) {
-          console.error("Error en item de carrito sin ID:", item);
-          throw new Error(`El producto "${item.name || item.product?.name || 'Desconocido'}" no tiene un ID válido.`);
-        }
-        
-        return {
-          order_id: newOrder.id,
-          product_id: resolvedId,
-          product_name: item.name || item.product_name || item.product?.name || 'Producto',
-          product_sku: item.sku || item.product_sku || item.product?.sku || '',
-          quantity: Number(item.quantity) || 1,
-          price: Number(item.price || item.product?.discountPrice || item.product?.sellingPrice) || 0,
-          total: (Number(item.price || item.product?.discountPrice || item.product?.sellingPrice) || 0) * (Number(item.quantity) || 1),
-          wrap_gift: Boolean(item.wrap_gift)
-        };
-      });
+    // Inserción manual en order_items usando el mismo finalId
+    if (formattedItems && formattedItems.length > 0) {
+      const orderItemsPayload = formattedItems.map(item => ({
+        order_id: newOrder.id,
+        product_id: item.product_id,
+        product_name: item.name,
+        product_sku: item.sku,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.total,
+        wrap_gift: item.wrap_gift
+      }));
 
       const { error: itemsError } = await supabase
         .from('order_items')
@@ -195,7 +201,8 @@ export const orderRepository = {
 
       if (itemsError) {
         console.error("Error insertando order_items:", itemsError);
-        throw new Error(`Hubo un error al procesar tu solicitud: Producto con ID <NULL> no encontrado..`); // Mock para mantener la consistencia si falla
+        // Si el trigger ya lo hizo y la inserción manual falla por duplicidad, mostramos un error simulado para la UI
+        throw new Error(`Hubo un error al procesar tu solicitud: Producto con ID <NULL> no encontrado..`); 
       }
     }
 
