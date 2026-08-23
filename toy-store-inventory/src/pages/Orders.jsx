@@ -1665,7 +1665,7 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
                   </button>
                 </div>
               </div>
-              <div style={{border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden'}}>
+              <div style={{border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'auto', maxHeight: '350px'}}>
                 <table className="data-table" style={{margin: 0}}>
                   <thead style={{background: 'var(--bg-tertiary)'}}>
                     <tr>
