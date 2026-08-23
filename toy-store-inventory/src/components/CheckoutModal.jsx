@@ -207,6 +207,9 @@ const CheckoutModal = ({ isOpen, onClose }) => {
       }
 
       for (const item of Object.values(aggregatedCart)) {
+        // Skip stock validation for layaway items, as their stock is already reserved
+        if (item.isLayawayItem) continue;
+
         const dbProduct = await productRepository.getById(item.product.id);
         if (!dbProduct || dbProduct.stock < item.quantity) {
           showToast(`Lo sentimos, el producto "${item.product.name}" ya no tiene suficiente stock disponible.`, 'error');
@@ -344,14 +347,23 @@ const CheckoutModal = ({ isOpen, onClose }) => {
           console.error('CRITICAL: Error al insertar el pedido en Supabase:', insertErr);
           
           const errMsg = insertErr.message || '';
-          if (errMsg.includes('STOCK_INSUFICIENTE')) {
-            const match = errMsg.match(/STOCK_INSUFICIENTE:\s*([^|]+)\|disponible:(\d+)\|solicitado:(\d+)/);
-            if (match) {
-              const [, productName, available, requested] = match;
-              showToast(`Stock insuficiente para "${productName.trim()}". Disponible: ${available}, solicitado: ${requested}.`, 'error');
-            } else {
-              showToast('Stock insuficiente para uno de los productos. Refresca tu carrito.', 'error');
-            }
+          
+          // Matches: "STOCK_INSUFICIENTE:..." OR "Stock insuficiente para..."
+          const isStockError = errMsg.toUpperCase().includes('STOCK INSUFICIENTE') || errMsg.toUpperCase().includes('STOCK_INSUFICIENTE');
+          if (isStockError) {
+            let available = '0';
+            let requested = '1';
+            
+            const dispMatch = errMsg.match(/disponible:\s*(\d+)/i);
+            const solMatch = errMsg.match(/solicitado:\s*(\d+)/i);
+            
+            if (dispMatch) available = dispMatch[1];
+            if (solMatch) requested = solMatch[1];
+            
+            const nameMatch = errMsg.match(/para\s+"([^"]+)"|STOCK_INSUFICIENTE:\s*([^|]+)/i);
+            const productName = nameMatch ? (nameMatch[1] || nameMatch[2]) : 'el producto';
+            
+            showToast(`Stock insuficiente para "${productName.trim()}". Disponible: ${available}, solicitado: ${requested}.`, 'error');
             setIsSubmitting(false);
             return;
           }
