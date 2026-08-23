@@ -451,19 +451,6 @@ const Orders = () => {
     }
   };
 
-  const saveLayawayEdit = async () => {
-    try {
-        await layawayRepository.updateLayaway(editedLayaway.id, {
-        event_name: editedLayaway.event_name,
-        event_date: editedLayaway.event_date
-      });
-      await loadData();
-      alert('Apartado actualizado exitosamente.');
-    } catch (err) {
-      console.error('Error al editar el apartado:', err);
-      alert('Hubo un error al editar el apartado. Reintenta.');
-    }
-  };
 
   const handleUpdateLayawayItemQty = async (item, delta) => {
     try {
