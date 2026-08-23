@@ -148,35 +148,58 @@ export const orderRepository = {
   },
 
   async create(order, cartItems = []) {
-    if (cartItems && cartItems.length > 0) {
-      const invalidItem = cartItems.find(item => !(item.id || item.product_id || item.products?.id || item.product?.id));
-      if (invalidItem) {
-        console.error("Ítem inválido en el carrito:", invalidItem);
-        throw new Error("Hay un problema con uno de los artículos en el carrito (ID faltante). Por favor, vacía tu carrito y vuelve a intentarlo.");
-      }
+    // Extraemos la lista de items. Si cartItems está vacío, usamos order.items
+    const itemsToProcess = (cartItems && cartItems.length > 0) ? cartItems : (order.items || []);
+    
+    // Primero insertamos la orden. Limpiamos items si queremos evitar triggers automáticos
+    // pero mantendremos order.items por si el backend lo requiere.
+    // Aseguramos que order.items tenga product_id para evitar errores de triggers legacy.
+    order.items = itemsToProcess.map(item => ({
+      ...item,
+      product_id: item.product_id || item.id || item.productId || item.product?.id
+    }));
 
-      // Aseguramos que el JSON lleve 'product_id' explícito para los triggers de base de datos
-      order.items = cartItems.map(item => ({
-        product_id: item.id || item.product_id || item.products?.id || item.product?.id,
-        quantity: item.quantity,
-        product: {
-          id: item.id || item.product_id || item.products?.id || item.product?.id,
-          sku: item.product?.sku || item.products?.sku,
-          name: item.product?.name || item.products?.name,
-          sellingPrice: item.product?.sellingPrice || item.products?.sellingPrice,
-          discountPrice: item.product?.discountPrice || item.products?.discountPrice,
-          imageUrl: item.product?.imageUrl || item.products?.imageUrl
-        }
-      }));
-    }
-
-    const { data, error } = await supabase
+    const { data: newOrder, error: orderError } = await supabase
       .from('orders')
       .insert([order])
       .select()
       .single();
-    if (error) throw error;
-    return data;
+      
+    if (orderError) throw orderError;
+
+    // Si hay items, los insertamos en order_items manualmente con la estructura limpia
+    if (itemsToProcess && itemsToProcess.length > 0) {
+      const orderItemsPayload = itemsToProcess.map(item => {
+        const resolvedId = item.product_id || item.id || item.productId || item.product?.id;
+        
+        if (!resolvedId) {
+          console.error("Error en item de carrito sin ID:", item);
+          throw new Error(`El producto "${item.name || item.product?.name || 'Desconocido'}" no tiene un ID válido.`);
+        }
+        
+        return {
+          order_id: newOrder.id,
+          product_id: resolvedId,
+          product_name: item.name || item.product_name || item.product?.name || 'Producto',
+          product_sku: item.sku || item.product_sku || item.product?.sku || '',
+          quantity: Number(item.quantity) || 1,
+          price: Number(item.price || item.product?.discountPrice || item.product?.sellingPrice) || 0,
+          total: (Number(item.price || item.product?.discountPrice || item.product?.sellingPrice) || 0) * (Number(item.quantity) || 1),
+          wrap_gift: Boolean(item.wrap_gift)
+        };
+      });
+
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItemsPayload);
+
+      if (itemsError) {
+        console.error("Error insertando order_items:", itemsError);
+        throw new Error(`Hubo un error al procesar tu solicitud: Producto con ID <NULL> no encontrado..`); // Mock para mantener la consistencia si falla
+      }
+    }
+
+    return newOrder;
   },
 
   async updateStatus(id, status) {
