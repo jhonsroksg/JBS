@@ -384,34 +384,18 @@ export const layawayRepository = {
 
   async cancelLayaway(layawayId, items) {
     // 1. Cambiar estado a 'Cancelado'
+    // IMPORTANTE: La base de datos de Supabase ya tiene un trigger (trg_layaway_status_update)
+    // que se activa al cambiar de 'active' a 'cancelled' o 'expired' 
+    // y reintegra automáticamente el inventario de layaway_items a products.
+    // NO debemos reintegrar el inventario manualmente aquí para evitar duplicación.
     const { data, error } = await supabase
       .from('layaways')
-      .update({ status: 'Cancelado' })
+      .update({ status: 'cancelled' })
       .eq('id', layawayId)
       .select()
       .single();
     
     if (error) throw error;
-
-    // 2. Reintegrar inventario no comprado
-    if (items && items.length > 0) {
-      for (const item of items) {
-        const remaining = (item.quantity_reserved || 0) - (item.quantity_bought || 0);
-        if (remaining > 0 && item.product && item.product.id) {
-          try {
-            // Leer el stock actual directo de la BD para evitar sobrescribir con data vieja
-            const dbProduct = await db.getById('products', item.product.id);
-            if (dbProduct) {
-              await db.update('products', item.product.id, { 
-                stock: dbProduct.stock + remaining 
-              });
-            }
-          } catch (err) {
-            console.error(`Error devolviendo stock al producto ${item.product.id}:`, err);
-          }
-        }
-      }
-    }
 
     return data;
   },

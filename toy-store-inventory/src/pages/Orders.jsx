@@ -427,7 +427,7 @@ const Orders = () => {
   };
 
   const handleCancelLayaway = async (layaway) => {
-    if (layaway.status === 'Cancelado') { alert('Este apartado ya está cancelado.'); return; }
+    if (layaway.status === 'cancelled') { alert('Este apartado ya está cancelado.'); return; }
     if (confirm(`¿Estás seguro de cancelar el apartado de ${layaway.customer_name}?\n\nLos artículos reservados que NO han sido comprados serán devueltos al inventario general inmediatamente.`)) {
       try {
         await db.layawayRepository.cancelLayaway(layaway.id, layaway.items);
@@ -981,13 +981,13 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
                       </div>
                     </td>
                     <td data-label="Estado">
-                      <span className={`badge ${layaway.status === 'Completado' ? 'badge-success' : layaway.status === 'Cancelado' ? 'badge-danger' : 'badge-warning'}`}>
-                        {layaway.status === 'active' ? 'Activo' : layaway.status || 'Activo'}
+                      <span className={`badge ${layaway.status === 'Completado' ? 'badge-success' : layaway.status === 'cancelled' ? 'badge-danger' : 'badge-warning'}`}>
+                        {layaway.status === 'active' ? 'Activo' : layaway.status === 'cancelled' ? 'Cancelado' : layaway.status || 'Activo'}
                       </span>
                     </td>
                     <td data-label="Acciones" className="actions-cell">
                       <button className="btn-icon" title="Ver Detalle" onClick={() => openLayawayModal(layaway, false)}><Eye size={20} strokeWidth={2.5} /></button>
-                      {layaway.status !== 'Cancelado' && (
+                      {layaway.status !== 'cancelled' && (
                         <>
                           <button className="btn-icon" title="Editar" onClick={() => openLayawayModal(layaway, true)}><Edit size={20} strokeWidth={2.5} /></button>
                           <button className="btn-icon cancel-btn" title="Cancelar Apartado" onClick={() => handleCancelLayaway(layaway)}><XCircle size={20} strokeWidth={2.5} /></button>
@@ -1558,7 +1558,7 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
               <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-color)'}}>
                 <div><label style={{color: 'var(--text-secondary)', fontSize: '0.9rem'}}>Creador / Contacto</label><div style={{fontWeight: 'bold', fontSize: '1.05rem'}}>{selectedLayaway.customer_name}</div><div style={{fontSize: '0.9rem', color: 'var(--text-secondary)'}}>{selectedLayaway.customer_email} {selectedLayaway.customer_phone ? `| 📞 ${selectedLayaway.customer_phone}` : ''}</div></div>
                 <div><label style={{color: 'var(--text-secondary)', fontSize: '0.9rem'}}>Fecha de Creación</label><div style={{fontWeight: 'bold', fontSize: '1.05rem'}}>{new Date(selectedLayaway.created_at).toLocaleString()}</div></div>
-                <div><label style={{color: 'var(--text-secondary)', fontSize: '0.9rem'}}>Vencimiento</label><div style={{fontWeight: 'bold', fontSize: '1.05rem', color: selectedLayaway.status === 'Cancelado' ? 'var(--danger)' : 'var(--text-primary)'}}>{new Date(selectedLayaway.expires_at).toLocaleString()}</div></div>
+                <div><label style={{color: 'var(--text-secondary)', fontSize: '0.9rem'}}>Vencimiento</label><div style={{fontWeight: 'bold', fontSize: '1.05rem', color: selectedLayaway.status === 'cancelled' ? 'var(--danger)' : 'var(--text-primary)'}}>{new Date(selectedLayaway.expires_at).toLocaleString()}</div></div>
               </div>
               
               <h3 style={{marginBottom: '0'}}>Lista de Artículos</h3>
