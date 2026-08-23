@@ -144,26 +144,34 @@ const CheckoutModal = ({ isOpen, onClose }) => {
     e.preventDefault();
     if (cart.length === 0 || isSubmitting) return;
 
-    if (customerInfo.name.trim().length < 3) {
+    const sanitizeHTML = (str) => {
+      if (typeof str !== 'string') return str;
+      return str.replace(/[<>]/g, '').trim();
+    };
+
+    const sanitizedName = sanitizeHTML(customerInfo.name);
+    if (sanitizedName.length < 3) {
       showToast('Por favor ingresa un nombre válido (mínimo 3 caracteres).', 'warning');
       return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(customerInfo.email)) {
+    if (!emailRegex.test(customerInfo.email.trim())) {
       showToast('Por favor ingresa un correo electrónico válido.', 'warning');
       return;
     }
-    const phoneDigits = customerInfo.phone.replace(/\D/g, '');
-    if (phoneDigits.length !== 8) {
-      showToast('El teléfono debe tener exactamente 8 dígitos numéricos.', 'warning');
+    const phoneRaw = customerInfo.phone.trim();
+    if (!/^\d{8,}$/.test(phoneRaw)) {
+      showToast('El teléfono debe contener solo números (mínimo 8 dígitos).', 'warning');
       return;
     }
+    const sanitizedAddress = sanitizeHTML(customerInfo.address);
+    const sanitizedEventName = sanitizeHTML(layawayInfo.eventName);
 
     const hasLayawayGifts = cart.some(item => item.isLayawayItem);
     const isPartyDelivery = hasLayawayGifts && deliveryOption === 'party';
 
     if (!isLayawayMode) {
-      if (!isPartyDelivery && !isPickUp && !customerInfo.address.trim()) {
+      if (!isPartyDelivery && !isPickUp && !sanitizedAddress) {
         showToast('La dirección de envío es requerida.', 'warning');
         return;
       }
@@ -176,7 +184,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
         return;
       }
     } else {
-      if (!layawayInfo.eventName.trim()) {
+      if (!sanitizedEventName) {
         showToast('El nombre del cumpleañero u ocasión es requerido.', 'warning');
         return;
       }
@@ -204,10 +212,10 @@ const CheckoutModal = ({ isOpen, onClose }) => {
     try {
       if (isLayawayMode) {
         const layawayData = {
-          customer_name: customerInfo.name,
-          customer_email: customerInfo.email,
-          customer_phone: customerInfo.phone,
-          event_name: layawayInfo.eventName,
+          customer_name: sanitizedName,
+          customer_email: customerInfo.email.trim(),
+          customer_phone: phoneRaw,
+          event_name: sanitizedEventName,
           event_date: layawayInfo.eventDate,
           status: 'active'
         };
@@ -290,12 +298,12 @@ const CheckoutModal = ({ isOpen, onClose }) => {
           : (selectedDelivery ? selectedDelivery.name : 'Envío estándar');
 
         const orderData = {
-          customerName: customerInfo.name,
-          customerEmail: customerInfo.email,
-          customerPhone: customerInfo.phone,
+          customerName: sanitizedName,
+          customerEmail: customerInfo.email.trim(),
+          customerPhone: phoneRaw,
           customerAddress: isPartyDelivery 
             ? 'ENTREGAR DIRECTAMENTE EN LA FIESTA (ENVÍO GRATIS)'
-            : (isPickUp ? `RECOJO EN TIENDA - ${customerInfo.municipality}, ${customerInfo.department}` : `${customerInfo.address}, ${customerInfo.municipality}, ${customerInfo.department}`),
+            : (isPickUp ? `RECOJO EN TIENDA - ${customerInfo.municipality}, ${customerInfo.department}` : `${sanitizedAddress}, ${customerInfo.municipality}, ${customerInfo.department}`),
           department: isPartyDelivery ? 'FIESTA' : customerInfo.department,
           municipality: isPartyDelivery ? 'FIESTA' : customerInfo.municipality,
           paymentMethod,
@@ -363,9 +371,9 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                   });
                 } else {
                   return db.insert('customers', {
-                    name: customerInfo.name,
-                    email: customerInfo.email,
-                    phone: customerInfo.phone,
+                    name: sanitizedName,
+                    email: customerInfo.email.trim(),
+                    phone: phoneRaw,
                     address: orderData.customerAddress,
                     totalOrders: 1
                   });

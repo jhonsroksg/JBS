@@ -157,9 +157,19 @@ export const orderRepository = {
     const formattedItems = itemsToProcess.map(item => {
       const finalId = item.id || item.product_id || item.productId || item.product?.id;
       
-      if (!finalId) {
-        console.error("Error en item de carrito sin ID:", item);
-        throw new Error(`El producto "${item.name || item.product?.name || 'Desconocido'}" no tiene un ID válido.`);
+      if (!finalId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(finalId)) {
+        console.error("Error en item de carrito sin ID válido:", item);
+        throw new Error(`El producto "${item.name || item.product?.name || 'Desconocido'}" no tiene un ID UUID válido.`);
+      }
+
+      const parsedQty = Number(item.quantity) || 1;
+      if (parsedQty <= 0 || !Number.isInteger(parsedQty)) {
+        throw new Error(`La cantidad para "${item.name || item.product?.name || 'Producto'}" debe ser un entero positivo mayor a 0.`);
+      }
+
+      const parsedPrice = Number(item.price || item.product?.discountPrice || item.product?.sellingPrice) || 0;
+      if (parsedPrice < 0) {
+        throw new Error(`El precio para "${item.name || item.product?.name || 'Producto'}" no puede ser negativo.`);
       }
 
       return {
@@ -168,9 +178,9 @@ export const orderRepository = {
         productId: finalId, // <- Añadido por si el trigger usa camelCase
         name: item.name || item.product_name || item.product?.name || 'Producto',
         sku: item.sku || item.product_sku || item.product?.sku || '',
-        price: Number(item.price || item.product?.discountPrice || item.product?.sellingPrice) || 0,
-        quantity: Number(item.quantity) || 1,
-        total: (Number(item.price || item.product?.discountPrice || item.product?.sellingPrice) || 0) * (Number(item.quantity) || 1),
+        price: parsedPrice,
+        quantity: parsedQty,
+        total: parsedPrice * parsedQty,
         image_url: item.image_url || item.imageUrl || item.product?.imageUrl || '',
         wrap_gift: Boolean(item.wrap_gift),
         // IMPORTANTE: Restaurar el objeto product anidado por si el trigger lo exige (ej. item->'product'->>'id')
@@ -180,7 +190,7 @@ export const orderRepository = {
           name: item.name || item.product_name || item.product?.name || 'Producto',
           sku: item.sku || item.product_sku || item.product?.sku || '',
           imageUrl: item.image_url || item.imageUrl || item.product?.imageUrl || '',
-          sellingPrice: Number(item.price || item.product?.discountPrice || item.product?.sellingPrice) || 0,
+          sellingPrice: parsedPrice,
           discountPrice: null
         }
       };
@@ -311,6 +321,27 @@ function generateRandomCode() {
 // --- 5. LAYAWAY REPOSITORY ---
 export const layawayRepository = {
   async create(layawayData, itemsData) {
+    if (!itemsData || itemsData.length === 0) {
+      throw new Error("El apartado debe contener al menos un producto.");
+    }
+
+    for (const item of itemsData) {
+      const finalId = item.product?.id || item.product_id || item.id;
+      if (!finalId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(finalId)) {
+        throw new Error(`El producto "${item.product?.name || 'Desconocido'}" no tiene un ID UUID válido.`);
+      }
+      
+      const parsedQty = Number(item.quantity) || 1;
+      if (parsedQty <= 0 || !Number.isInteger(parsedQty)) {
+        throw new Error(`La cantidad para reservar "${item.product?.name || 'Producto'}" debe ser un entero positivo.`);
+      }
+
+      const parsedPrice = Number(item.product?.discountPrice || item.product?.sellingPrice) || 0;
+      if (parsedPrice < 0) {
+        throw new Error(`El precio para "${item.product?.name || 'Producto'}" no puede ser negativo.`);
+      }
+    }
+
     let uniqueCode = '';
     let isUnique = false;
     let attempts = 0;
@@ -348,8 +379,8 @@ export const layawayRepository = {
 
     const layawayItems = itemsData.map(item => ({
       layaway_id: newLayaway.id,
-      product_id: item.product.id,
-      quantity_reserved: item.quantity,
+      product_id: item.product.id || item.product_id || item.id,
+      quantity_reserved: Number(item.quantity) || 1,
       quantity_bought: 0
     }));
 
