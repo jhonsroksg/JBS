@@ -65,6 +65,7 @@ const Orders = () => {
       setLayaways(lays || []);
     } catch (err) {
       console.error('Error al cargar apartados (getLayaways):', err);
+      alert('Error cargando la lista de apartados: ' + (err.message || 'Desconocido'));
       setLayaways([]);
     }
   };
@@ -954,9 +955,9 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
                    let totalAmount = 0;
                    let totalReserved = 0;
                    let totalBought = 0;
-                   if (layaway.items) {
-                     layaway.items.forEach(i => {
-                       const price = Number(i.product?.sellingPrice || 0);
+                   if (layaway.layaway_items) {
+                     layaway.layaway_items.forEach(i => {
+                       const price = Number(i.products?.sellingPrice || 0);
                        totalAmount += price * i.quantity_reserved;
                        totalReserved += i.quantity_reserved;
                        totalBought += i.quantity_bought;
@@ -1475,6 +1476,7 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
                         }
                       }}
                       style={{...inputStyle, fontWeight: 'bold', fontSize: '1.05rem', background: 'rgba(0,0,0,0.3)'}}
+                            style={{...inputStyle, fontWeight: 'bold', fontSize: '1.05rem', background: 'rgba(0,0,0,0.3)'}}
                       disabled={selectedOrder.isDeleted}
                     >
                       <option value="Pendiente">Pendiente</option>
@@ -1584,17 +1586,17 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
                     </tr>
                   </thead>
                   <tbody>
-                    {selectedLayaway.items && selectedLayaway.items.length > 0 ? selectedLayaway.items.map(item => {
-                      const price = Number(item.product?.sellingPrice || 0);
+                    {selectedLayaway.layaway_items && selectedLayaway.layaway_items.length > 0 ? selectedLayaway.layaway_items.map(item => {
+                      const price = Number(item.products?.sellingPrice || 0);
                       const pending = item.quantity_reserved - item.quantity_bought;
                       return (
                         <tr key={item.id}>
                           <td>
                             <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-                              {item.product?.imageUrl && <img src={item.product.imageUrl} alt={item.product.name} style={{width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px'}} />}
+                              {item.products?.imageUrl && <img src={item.products.imageUrl} alt={item.products.name} style={{width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px'}} />}
                               <div>
-                                <div style={{fontWeight: 600}}>{item.product?.name || 'Producto'}</div>
-                                <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>SKU: {item.product?.sku || 'N/A'} | L. {price.toLocaleString('en-US', {minimumFractionDigits: 2})} c/u</div>
+                                <div style={{fontWeight: 600}}>{item.products?.name || 'Producto'}</div>
+                                <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>SKU: {item.products?.sku || 'N/A'} | L. {price.toLocaleString('en-US', {minimumFractionDigits: 2})} c/u</div>
                               </div>
                             </div>
                           </td>

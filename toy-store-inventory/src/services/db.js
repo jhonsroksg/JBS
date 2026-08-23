@@ -365,9 +365,12 @@ export const layawayRepository = {
   async getLayaways() {
     const { data, error } = await supabase
       .from('layaways')
-      .select('*, items:layaway_items(*, product:products(*))')
+      .select('*, layaway_items(*, products(*))')
       .order('created_at', { ascending: false });
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase getLayaways Error:", error);
+      throw error;
+    }
     return data || [];
   },
 
