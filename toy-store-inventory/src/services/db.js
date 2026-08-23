@@ -171,7 +171,16 @@ export const orderRepository = {
         quantity: Number(item.quantity) || 1,
         total: (Number(item.price || item.product?.discountPrice || item.product?.sellingPrice) || 0) * (Number(item.quantity) || 1),
         image_url: item.image_url || item.imageUrl || item.product?.imageUrl || '',
-        wrap_gift: Boolean(item.wrap_gift)
+        wrap_gift: Boolean(item.wrap_gift),
+        // IMPORTANTE: Restaurar el objeto product anidado por si el trigger lo exige (ej. item->'product'->>'id')
+        product: item.product || {
+          id: finalId,
+          name: item.name || item.product_name || item.product?.name || 'Producto',
+          sku: item.sku || item.product_sku || item.product?.sku || '',
+          imageUrl: item.image_url || item.imageUrl || item.product?.imageUrl || '',
+          sellingPrice: Number(item.price || item.product?.discountPrice || item.product?.sellingPrice) || 0,
+          discountPrice: null
+        }
       };
     });
 
