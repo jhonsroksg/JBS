@@ -165,6 +165,7 @@ export const orderRepository = {
       return {
         id: finalId,
         product_id: finalId,
+        productId: finalId, // <- Añadido por si el trigger usa camelCase
         name: item.name || item.product_name || item.product?.name || 'Producto',
         sku: item.sku || item.product_sku || item.product?.sku || '',
         price: Number(item.price || item.product?.discountPrice || item.product?.sellingPrice) || 0,
@@ -175,6 +176,7 @@ export const orderRepository = {
         // IMPORTANTE: Restaurar el objeto product anidado por si el trigger lo exige (ej. item->'product'->>'id')
         product: item.product || {
           id: finalId,
+          productId: finalId,
           name: item.name || item.product_name || item.product?.name || 'Producto',
           sku: item.sku || item.product_sku || item.product?.sku || '',
           imageUrl: item.image_url || item.imageUrl || item.product?.imageUrl || '',
