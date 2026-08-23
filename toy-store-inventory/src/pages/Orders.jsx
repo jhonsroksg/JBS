@@ -360,14 +360,26 @@ const Orders = () => {
     
     try {
       const productIds = [...new Set(order.items.filter(i => i.product?.id).map(i => i.product.id))];
-      const productList = await Promise.all(productIds.map(id => db.getById('products', id)));
+      const productList = await Promise.all(productIds.map(async id => {
+        try {
+          return await db.getById('products', id);
+        } catch (e) {
+          console.warn(`Producto ${id} no encontrado al retornar stock. Ignorando.`);
+          return null;
+        }
+      }));
+      
       const productMap = {};
       productList.forEach(p => { if (p) productMap[p.id] = p; });
 
-      await Promise.all(order.items.map(item => {
+      await Promise.all(order.items.map(async item => {
         const product = productMap[item.product?.id];
         if (product) {
-          return db.update('products', product.id, { stock: Number(product.stock) + Number(item.quantity) });
+          try {
+            await db.update('products', product.id, { stock: Number(product.stock) + Number(item.quantity) });
+          } catch (e) {
+            console.error(`Error actualizando stock de producto ${product.id}:`, e);
+          }
         }
       }));
     } catch (err) {
