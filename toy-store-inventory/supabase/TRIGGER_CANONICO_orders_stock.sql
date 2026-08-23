@@ -1,6 +1,8 @@
 -- Hotfix to restore layaway logic AND keep custom error formatting + jsonb mapping
 CREATE OR REPLACE FUNCTION validate_and_update_stock()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER 
+SECURITY DEFINER
+AS $$
 DECLARE
     item RECORD;
     current_stock INT;
