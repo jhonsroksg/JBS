@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, layawayRepository, orderRepository, productRepository } from '../services/db';
+import { db, layawayRepository, orderRepository, productRepository, customerRepository } from '../services/db';
 import { X, Trash2, CheckCircle, User, Mail, Phone, MapPin, Truck, CreditCard, Copy } from 'lucide-react';
 import { hondurasLocations } from '../data/hondurasLocations';
 import { supabase } from '../lib/supabaseClient';
@@ -472,7 +472,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
             const bgTasks = [];
             bgTasks.push((async () => {
               try {
-                const existingCust = await db.getByFilter('customers', 'email', customerInfo.email);
+                const existingCust = await customerRepository.getByEmail(customerInfo.email.trim());
                 if (existingCust) {
                   return db.update('customers', existingCust.id, {
                     totalOrders: (existingCust.totalOrders || 0) + 1,
@@ -492,23 +492,6 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                 console.warn('Tarea de cliente falló (no crítica):', custErr.message);
               }
             })());
-
-            sanitizedCart.forEach(item => {
-              const origItem = cart.find(c => c.product.id === item.productId);
-              if (origItem && origItem.isLayawayItem) {
-                return;
-              }
-              bgTasks.push((async () => {
-                try {
-                  const dbProduct = await productRepository.getById(item.productId);
-                  if (dbProduct) {
-                    return db.update('products', dbProduct.id, { stock: Math.max(0, dbProduct.stock - item.quantity) });
-                  }
-                } catch (stockErr) {
-                  console.warn(`Actualización de stock falló:`, stockErr.message);
-                }
-              })());
-            });
 
             await Promise.all(bgTasks);
           } catch (bgErr) {

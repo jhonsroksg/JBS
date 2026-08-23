@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, layawayRepository, deleteLayaway } from '../services/db';
+import { db, orderRepository, layawayRepository, customerRepository, productRepository, deleteLayaway } from '../services/db';
 import { Eye, X, Download, Send, Edit, Save, Trash2, List, Archive, Truck, Package, CheckCircle, XCircle, Calendar } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 import './Products.css';
@@ -291,7 +291,7 @@ const Orders = () => {
     }
     const allProductIds = new Set([...Object.keys(origMap), ...Object.keys(newMap)]);
     // Pre-fetch all products
-    const productList = await Promise.all([...allProductIds].map(id => db.getById('products', id)));
+    const productList = await Promise.all([...allProductIds].map(id => productRepository.getById(id).catch(() => null)));
     const productMap = {};
     productList.forEach(p => { if (p) productMap[p.id] = p; });
     
@@ -362,7 +362,7 @@ const Orders = () => {
       const productIds = [...new Set(order.items.filter(i => i.product?.id).map(i => i.product.id))];
       const productList = await Promise.all(productIds.map(async id => {
         try {
-          return await db.getById('products', id);
+          return await productRepository.getById(id).catch(() => null);
         } catch (e) {
           console.warn(`Producto ${id} no encontrado al retornar stock. Ignorando.`);
           return null;
