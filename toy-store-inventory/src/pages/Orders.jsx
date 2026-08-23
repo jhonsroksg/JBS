@@ -1090,6 +1090,7 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
             </tbody>
           </table>
         </div>
+        )}
       </div>
 
       {/* --- SHIPPING QUICK DISPATCH MODAL --- */}
