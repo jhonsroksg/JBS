@@ -203,9 +203,11 @@ export const orderRepository = {
         .insert(orderItemsPayload);
 
       if (itemsError) {
-        console.error("Error insertando order_items:", itemsError);
-        // Si el trigger ya lo hizo y la inserción manual falla por duplicidad, mostramos un error simulado para la UI
-        throw new Error(`Hubo un error al procesar tu solicitud: Producto con ID <NULL> no encontrado..`); 
+        console.error("Error insertando order_items manualmente:", itemsError);
+        // Si el error NO es llave duplicada (23505) lanzamos el error real
+        if (itemsError.code !== '23505') {
+          throw new Error(`Error en order_items: ${itemsError.message}`);
+        }
       }
     }
 
