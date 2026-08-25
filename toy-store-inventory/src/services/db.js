@@ -151,6 +151,10 @@ export const orderRepository = {
   },
 
   async create(order, cartItems = []) {
+    const generatedOrderNumber = `JBS-${Math.floor(10000 + Math.random() * 90000)}`;
+    order.order_number = generatedOrderNumber;
+    order.order_id_custom = generatedOrderNumber;
+
     const itemsToProcess = (cartItems && cartItems.length > 0) ? cartItems : (order.items || []);
     
     // Mapeamos explícitamente para asegurar que el JSONB contenga id y product_id al nivel raíz

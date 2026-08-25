@@ -26,7 +26,7 @@ serve(async (req) => {
       throw new Error('No se encontraron datos del pedido en el payload (record/orderData missing)')
     }
 
-    const order_id_custom = record.order_id_custom
+    const order_id_custom = record.order_id_custom || record.order_number || record.id || 'PENDIENTE'
     const customerEmail = record.customerEmail
 
     // --- LÓGICA DE VALIDACIÓN (MEJORADA) ---
@@ -237,7 +237,7 @@ serve(async (req) => {
         from: 'Joa Baby Shop <ventas@joababyshophn.com>',
         to: [customerEmail],
         bcc: ['joababyshop@gmail.com'],
-        subject: `Confirmación de Pedido - #${order_id_custom}`,
+        subject: `Confirmación de su pedido #${order_id_custom} - Joa Baby Shop`,
         html: emailHtml,
       }),
     })

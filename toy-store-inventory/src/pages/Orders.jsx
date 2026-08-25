@@ -30,7 +30,8 @@ const Orders = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [productToAdd, setProductToAdd] = useState('');
 
-  // Date filter state
+  // Filter state
+  const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('all');
   const [customDateStart, setCustomDateStart] = useState(() => {
     const d = new Date(); d.setDate(1); return d.toISOString().split('T')[0];
@@ -106,7 +107,18 @@ const Orders = () => {
     return list.filter(o => new Date(o.date) >= from);
   };
 
-  const displayOrders = applyDateFilter(baseOrders);
+  let displayOrders = applyDateFilter(baseOrders);
+
+  // Apply text search
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase();
+    displayOrders = displayOrders.filter(o => {
+      const idStr = (o.order_id_custom || o.order_number || o.id || '').toString().toLowerCase();
+      const nameStr = (o.customerName || '').toLowerCase();
+      const phoneStr = (o.customerPhone || '').toLowerCase();
+      return idStr.includes(term) || nameStr.includes(term) || phoneStr.includes(term);
+    });
+  }
 
   const openModal = (order, editMode = false) => {
     setSelectedOrder(order);
@@ -141,7 +153,9 @@ const Orders = () => {
     
     // Prioridad 2: Si tiene order_number, formatearlo al vuelo con el nuevo estándar (Retrocompatibilidad visual)
     if (order.order_number) {
-      return db.formatOrderId(order.order_number, order.date);
+      return String(order.order_number).startsWith('JBS') 
+        ? order.order_number 
+        : `JBS-${order.order_number}`;
     }
     
     // Fallback: Si no hay nada, mostrar los primeros caracteres del ID único o N/A
@@ -969,24 +983,41 @@ ${order.coupon ? `*Cupón (${order.coupon.code}):* - L. ${Number(order.discountA
         </div>
       </div>
 
-      {/* Date filter bar */}
+      {/* Date filter bar and Search */}
       <div className="filter-row-responsive">
-        <Calendar size={16} style={{color: 'var(--text-secondary)'}} />
-        <span style={{fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600, marginRight: '4px'}}>Filtrar por fecha:</span>
-        {[{v:'all',l:'Todos'},{v:'week',l:'Esta semana'},{v:'biweek',l:'Quincena'},{v:'month',l:'Este mes'},{v:'custom',l:'📅 Rango'}].map(f => (
-          <button
-            key={f.v}
-            onClick={() => setDateFilter(f.v)}
-            style={{
-              padding: '6px 14px', borderRadius: '20px', border: '1px solid',
-              fontFamily: 'inherit', fontSize: '0.82rem', cursor: 'pointer', fontWeight: 600,
-              background: dateFilter === f.v ? 'var(--accent-gradient)' : 'transparent',
-              color: dateFilter === f.v ? 'white' : 'var(--text-secondary)',
-              borderColor: dateFilter === f.v ? 'transparent' : 'var(--border-color)',
-              transition: 'all 0.2s ease',
-            }}
-          >{f.l}</button>
-        ))}
+        <div style={{ flex: '1 1 auto', minWidth: '200px' }}>
+          <div className="search-bar" style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-card)', padding: '0 12px', borderRadius: '8px', border: '1px solid var(--border-color)', height: '42px' }}>
+            <span style={{ color: 'var(--text-secondary)', marginRight: '8px' }}>🔍</span>
+            <input 
+              type="text" 
+              placeholder="Buscar por ID, nombre o teléfono..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', color: 'var(--text-primary)', fontSize: '0.95rem' }}
+            />
+          </div>
+        </div>
+
+        <div className="date-filter-group" style={{ flex: '2 1 auto', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <Calendar size={16} style={{color: 'var(--text-secondary)'}} />
+          <span style={{fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600, marginRight: '4px'}}>Filtrar por fecha:</span>
+          {[{v:'all',l:'Todos'},{v:'week',l:'Esta semana'},{v:'biweek',l:'Quincena'},{v:'month',l:'Este mes'},{v:'custom',l:'📅 Rango'}].map(f => (
+            <button
+              key={f.v}
+              onClick={() => setDateFilter(f.v)}
+              style={{
+                padding: '6px 14px', borderRadius: '20px', border: '1px solid',
+                fontFamily: 'inherit', fontSize: '0.82rem', cursor: 'pointer', fontWeight: 600,
+                background: dateFilter === f.v ? 'var(--accent-gradient)' : 'transparent',
+                color: dateFilter === f.v ? 'white' : 'var(--text-secondary)',
+                borderColor: dateFilter === f.v ? 'transparent' : 'var(--border-color)',
+                transition: 'all 0.2s', boxShadow: dateFilter === f.v ? '0 4px 12px rgba(13, 148, 136, 0.25)' : 'none'
+              }}
+            >
+              {f.l}
+            </button>
+          ))}
+        </div>
         {dateFilter === 'custom' && (
           <>
             <input type="date" value={customDateStart} max={customDateEnd}

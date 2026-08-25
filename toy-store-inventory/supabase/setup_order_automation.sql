@@ -17,9 +17,14 @@ BEGIN
     -- El order_number ya debe estar generado por la identidad
     counter_str := LPAD(NEW.order_number::TEXT, 4, '0');
     
-    -- Formatear ID final
-    NEW.order_id_custom := day_str || month_str || year_str || 'PED' || counter_str;
+    -- Formatear ID final (Deshabilitado a favor de JBS-XXXXX en el Frontend)
+    -- NEW.order_id_custom := day_str || month_str || year_str || 'PED' || counter_str;
     
+    -- Usar el id que venga del front, si está vacío usar un default
+    IF NEW.order_id_custom IS NULL THEN
+        NEW.order_id_custom := 'JBS-' || counter_str;
+    END IF;
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
