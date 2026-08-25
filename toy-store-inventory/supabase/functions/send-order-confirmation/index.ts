@@ -61,6 +61,20 @@ serve(async (req) => {
     const deliveryCost = Number(record.deliveryCost || 0)
     const paymentMethod = record.paymentMethod || 'Pago contra entrega'
 
+    // Nuevos campos para la nueva plantilla
+    const status = record.status || 'Recibido / En preparación'
+    const createdAt = record.created_at ? new Date(record.created_at) : new Date()
+    const formattedDate = createdAt.toLocaleDateString('es-HN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+    const address = record.address || 'Dirección no especificada'
+    const city = record.city || ''
+    const state = record.state || ''
+    const phone = record.phone || ''
+    const fullAddress = [address, city, state, 'Honduras'].filter(Boolean).join(', ')
+
     if (!customerEmail) {
       throw new Error('El correo del cliente es obligatorio')
     }
@@ -72,21 +86,18 @@ serve(async (req) => {
       
       return `
         <tr>
-          <td style="padding: 15px 0; border-bottom: 1px solid #f1f5f9;">
-            <table width="100%" cellpadding="0" cellspacing="0">
+          <td style="padding: 15px 0; border-bottom: 1px solid #e4e4e7;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
               <tr>
-                <td width="60" style="vertical-align: top;">
-                  <img src="${productImage}" width="50" height="50" style="border-radius: 8px; object-fit: cover; border: 1px solid #e2e8f0;" />
+                <td width="95" style="vertical-align: middle;">
+                  <img src="${productImage}" width="80" height="80" style="border-radius: 6px; object-fit: contain; border: 1px solid #f0f0f0; display: block;" alt="${item.product?.name || 'Producto'}" />
                 </td>
-                <td style="padding-left: 15px;">
-                  <div style="font-weight: 700; color: #1e293b; font-size: 15px;">${item.product?.name || 'Producto'}</div>
-                  <div style="font-size: 13px; color: #64748b;">Cantidad: ${item.quantity} × L. ${price.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
+                <td style="vertical-align: middle;">
+                  <div style="font-weight: bold; color: #0d9488; font-size: 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">${item.product?.name || 'Producto'}</div>
+                  <div style="font-size: 14px; color: #71717a; margin-top: 4px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">${item.quantity} × L ${price.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
                 </td>
               </tr>
             </table>
-          </td>
-          <td style="padding: 15px 0; text-align: right; border-bottom: 1px solid #f1f5f9; vertical-align: middle; font-weight: 600; color: #1e293b;">
-            L. ${(item.quantity * price).toLocaleString('en-US', {minimumFractionDigits: 2})}
           </td>
         </tr>
       `
@@ -97,78 +108,118 @@ serve(async (req) => {
       <html>
       <head>
         <meta charset="utf-8">
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #334155; margin: 0; padding: 0; background-color: #f8fafc; }
-          .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-          .header { background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%); padding: 40px 20px; text-align: center; color: #ffffff; }
-          .header h1 { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.025em; }
-          .header p { margin: 10px 0 0; opacity: 0.9; font-size: 16px; }
-          .content { padding: 40px; }
-          .welcome-text { font-size: 18px; color: #1e293b; margin-bottom: 30px; }
-          .order-card { background: #f1f5f9; border-radius: 12px; padding: 20px; margin-bottom: 30px; border-left: 4px solid #14b8a6; }
-          .order-id-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 700; }
-          .order-id-value { font-size: 20px; color: #0f766e; font-weight: 800; }
-          .items-table { width: 100%; border-collapse: collapse; }
-          .summary-table { width: 100%; margin-top: 20px; border-top: 2px solid #f1f5f9; }
-          .summary-label { padding: 10px 0; color: #64748b; font-size: 14px; }
-          .summary-value { padding: 10px 0; text-align: right; color: #1e293b; font-weight: 600; }
-          .total-row { font-size: 20px; color: #0d9488; font-weight: 800; }
-          .footer { text-align: center; padding: 30px; background: #f8fafc; color: #94a3b8; font-size: 13px; border-top: 1px solid #f1f5f9; }
-          .btn { display: inline-block; padding: 14px 28px; background-color: #14b8a6; color: #ffffff !important; text-decoration: none; border-radius: 10px; font-weight: 700; margin-top: 30px; transition: background 0.2s; }
-          .details-section { margin-top: 30px; padding-top: 30px; border-top: 1px solid #f1f5f9; }
-          .details-title { font-size: 14px; font-weight: 700; color: #1e293b; text-transform: uppercase; margin-bottom: 10px; }
-        </style>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Confirmación de Pedido</title>
       </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>¡Gracias por confiar en nosotros!</h1>
-            <p>Tu pedido ha sido recibido con éxito</p>
-          </div>
-          <div class="content">
-            <div class="welcome-text">Hola <strong>${customerName}</strong>,</div>
-            <p>Es un gusto saludarte. Estamos preparando todo para que recibas tus productos lo antes posible.</p>
-            
-            <div class="order-card">
-              <div class="order-id-label">Número de Pedido</div>
-              <div class="order-id-value">#${order_id_custom}</div>
-            </div>
-            
-            <table class="items-table">
-              ${itemsHtml}
-            </table>
+      <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; padding: 20px 0;">
+          <tr>
+            <td align="center">
+              <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); border: 1px solid #e4e4e7;">
+                <!-- Encabezado y Metadatos -->
+                <tr>
+                  <td style="padding: 20px 30px;">
+                    <div style="text-align: center; color: #71717a; font-size: 12px; margin-bottom: 20px;">
+                      Pedido #${order_id_custom} el ${formattedDate}
+                    </div>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td align="left" style="vertical-align: middle;">
+                          <h1 style="margin: 0; color: #18181b; font-size: 24px; font-weight: bold;">Confirmación de su pedido</h1>
+                        </td>
+                        <td align="right" style="vertical-align: middle;">
+                          <img src="https://joababyshophn.com/logo.png" alt="Joa Baby Shop" width="100" style="display: block; max-width: 100px;">
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
 
-            <table class="summary-table">
-              <tr>
-                <td class="summary-label">Subtotal</td>
-                <td class="summary-value">L. ${subtotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-              </tr>
-              ${discountAmount > 0 ? `<tr><td class="summary-label" style="color: #ef4444;">Descuento Cupón</td><td class="summary-value" style="color: #ef4444;">- L. ${discountAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</td></tr>` : ''}
-              ${adminDiscountAmount > 0 ? `<tr><td class="summary-label" style="color: #ef4444;">Descuento Especial</td><td class="summary-value" style="color: #ef4444;">- L. ${adminDiscountAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</td></tr>` : ''}
-              <tr>
-                <td class="summary-label">Envío (${deliveryMethodName})</td>
-                <td class="summary-value">L. ${deliveryCost.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-              </tr>
-              <tr class="total-row">
-                <td style="padding-top: 20px;">Total a Pagar</td>
-                <td style="padding-top: 20px; text-align: right;">L. ${total.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-              </tr>
-            </table>
+                <!-- Saludo y Estado -->
+                <tr>
+                  <td style="padding: 0 30px 20px;">
+                    <p style="color: #18181b; font-size: 16px; margin-bottom: 10px;">Estimado(a) <strong>${customerName}</strong>,</p>
+                    <p style="color: #3f3f46; font-size: 16px; margin-top: 0; margin-bottom: 20px;">Hemos recibido su pedido <strong>#${order_id_custom}</strong> correctamente.</p>
+                    
+                    <div style="background-color: #f4f4f5; border-radius: 8px; padding: 16px; text-align: center;">
+                      <div style="color: #71717a; font-size: 12px; font-weight: normal; margin-bottom: 4px;">Estado de pedido</div>
+                      <div style="color: #18181b; font-size: 20px; font-weight: bold;">${status}</div>
+                    </div>
+                  </td>
+                </tr>
 
-            <div class="details-section">
-              <div class="details-title">Método de Pago</div>
-              <div style="color: #475569;">${paymentMethod}</div>
-            </div>
+                <!-- Tarjeta de Productos -->
+                <tr>
+                  <td style="padding: 0 30px;">
+                    <div style="border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px; margin-top: 10px;">
+                      <h2 style="color: #18181b; font-size: 18px; font-weight: bold; margin-top: 0; margin-bottom: 15px;">Su pedido</h2>
+                      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                        ${itemsHtml}
+                      </table>
+                      
+                      <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 16px;">
+                        <tr>
+                          <td align="right" style="padding: 4px 0; color: #3f3f46; font-size: 15px;">Artículos: L ${subtotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                        </tr>
+                        ${discountAmount > 0 ? `<tr><td align="right" style="padding: 4px 0; color: #ef4444; font-size: 15px;">Descuento Cupón: - L ${discountAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</td></tr>` : ''}
+                        ${adminDiscountAmount > 0 ? `<tr><td align="right" style="padding: 4px 0; color: #ef4444; font-size: 15px;">Descuento Especial: - L ${adminDiscountAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</td></tr>` : ''}
+                        <tr>
+                          <td align="right" style="padding: 4px 0; color: #3f3f46; font-size: 15px;">Entrega: ${deliveryCost === 0 ? 'Gratis' : `L ${deliveryCost.toLocaleString('en-US', {minimumFractionDigits: 2})}`}</td>
+                        </tr>
+                        <tr>
+                          <td align="right" style="padding-top: 12px; color: #18181b; font-size: 20px; font-weight: bold;">Total L ${total.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                        </tr>
+                      </table>
+                    </div>
+                  </td>
+                </tr>
 
-            <div style="text-align: center;">
-              <a href="https://wa.me/50498927803" class="btn">Consultar por WhatsApp</a>
-            </div>
-          </div>
-          <div class="footer">
-            <p><strong>Joa Baby Shop</strong><br>Haciendo felices a los más pequeños.<br>San Pedro Sula, Honduras</p>
-            <p style="margin-top: 15px; font-size: 11px;">Este es un correo automático, por favor no respondas directamente a este mensaje.</p>
-          </div>
-        </div>
+                <!-- Información de Despacho -->
+                <tr>
+                  <td style="padding: 30px 30px;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td width="50%" valign="top" style="padding-right: 15px;">
+                          <h3 style="color: #18181b; font-size: 15px; font-weight: bold; margin-top: 0; margin-bottom: 8px;">Dirección de entrega</h3>
+                          <div style="color: #3f3f46; font-size: 14px; line-height: 1.5;">
+                            ${customerName}<br>
+                            ${fullAddress}<br>
+                            ${phone ? `Teléfono: ${phone}` : ''}
+                          </div>
+                        </td>
+                        <td width="50%" valign="top" style="padding-left: 15px;">
+                          <h3 style="color: #18181b; font-size: 15px; font-weight: bold; margin-top: 0; margin-bottom: 8px;">Método de entrega</h3>
+                          <div style="color: #3f3f46; font-size: 14px; line-height: 1.5; margin-bottom: 15px;">
+                            ${deliveryMethodName}<br>
+                            <span style="color: #71717a; font-size: 13px;">Se contactará previamente al cliente para coordinar la entrega</span>
+                          </div>
+                          <h3 style="color: #18181b; font-size: 15px; font-weight: bold; margin-top: 0; margin-bottom: 8px;">Método de pago</h3>
+                          <div style="color: #3f3f46; font-size: 14px; line-height: 1.5;">
+                            ${paymentMethod}
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Pie de Página -->
+                <tr>
+                  <td style="background-color: #fafafa; border-top: 1px solid #e4e4e7; padding: 40px 30px; text-align: center;">
+                    <h2 style="color: #18181b; font-size: 22px; font-weight: bold; margin-top: 0; margin-bottom: 15px;">Gracias por hacer sus compras con nosotros</h2>
+                    <p style="color: #52525b; font-size: 14px; line-height: 1.6; margin-top: 0; margin-bottom: 20px;">
+                      Si necesita ayuda o tiene preguntas, siempre nos complace poder ayudarle. Comuníquese con nosotros enviándonos un correo electrónico a <a href="mailto:ventas@joababyshophn.com" style="color: #0d9488; text-decoration: none;">ventas@joababyshophn.com</a> o llámenos/escríbanos al <a href="tel:+50498927803" style="color: #0d9488; text-decoration: none;">+504 9892-7803</a>.
+                    </p>
+                    <p style="color: #18181b; font-size: 15px; font-weight: bold; margin-bottom: 30px;">Atentamente, Joa Baby Shop</p>
+                    <div style="color: #71717a; font-size: 12px; margin-top: 20px;">
+                      © Joa Baby Shop - San Pedro Sula, Cortés, Honduras
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
       </body>
       </html>
     `
