@@ -151,8 +151,9 @@ export const orderRepository = {
   },
 
   async create(order, cartItems = []) {
-    const generatedOrderNumber = `JBS-${Math.floor(10000 + Math.random() * 90000)}`;
-    order.order_id_custom = generatedOrderNumber;
+    // Ya no generamos ID aleatorio aquí.
+    // Dejamos que Supabase genere order_number consecutivo
+    // y su trigger genere order_id_custom como JBS-XXXX.
 
     const itemsToProcess = (cartItems && cartItems.length > 0) ? cartItems : (order.items || []);
     

@@ -428,8 +428,9 @@ const CheckoutModal = ({ isOpen, onClose }) => {
         try {
           // Ya no pasamos order_id_custom ni order_number aquí manualmente, db.js lo inyecta
           const newOrder = await orderRepository.create(orderData, cart);
-          if (newOrder && (newOrder.order_number || newOrder.order_id_custom)) {
-            setCompletedOrderNumber(newOrder.order_number || newOrder.order_id_custom);
+          if (newOrder) {
+            const finalId = newOrder.order_id_custom || (newOrder.order_number ? `JBS-${String(newOrder.order_number).padStart(5, '0')}` : null);
+            setCompletedOrderNumber(finalId || 'PROCESANDO...');
           } else {
             setCompletedOrderNumber('PROCESANDO...');
           }

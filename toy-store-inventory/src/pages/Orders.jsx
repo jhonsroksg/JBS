@@ -155,7 +155,7 @@ const Orders = () => {
     if (order.order_number) {
       return String(order.order_number).startsWith('JBS') 
         ? order.order_number 
-        : `JBS-${order.order_number}`;
+        : `JBS-${String(order.order_number).padStart(5, '0')}`;
     }
     
     // Fallback: Si no hay nada, mostrar los primeros caracteres del ID único o N/A
