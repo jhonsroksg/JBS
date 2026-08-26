@@ -418,7 +418,6 @@ const CheckoutModal = ({ isOpen, onClose }) => {
           total: finalTotal,
           status: 'Pendiente',
           date: new Date().toISOString(),
-          order_id_custom: 'GENERANDO...',
           is_layaway_order: !!firstLayawayItem,
           layaway_id: firstLayawayItem ? firstLayawayItem.layawayId : null,
           delivery_type: isPartyDelivery ? 'party' : 'standard',
