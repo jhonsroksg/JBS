@@ -195,7 +195,7 @@ const Storefront = () => {
     try {
       const { products: newProducts, hasNextPage } = await productRepository.getPaginated({
         page: pageToFetch,
-        limit: 12,
+        limit: 1000,
         category: activeCategory,
         section: activeSection,
         search: searchTerm,
@@ -212,7 +212,7 @@ const Storefront = () => {
       if (hasNextPage) {
         productRepository.getPaginated({
           page: pageToFetch + 1,
-          limit: 12,
+          limit: 1000,
           category: activeCategory,
           section: activeSection,
           search: searchTerm,
@@ -263,7 +263,7 @@ const Storefront = () => {
       const [productsResult, categoriesResult, info, sectionsData] = await Promise.all([
         productRepository.getPaginated({
           page: 0,
-          limit: 12,
+          limit: 1000,
           category: activeCategory,
           section: activeSection,
           search: searchTerm,
