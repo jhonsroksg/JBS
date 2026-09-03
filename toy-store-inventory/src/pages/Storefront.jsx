@@ -360,7 +360,7 @@ const Storefront = () => {
     return [...new Set(rawRanges)].sort();
   }, [products]);
 
-  const filteredProducts = products.filter(p => p.stock > 0);
+  const filteredProducts = products.filter(p => p.stock > 0 && p.isHidden !== true);
   const maxPriceAvailable = 5000;
 
   const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);

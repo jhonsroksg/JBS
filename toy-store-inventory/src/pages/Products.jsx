@@ -528,6 +528,7 @@ const Products = () => {
                 <th className="badge-col-header">Nuevo</th>
                 <th className="badge-col-header">¡Solo<br/>quedan!</th>
                 <th className="badge-col-header">Últimas<br/>piezas</th>
+                <th className="badge-col-header">Ocultar</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -580,6 +581,14 @@ const Products = () => {
                     <div className="toggle-switch-wrapper">
                       <label className="toggle-switch">
                         <input type="checkbox" checked={product.isLimitedBadge || false} onChange={() => handleToggleBadge(product.id, 'isLimitedBadge', product.isLimitedBadge)} />
+                        <span className="toggle-slider"></span>
+                      </label>
+                    </div>
+                  </td>
+                  <td data-label="Ocultar" className="badge-toggle-cell">
+                    <div className="toggle-switch-wrapper">
+                      <label className="toggle-switch">
+                        <input type="checkbox" checked={product.isHidden || false} onChange={() => handleToggleBadge(product.id, 'isHidden', product.isHidden)} />
                         <span className="toggle-slider"></span>
                       </label>
                     </div>
