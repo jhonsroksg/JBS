@@ -1,5 +1,5 @@
 // Storefront - Última actualización: Refinamiento de Catálogo
-import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, lazy, Suspense, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { ShoppingCart, X, Search, Filter, MessageCircle, Package, Users, CheckCircle, Truck, Share2, ChevronLeft, ChevronRight, Maximize2, RotateCcw, SlidersHorizontal, Plus } from 'lucide-react';
@@ -135,6 +135,13 @@ const Storefront = () => {
   // --- Estados de Paginación ---
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const PRODUCTS_PER_PAGE = 12;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCategory, activeSection, searchTerm]);
 
   const updateParams = (updates) => {
     const newParams = new URLSearchParams(searchParams);
@@ -247,9 +254,60 @@ const Storefront = () => {
     }
   };
 
+  // --- Carga Inicial en Paralelo ---
+  const isFirstMount = useRef(true);
+
+  const loadInitialData = async () => {
+    setIsLoading(true);
+    try {
+      const [productsResult, categoriesResult, info, sectionsData] = await Promise.all([
+        productRepository.getPaginated({
+          page: 0,
+          limit: 12,
+          category: activeCategory,
+          section: activeSection,
+          search: searchTerm,
+          maxPrice: priceRange,
+          ageRange: activeAgeRange
+        }),
+        db.getCategories(),
+        db.getStoreInfo(),
+        db.getAll('main_sections').catch(() => [])
+      ]);
+
+      const { products: newProducts, hasNextPage } = productsResult;
+      
+      setProducts(newProducts);
+      setHasMore(hasNextPage);
+      setCache(`products:${activeCategory}:${activeSection}:${activeAgeRange}:${priceRange}:${searchTerm}:0`, { products: newProducts, hasNextPage });
+
+      if (categoriesResult) {
+        setCategories(categoriesResult);
+        setCache('categories', categoriesResult);
+      }
+      if (info) {
+        setStoreInfo(info);
+        setCache('storeInfo', info);
+      }
+      if (sectionsData && sectionsData.length > 0) {
+        setSections(sectionsData);
+        setCache('main_sections', sectionsData);
+      }
+    } catch (error) {
+      console.error("Error loading initial data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    setPage(0);
-    fetchProducts(0, true);
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      loadInitialData();
+    } else {
+      setPage(0);
+      fetchProducts(0, true);
+    }
   }, [activeCategory, activeSection, searchTerm, activeAgeRange, priceRange]);
 
   const loadMore = () => {
@@ -304,6 +362,16 @@ const Storefront = () => {
 
   const filteredProducts = products.filter(p => p.stock > 0);
   const maxPriceAvailable = 5000;
+
+  const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
+  const indexOfLastProduct = currentPage * PRODUCTS_PER_PAGE;
+  const indexOfFirstProduct = indexOfLastProduct - PRODUCTS_PER_PAGE;
+  const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+    document.querySelector('.storefront-content')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   const handleAddToCart = (product) => {
     if (product.stock <= 0) {
@@ -379,7 +447,7 @@ const Storefront = () => {
           className="hero-background-img"
           fetchpriority="high"
           loading="eager"
-          decoding="sync"
+          decoding="async"
         />
         <div className="hero-overlay"></div>
         <div className="hero-content">
@@ -513,7 +581,7 @@ const Storefront = () => {
               <SkeletonGrid count={8} />
             ) : (
               <div className="products-grid">
-                {filteredProducts.map((product, index) => (
+                {currentProducts.map((product, index) => (
                   <div key={product.id} className="product-card">
                     <div className="product-image-container" onClick={() => setSelectedProduct(product)} style={{ cursor: 'pointer' }}>
                       <OptimizedImage 
@@ -559,17 +627,45 @@ const Storefront = () => {
           </div>
         </div>
 
-        {hasMore && (
-          <div className="load-more-container">
-            <button className="btn-load-more" onClick={loadMore} disabled={isLoadingMore}>
-              {isLoadingMore ? (
-                <>Cargando más...</>
-              ) : (
-                <>
-                  <Plus size={20} />
-                  <span>Cargar más productos</span>
-                </>
-              )}
+        {totalPages > 1 && (
+          <div className="pagination-container">
+            <button
+              className="pagination-btn arrow-btn"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              aria-label="Página anterior"
+            >
+              <ChevronLeft size={18}/>
+              <span className="pagination-btn-text">Anterior</span>
+            </button>
+
+            <div className="pagination-numbers">
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(num => num === 1 || num === totalPages || (num >= currentPage - 1 && num <= currentPage + 1))
+                .map((pageNum, index, array) => {
+                  const prevNum = array[index - 1];
+                  return (
+                    <React.Fragment key={pageNum}>
+                      {prevNum && pageNum - prevNum > 1 && <span className="pagination-ellipsis">...</span>}
+                      <button
+                        className={`pagination-number-btn ${currentPage === pageNum ? 'active' : ''}`}
+                        onClick={() => handlePageChange(pageNum)}
+                      >
+                        {pageNum}
+                      </button>
+                    </React.Fragment>
+                  );
+                })}
+            </div>
+
+            <button
+              className="pagination-btn arrow-btn"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              aria-label="Página siguiente"
+            >
+              <span className="pagination-btn-text">Siguiente</span>
+              <ChevronRight size={18}/>
             </button>
           </div>
         )}
