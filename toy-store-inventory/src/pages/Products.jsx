@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { productRepository, db } from '../services/db';
-import { Plus, Search, Edit2, Trash2, X, Download, Upload } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Download, Upload, Copy } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import './Products.css';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -156,6 +156,50 @@ const Products = () => {
         newImageFiles: []
       });
       setIsModalOpen(true);
+    }
+  };
+
+  const handleDuplicateProduct = async (product) => {
+    setEditingId(null);
+    const { id, created_at, updated_at, ...restOfProduct } = product;
+
+    const duplicatedData = {
+      ...restOfProduct,
+      name: `${product.name} (Copia)`,
+      sku: product.sku ? `${product.sku}-COPIA` : '',
+      costPrice: product.costPrice ? Number(product.costPrice).toFixed(2) : '',
+      sellingPrice: product.sellingPrice ? Number(product.sellingPrice).toFixed(2) : '',
+      discountPrice: product.discountPrice ? Number(product.discountPrice).toFixed(2) : '',
+      section: product.section || 'TODOS',
+      images: (product.images || (product.imageUrl ? [product.imageUrl] : [])).map(url => ({ id: Math.random().toString(), url, isNew: false })),
+      newImageFiles: [],
+      isDuplicate: true
+    };
+
+    setFormData(duplicatedData);
+    setIsModalOpen(true);
+
+    setLoading(true);
+    try {
+      const fullProduct = await productRepository.getById(product.id);
+      if (fullProduct) {
+        setFormData({
+          ...fullProduct,
+          name: `${fullProduct.name} (Copia)`,
+          sku: fullProduct.sku ? `${fullProduct.sku}-COPIA` : '',
+          costPrice: fullProduct.costPrice ? Number(fullProduct.costPrice).toFixed(2) : '',
+          sellingPrice: fullProduct.sellingPrice ? Number(fullProduct.sellingPrice).toFixed(2) : '',
+          discountPrice: fullProduct.discountPrice ? Number(fullProduct.discountPrice).toFixed(2) : '',
+          section: fullProduct.section || 'TODOS',
+          images: (fullProduct.images || (fullProduct.imageUrl ? [fullProduct.imageUrl] : [])).map(url => ({ id: Math.random().toString(), url, isNew: false })),
+          newImageFiles: [],
+          isDuplicate: true
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching full product details for duplicate:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -331,7 +375,11 @@ const Products = () => {
       });
       
       handleCloseModal();
-      alert('¡Producto guardado exitosamente!');
+      if (formData.isDuplicate) {
+        alert('Producto duplicado y creado exitosamente');
+      } else {
+        alert('¡Producto guardado exitosamente!');
+      }
     } catch (error) {
       console.error('Error al guardar producto:', error);
       alert('Error al guardar: ' + (error.message || 'Verifica los datos e intenta de nuevo.'));
@@ -595,6 +643,19 @@ const Products = () => {
                   </td>
                   <td data-label="Acciones" className="actions-cell">
                     <button className="btn-icon" title="Editar" onClick={() => handleOpenModal(product)}><Edit2 strokeWidth={2.5} /></button>
+                    <button
+                      type="button"
+                      className="btn-icon duplicate-btn"
+                      title="Duplicar Producto"
+                      onClick={() => handleDuplicateProduct(product)}
+                      style={{
+                        backgroundColor: '#e0f2fe',
+                        color: '#0284c7',
+                        borderColor: '#bae6fd'
+                      }}
+                    >
+                      <Copy size={18} strokeWidth={2.5}/>
+                    </button>
                     <button className="btn-icon danger" title="Eliminar" onClick={() => handleDelete(product.id)}><Trash2 strokeWidth={2.5} /></button>
                   </td>
                 </tr>
@@ -646,7 +707,7 @@ const Products = () => {
         <div className="modal-overlay" onClick={handleCloseModal}>
           <div className="modal-content glass-panel" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{editingId ? 'Editar Juguete' : 'Nuevo Juguete'}</h2>
+              <h2>{formData.isDuplicate ? 'Duplicar Juguete' : (editingId ? 'Editar Juguete' : 'Nuevo Juguete')}</h2>
               <button className="btn-icon" onClick={handleCloseModal}><X /></button>
             </div>
             <form onSubmit={handleSave} className="modal-form">
