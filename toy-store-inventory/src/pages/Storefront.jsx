@@ -173,7 +173,7 @@ const Storefront = () => {
   }, [sections, activeSection]);
 
   const [activeAgeRange, setActiveAgeRange] = useState('all');
-  const [priceRange, setPriceRange] = useState(2500); 
+  const [priceRange, setPriceRange] = useState(null); 
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
@@ -199,7 +199,7 @@ const Storefront = () => {
         category: activeCategory,
         section: activeSection,
         search: searchTerm,
-        maxPrice: priceRange,
+        maxPrice: priceRange !== null ? priceRange : 100000,
         ageRange: activeAgeRange
       });
 
@@ -216,7 +216,7 @@ const Storefront = () => {
           category: activeCategory,
           section: activeSection,
           search: searchTerm,
-          maxPrice: priceRange,
+          maxPrice: priceRange !== null ? priceRange : 100000,
           ageRange: activeAgeRange
         }).then(nextData => {
           setCache(`products:${activeCategory}:${activeSection}:${activeAgeRange}:${priceRange}:${searchTerm}:${pageToFetch + 1}`, nextData);
@@ -267,7 +267,7 @@ const Storefront = () => {
           category: activeCategory,
           section: activeSection,
           search: searchTerm,
-          maxPrice: priceRange,
+          maxPrice: priceRange !== null ? priceRange : 100000,
           ageRange: activeAgeRange
         }),
         db.getCategories(),
@@ -361,7 +361,13 @@ const Storefront = () => {
   }, [products]);
 
   const filteredProducts = products.filter(p => p.stock > 0 && p.isHidden !== true);
-  const maxPriceAvailable = 5000;
+  const maxPriceAvailable = useMemo(() => {
+    if (!products || products.length === 0) return 5000;
+    const max = Math.max(...products.map(p => Number(p.discountPrice || p.sellingPrice || 0)));
+    return Math.max(1000, Math.ceil(max / 50) * 50); 
+  }, [products]);
+
+  const currentPriceRange = priceRange !== null ? priceRange : maxPriceAvailable;
 
   const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
   const indexOfLastProduct = currentPage * PRODUCTS_PER_PAGE;
@@ -492,14 +498,14 @@ const Storefront = () => {
               <span className="filter-label">Precio Máximo</span>
               <div className="price-slider-container">
                 <input 
-                  type="range" min="0" max={5000} step="50" 
-                  value={priceRange} onChange={(e) => setPriceRange(Number(e.target.value))}
+                  type="range" min="0" max={maxPriceAvailable} step="50" 
+                  value={currentPriceRange} onChange={(e) => setPriceRange(Number(e.target.value))}
                 />
-                <span className="price-display">L. {priceRange.toLocaleString()}</span>
+                <span className="price-display">L. {currentPriceRange.toLocaleString()}</span>
               </div>
             </div>
 
-            <button className="btn-clear-inline" onClick={() => { setActiveCategory('all'); setActiveSection('all'); setActiveAgeRange('all'); setSearchTerm(''); setPriceRange(2500); }}>
+            <button className="btn-clear-inline" onClick={() => { setActiveCategory('all'); setActiveSection('all'); setActiveAgeRange('all'); setSearchTerm(''); setPriceRange(null); }}>
               <RotateCcw size={14} style={{ marginRight: '6px' }} /> Limpiar
             </button>
           </div>
@@ -542,11 +548,11 @@ const Storefront = () => {
               <div className="price-filter-wrapper">
                 <div className="price-labels">
                   <span>L. 0</span>
-                  <span>L. {priceRange.toLocaleString()}</span>
+                  <span>L. {currentPriceRange.toLocaleString()}</span>
                 </div>
                 <input 
-                  type="range" min="0" max={5000} step="50" 
-                  value={priceRange} onChange={(e) => setPriceRange(Number(e.target.value))}
+                  type="range" min="0" max={maxPriceAvailable} step="50" 
+                  value={currentPriceRange} onChange={(e) => setPriceRange(Number(e.target.value))}
                   className="price-slider"
                 />
               </div>
@@ -570,7 +576,7 @@ const Storefront = () => {
               <button className="btn-primary" style={{ width: '100%', height: '48px' }} onClick={() => setIsMobileFiltersOpen(false)}>
                 Aplicar Filtros
               </button>
-              <button className="btn-clear-filters" style={{ width: '100%' }} onClick={() => { setActiveCategory('all'); setActiveSection('all'); setActiveAgeRange('all'); setSearchTerm(''); setPriceRange(2500); setIsMobileFiltersOpen(false); }}>
+              <button className="btn-clear-filters" style={{ width: '100%' }} onClick={() => { setActiveCategory('all'); setActiveSection('all'); setActiveAgeRange('all'); setSearchTerm(''); setPriceRange(null); setIsMobileFiltersOpen(false); }}>
                 Limpiar todo
               </button>
             </div>
