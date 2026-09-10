@@ -103,6 +103,7 @@
   display: flex;
   gap: 8px;
   padding-right: 16px !important;
+  white-space: nowrap;
 }
 
 .btn-icon {
@@ -487,11 +488,13 @@
   text-align: center !important;
   white-space: normal;
   line-height: 1.2;
-  padding: 8px 6px !important;
+  padding: 10px 4px !important;
 }
 
 .badge-toggle-cell {
   text-align: center !important;
   vertical-align: middle !important;
-  padding: 8px 6px !important;
+  padding: 10px 4px !important;
 }
+  
+.products-content { width: 100%%; max-width: 100%%; box-sizing: border-box; } 

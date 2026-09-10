@@ -231,9 +231,10 @@ h1, h2, h3, h4, h5, h6 {
 .page-content {
   padding: 32px;
   padding-bottom: calc(32px + var(--safe-bottom));
-  max-width: var(--container-max);
-  margin: 0 auto;
+  /* Cambiado para remover max-width 1200px y usar el espacio disponible */
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .page-content h1 {
