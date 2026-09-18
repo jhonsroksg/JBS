@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { db } from '../services/db';
-import { Package, LayoutDashboard, Tags, ShoppingCart, Users, Store, Settings as SettingsIcon, Menu, X, LogOut } from 'lucide-react';
+import { Package, LayoutDashboard, Tags, ShoppingCart, Users, Store, Settings as SettingsIcon, Menu, X, LogOut, Shield, UserCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const MainLayout = () => {
-  const { signOut } = useAuth();
+  const { signOut, user, profile, role, isAdmin } = useAuth();
   const [storeName, setStoreName] = useState('ToyStore Admin');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
@@ -28,6 +28,17 @@ const MainLayout = () => {
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location]);
+
+  const userName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuario';
+  const roleLabels = {
+    admin: 'Administrador',
+    vendedor: 'Vendedor',
+    inventario: 'Inventario',
+    empleado: 'Empleado',
+    personalizado: 'Personalizado',
+    cliente: 'Cliente'
+  };
+  const roleLabel = roleLabels[role] || (isAdmin ? 'Administrador' : 'Usuario');
 
   return (
     <div className={`layout-container ${isMobileMenuOpen ? 'mobile-menu-active' : ''}`}>
@@ -59,9 +70,11 @@ const MainLayout = () => {
           <Link to="/admin/customers" className={`nav-link ${location.pathname === '/admin/customers' ? 'active' : ''}`}>
             <Users className="nav-icon" /> Clientes
           </Link>
-          <Link to="/admin/settings" className={`nav-link ${location.pathname === '/admin/settings' ? 'active' : ''}`}>
-            <SettingsIcon className="nav-icon" /> Configuración
-          </Link>
+          {isAdmin && (
+            <Link to="/admin/settings" className={`nav-link ${location.pathname === '/admin/settings' ? 'active' : ''}`}>
+              <SettingsIcon className="nav-icon" /> Configuración
+            </Link>
+          )}
         </nav>
         <div style={{ marginTop: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <Link to="/" className="nav-link" style={{ background: 'var(--accent-gradient)', color: 'white', marginBottom: '0' }}>
@@ -94,7 +107,25 @@ const MainLayout = () => {
             </button>
             <div className="topbar-title">Administración</div>
           </div>
-          <div className="user-profile">Admin</div>
+          <div className="user-profile" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#1e293b' }}>{userName}</div>
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                padding: '2px 8px',
+                borderRadius: '6px',
+                background: role === 'admin' ? 'rgba(14, 165, 233, 0.12)' : 'rgba(16, 185, 129, 0.12)',
+                color: role === 'admin' ? '#0284c7' : '#059669'
+              }}>
+                {role === 'admin' ? <Shield size={12} /> : <UserCheck size={12} />}
+                {roleLabel}
+              </span>
+            </div>
+          </div>
         </header>
         <div className="page-content">
           <Outlet />

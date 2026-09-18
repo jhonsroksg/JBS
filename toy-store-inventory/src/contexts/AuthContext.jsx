@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
 const AuthContext = createContext({});
@@ -6,20 +6,79 @@ const AuthContext = createContext({});
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [mfaLevel, setMfaLevel] = useState('aal1'); // Default level
+  const [mfaLevel, setMfaLevel] = useState('aal1');
   const [hasMfaEnrolled, setHasMfaEnrolled] = useState(false);
+
+  // Función para obtener o sincronizar el perfil y rol del usuario
+  const fetchProfile = useCallback(async (currentUser) => {
+    if (!currentUser) {
+      setProfile(null);
+      setRole(null);
+      return null;
+    }
+
+    try {
+      // 1. Intentar obtener rol desde user_roles (administrado desde Settings)
+      const { data: userRoleData } = await supabase
+        .from('user_roles')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .maybeSingle();
+
+      // 2. Intentar obtener perfil desde profiles
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', currentUser.id)
+        .maybeSingle();
+
+      const resolvedRole = userRoleData?.role || profileData?.role || currentUser.user_metadata?.role || 'admin';
+      const resolvedPermissions = userRoleData?.permissions || { pedidos: true, productos: true, configuracion: resolvedRole === 'admin' };
+
+      const userProfile = {
+        id: currentUser.id,
+        email: currentUser.email,
+        full_name: profileData?.full_name || currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Usuario',
+        phone: profileData?.phone || currentUser.user_metadata?.phone || '',
+        role: resolvedRole,
+        permissions: resolvedPermissions
+      };
+
+      setProfile(userProfile);
+      setRole(resolvedRole);
+      return userProfile;
+    } catch (err) {
+      console.warn('Error al cargar perfil de usuario:', err);
+      const fallbackRole = currentUser.user_metadata?.role || 'admin';
+      const fallbackProfile = {
+        id: currentUser.id,
+        email: currentUser.email,
+        full_name: currentUser.email?.split('@')[0] || 'Usuario',
+        role: fallbackRole,
+        permissions: { pedidos: true, productos: true, configuracion: fallbackRole === 'admin' }
+      };
+      setProfile(fallbackProfile);
+      setRole(fallbackRole);
+      return fallbackProfile;
+    }
+  }, []);
 
   useEffect(() => {
     let mounted = true;
 
-    // Obtener sesión inicial manualmente para cargar la UI rápido
     const initAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (mounted) {
           setSession(session);
-          setUser(session?.user ?? null);
+          const currentUser = session?.user ?? null;
+          setUser(currentUser);
+          if (currentUser) {
+            await fetchProfile(currentUser);
+          }
           setLoading(false);
         }
       } catch (err) {
@@ -28,11 +87,17 @@ export const AuthProvider = ({ children }) => {
     };
     initAuth();
 
-    // Suscribirse a cambios futuros
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       if (!mounted) return;
-      setSession(session);
-      setUser(session?.user ?? null);
+      setSession(newSession);
+      const currentUser = newSession?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) {
+        await fetchProfile(currentUser);
+      } else {
+        setProfile(null);
+        setRole(null);
+      }
       setLoading(false);
     });
 
@@ -40,9 +105,9 @@ export const AuthProvider = ({ children }) => {
       mounted = false;
       subscription?.unsubscribe();
     };
-  }, []);
+  }, [fetchProfile]);
 
-  // Efecto separado para verificar el nivel de MFA sin bloquear el hilo de autenticación inicial
+  // Verificación de MFA
   useEffect(() => {
     let mounted = true;
 
@@ -54,9 +119,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       try {
-        // Añadimos un pequeño retraso para asegurar que cualquier transacción de Auth previa haya finalizado
         await new Promise(resolve => setTimeout(resolve, 0));
-        
         if (!mounted) return;
         const { data: mfaData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
         if (mounted && mfaData) {
@@ -64,7 +127,7 @@ export const AuthProvider = ({ children }) => {
           setHasMfaEnrolled((mfaData.nextLevel || mfaData.currentLevel) === 'aal2');
         }
       } catch (err) {
-        console.warn('Deferred MFA check check failed');
+        console.warn('Deferred MFA check failed');
       }
     };
 
@@ -75,8 +138,14 @@ export const AuthProvider = ({ children }) => {
   const value = {
     session,
     user,
+    profile,
+    role: role || (user ? 'admin' : null),
+    isAdmin: role === 'admin' || (user && !role),
+    isEmployee: role === 'empleado',
+    isCustomer: role === 'cliente',
     mfaLevel,
     hasMfaEnrolled,
+    refreshProfile: () => fetchProfile(user),
     signOut: () => supabase.auth.signOut(),
   };
 

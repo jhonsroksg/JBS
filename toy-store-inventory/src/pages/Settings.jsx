@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { db, userRepository } from '../services/db';
 import { supabase } from '../lib/supabaseClient';
-import { Plus, Trash2, Edit2, Check, X, Save, Image as ImageIcon, Upload, Shield, HelpCircle } from 'lucide-react';
+import { useToast } from '../hooks/useToast';
+import { Plus, Trash2, Edit2, Check, X, Save, Image as ImageIcon, Upload, Shield, HelpCircle, Loader2 } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 
 const Settings = () => {
+  const { showToast } = useToast();
   const [methods, setMethods] = useState([]);
   const [newMethod, setNewMethod] = useState('');
   const [editingId, setEditingId] = useState(null);
@@ -64,6 +66,7 @@ const Settings = () => {
   const [users, setUsers] = useState([]);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState(null);
+  const [savingUser, setSavingUser] = useState(false);
   const [userFormData, setUserFormData] = useState({
     email: '',
     role: 'vendedor',
@@ -445,23 +448,22 @@ const Settings = () => {
     e.preventDefault();
     if (!userFormData.email.trim()) return;
     
+    setSavingUser(true);
     try {
       if (editingUserId) {
         await userRepository.updateUserRole(editingUserId, userFormData.role, userFormData.permissions);
-        alert('✅ Usuario actualizado con éxito.');
+        showToast('Usuario actualizado con éxito.', 'success');
       } else {
-        const newUser = await userRepository.inviteUser(userFormData.email.trim(), userFormData.role, userFormData.permissions);
-        if (newUser) {
-          alert('✅ Usuario invitado con éxito.');
-        } else {
-          alert('No se pudo invitar al usuario. (¿Falta Service Role Key?)');
-        }
+        await userRepository.inviteUser(userFormData.email.trim(), userFormData.role, userFormData.permissions);
+        showToast('¡Invitación enviada con éxito al correo!', 'success');
       }
       handleCloseUserModal();
       await loadData();
     } catch (error) {
       console.error('Error al guardar usuario:', error);
-      alert('Error: ' + error.message);
+      showToast(error.message || 'Error al procesar la solicitud de usuario.', 'error');
+    } finally {
+      setSavingUser(false);
     }
   };
 
@@ -469,11 +471,11 @@ const Settings = () => {
     if (confirm(`¿Seguro que deseas eliminar el acceso para ${email}?`)) {
       try {
         await userRepository.deleteUserAccess(userId);
-        alert('Usuario eliminado.');
+        showToast('Acceso de usuario eliminado con éxito.', 'success');
         await loadData();
       } catch (error) {
         console.error('Error eliminando usuario:', error);
-        alert('Error: ' + error.message);
+        showToast(error.message || 'Error al eliminar usuario.', 'error');
       }
     }
   };
@@ -1110,8 +1112,35 @@ const Settings = () => {
               )}
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                <button type="button" onClick={handleCloseUserModal} className="btn-secondary" style={{ flex: 1, padding: '12px' }}>Cancelar</button>
-                <button type="submit" className="btn-primary" style={{ flex: 1, padding: '12px' }}>{editingUserId ? 'Guardar Cambios' : 'Invitar Usuario'}</button>
+                <button 
+                  type="button" 
+                  onClick={handleCloseUserModal} 
+                  disabled={savingUser}
+                  className="btn-secondary" 
+                  style={{ flex: 1, padding: '12px' }}
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={savingUser} 
+                  className="btn-primary" 
+                  style={{ 
+                    flex: 1, 
+                    padding: '12px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    gap: '8px',
+                    opacity: savingUser ? 0.7 : 1,
+                    cursor: savingUser ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {savingUser && <Loader2 size={18} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />}
+                  {savingUser 
+                    ? (editingUserId ? 'Guardando...' : 'Invitando...') 
+                    : (editingUserId ? 'Guardar Cambios' : 'Invitar Usuario')}
+                </button>
               </div>
             </form>
           </div>

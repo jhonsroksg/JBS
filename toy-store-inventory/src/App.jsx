@@ -17,6 +17,7 @@ const ProductPage = React.lazy(() => import('./pages/ProductPage'));
 const LayawayView = React.lazy(() => import('./pages/LayawayView'));
 const Settings = React.lazy(() => import('./pages/Settings'));
 const Login = React.lazy(() => import('./pages/Login'));
+const ResetPassword = React.lazy(() => import('./pages/ResetPassword'));
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -60,12 +61,13 @@ function App() {
                 <Route path="apartado/:code" element={<LayawayView />} />
               </Route>
 
-              {/* Login */}
+              {/* Login y Recuperación de Contraseña */}
               <Route path="/login" element={<Login />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
 
-              {/* Rutas de Administración Protegidas */}
+              {/* Rutas de Administración Protegidas (Admin y Empleados) */}
               <Route path="/admin" element={
-                <ProtectedRoute>
+                <ProtectedRoute allowedRoles={['admin', 'empleado']}>
                   <MainLayout />
                 </ProtectedRoute>
               }>
@@ -74,7 +76,11 @@ function App() {
                 <Route path="categories" element={<Categories />} />
                 <Route path="orders" element={<Orders />} />
                 <Route path="customers" element={<Customers />} />
-                <Route path="settings" element={<Settings />} />
+                <Route path="settings" element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <Settings />
+                  </ProtectedRoute>
+                } />
               </Route>
 
               {/* Redirección por defecto */}
