@@ -35,7 +35,7 @@ export const ProductModal = ({
   const images = product.images || [product.imageUrl || 'https://via.placeholder.com/400'];
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1000 }}>
+    <div className="modal-overlay" style={{ zIndex: 1000 }}>
       <div className="modal-content glass-panel" onClick={e => e.stopPropagation()}>
         <div className="modal-gallery-side">
           <div className="modal-main-image-wrapper">

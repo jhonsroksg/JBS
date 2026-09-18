@@ -704,7 +704,7 @@ const Products = () => {
       </div>
 
       {isModalOpen && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
+        <div className="modal-overlay">
           <div className="modal-content glass-panel" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{formData.isDuplicate ? 'Duplicar Juguete' : (editingId ? 'Editar Juguete' : 'Nuevo Juguete')}</h2>

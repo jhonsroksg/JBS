@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../services/db';
+import { db, userRepository } from '../services/db';
 import { supabase } from '../lib/supabaseClient';
 import { Plus, Trash2, Edit2, Check, X, Save, Image as ImageIcon, Upload, Shield, HelpCircle } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
@@ -60,6 +60,16 @@ const Settings = () => {
   const [editingSectionSubtitle, setEditingSectionSubtitle] = useState('');
   const [uploadingSectionImage, setUploadingSectionImage] = useState(false);
 
+  // Users States
+  const [users, setUsers] = useState([]);
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [editingUserId, setEditingUserId] = useState(null);
+  const [userFormData, setUserFormData] = useState({
+    email: '',
+    role: 'vendedor',
+    permissions: { pedidos: true, productos: false, configuracion: false }
+  });
+
   const [activeTab, setActiveTab] = useState('general');
 
   // MFA States
@@ -72,13 +82,14 @@ const Settings = () => {
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
-    const [pay, del, coup, statuses, info, sections] = await Promise.all([
+    const [pay, del, coup, statuses, info, sections, usersData] = await Promise.all([
       db.getAll('payment_methods'),
       db.getAll('delivery_methods'),
       db.getAll('coupons'),
       db.getAll('order_statuses'),
       db.getStoreInfo(),
-      db.getAll('main_sections').catch(() => [])
+      db.getAll('main_sections').catch(() => []),
+      userRepository.getUsers().catch(() => [])
     ]);
     setMethods(pay);
     setDeliveryMethods(del);
@@ -86,6 +97,7 @@ const Settings = () => {
     setOrderStatuses(statuses);
     if (info) setStoreInfo(info);
     if (sections) setMainSections(sections);
+    if (usersData) setUsers(usersData);
     await loadMFAStatus();
   };
 
@@ -406,6 +418,66 @@ const Settings = () => {
     }
   };
 
+  const handleOpenUserModal = (user = null) => {
+    if (user) {
+      setEditingUserId(user.user_id);
+      setUserFormData({
+        email: user.email,
+        role: user.role,
+        permissions: user.permissions || { pedidos: false, productos: false, configuracion: false }
+      });
+    } else {
+      setEditingUserId(null);
+      setUserFormData({
+        email: '',
+        role: 'vendedor',
+        permissions: { pedidos: true, productos: false, configuracion: false }
+      });
+    }
+    setIsUserModalOpen(true);
+  };
+
+  const handleCloseUserModal = () => {
+    setIsUserModalOpen(false);
+  };
+
+  const handleSaveUser = async (e) => {
+    e.preventDefault();
+    if (!userFormData.email.trim()) return;
+    
+    try {
+      if (editingUserId) {
+        await userRepository.updateUserRole(editingUserId, userFormData.role, userFormData.permissions);
+        alert('✅ Usuario actualizado con éxito.');
+      } else {
+        const newUser = await userRepository.inviteUser(userFormData.email.trim(), userFormData.role, userFormData.permissions);
+        if (newUser) {
+          alert('✅ Usuario invitado con éxito.');
+        } else {
+          alert('No se pudo invitar al usuario. (¿Falta Service Role Key?)');
+        }
+      }
+      handleCloseUserModal();
+      await loadData();
+    } catch (error) {
+      console.error('Error al guardar usuario:', error);
+      alert('Error: ' + error.message);
+    }
+  };
+
+  const handleDeleteUser = async (userId, email) => {
+    if (confirm(`¿Seguro que deseas eliminar el acceso para ${email}?`)) {
+      try {
+        await userRepository.deleteUserAccess(userId);
+        alert('Usuario eliminado.');
+        await loadData();
+      } catch (error) {
+        console.error('Error eliminando usuario:', error);
+        alert('Error: ' + error.message);
+      }
+    }
+  };
+
   const availableIcons = [
     'Heart', 'User', 'Baby', 'ShoppingBag', 'Tag', 'Gift', 'Star', 'Truck', 'Home', 'Settings', 
     'Search', 'ShoppingBasket', 'Smile', 'Sun', 'Moon', 'Package', 'ShoppingCard', 'Zap', 'Flame'
@@ -437,6 +509,7 @@ const Settings = () => {
           { id: 'pagos', label: 'Pagos', icon: '💳' },
           { id: 'promociones', label: 'Promociones', icon: '🏷️' },
           { id: 'secciones', label: 'Secciones', icon: '🎡' },
+          { id: 'usuarios', label: 'Usuarios', icon: '👥' },
           { id: 'seguridad', label: 'Seguridad', icon: '🛡️' }
         ].map(tab => (
           <button 
@@ -912,6 +985,135 @@ const Settings = () => {
                 )}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Usuarios Tab */}
+      {activeTab === 'usuarios' && (
+        <div className="glass-panel" style={{ padding: '30px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h2 style={{ fontSize: '1.4rem', margin: 0 }}>Usuarios y Accesos</h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '4px' }}>Administra quién tiene acceso al panel de control.</p>
+            </div>
+            <button className="btn-primary" onClick={() => handleOpenUserModal()} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Plus size={18} /> Nuevo Usuario
+            </button>
+          </div>
+          
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
+                  <th style={{ padding: '12px' }}>Correo</th>
+                  <th style={{ padding: '12px' }}>Rol</th>
+                  <th style={{ padding: '12px' }}>Accesos Permitidos</th>
+                  <th style={{ padding: '12px', textAlign: 'right' }}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map(u => (
+                  <tr key={u.id} style={{ borderBottom: '1px solid var(--bg-tertiary)' }}>
+                    <td style={{ padding: '16px 12px', fontWeight: 500 }}>{u.email}</td>
+                    <td style={{ padding: '16px 12px' }}>
+                      <span style={{ padding: '4px 8px', borderRadius: '8px', background: 'var(--accent-primary)', color: 'white', fontSize: '0.8rem', fontWeight: 600 }}>
+                        {u.role.toUpperCase()}
+                      </span>
+                    </td>
+                    <td style={{ padding: '16px 12px' }}>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        {u.role === 'admin' ? (
+                          <span style={{ padding: '4px 8px', borderRadius: '4px', background: 'rgba(39, 174, 96, 0.1)', color: '#27ae60', fontSize: '0.75rem', fontWeight: 600 }}>Todos los módulos</span>
+                        ) : (
+                          Object.entries(u.permissions || {}).map(([key, val]) => val && (
+                            <span key={key} style={{ padding: '4px 8px', borderRadius: '4px', background: 'rgba(52, 152, 219, 0.1)', color: '#2980b9', fontSize: '0.75rem', fontWeight: 600 }}>
+                              {key.charAt(0).toUpperCase() + key.slice(1)}
+                            </span>
+                          ))
+                        )}
+                      </div>
+                    </td>
+                    <td style={{ padding: '16px 12px', textAlign: 'right' }}>
+                      <button onClick={() => handleOpenUserModal(u)} className="btn-icon" title="Editar"><Edit2 size={16} /></button>
+                      <button onClick={() => handleDeleteUser(u.user_id, u.email)} className="btn-icon danger" title="Eliminar"><Trash2 size={16} /></button>
+                    </td>
+                  </tr>
+                ))}
+                {users.length === 0 && (
+                  <tr>
+                    <td colSpan="4" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>No hay usuarios configurados.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Usuario */}
+      {isUserModalOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: '450px', padding: '30px', position: 'relative' }}>
+            <button onClick={handleCloseUserModal} className="btn-icon" style={{ position: 'absolute', top: '15px', right: '15px' }}><X size={20} /></button>
+            <h2 style={{ fontSize: '1.4rem', marginBottom: '20px' }}>{editingUserId ? 'Editar Usuario' : 'Nuevo Usuario'}</h2>
+            
+            <form onSubmit={handleSaveUser} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '8px' }}>Correo Electrónico</label>
+                <input 
+                  type="email" 
+                  value={userFormData.email} 
+                  onChange={e => setUserFormData({ ...userFormData, email: e.target.value })} 
+                  style={inputStyle} 
+                  disabled={!!editingUserId}
+                  placeholder="ejemplo@tienda.com"
+                  required 
+                />
+                {!!editingUserId && <small style={{ color: 'var(--text-secondary)' }}>El correo no se puede cambiar al editar.</small>}
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '8px' }}>Rol Principal</label>
+                <select 
+                  value={userFormData.role} 
+                  onChange={e => setUserFormData({ ...userFormData, role: e.target.value })} 
+                  style={inputStyle}
+                >
+                  <option value="admin">Administrador (Acceso total)</option>
+                  <option value="vendedor">Vendedor</option>
+                  <option value="inventario">Inventario</option>
+                  <option value="personalizado">Personalizado</option>
+                </select>
+              </div>
+
+              {userFormData.role !== 'admin' && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, marginBottom: '8px' }}>Permisos Específicos</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: 'var(--bg-tertiary)', padding: '16px', borderRadius: '12px' }}>
+                    {['pedidos', 'productos', 'configuracion'].map(perm => (
+                      <label key={perm} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={userFormData.permissions[perm] || false}
+                          onChange={e => setUserFormData({
+                            ...userFormData,
+                            permissions: { ...userFormData.permissions, [perm]: e.target.checked }
+                          })}
+                          style={{ width: '18px', height: '18px', accentColor: 'var(--accent-primary)' }}
+                        />
+                        <span style={{ fontSize: '0.95rem', textTransform: 'capitalize', color: 'var(--text-primary)' }}>{perm}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                <button type="button" onClick={handleCloseUserModal} className="btn-secondary" style={{ flex: 1, padding: '12px' }}>Cancelar</button>
+                <button type="submit" className="btn-primary" style={{ flex: 1, padding: '12px' }}>{editingUserId ? 'Guardar Cambios' : 'Invitar Usuario'}</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

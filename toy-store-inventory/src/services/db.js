@@ -511,3 +511,67 @@ export const deleteLayaway = async (layawayId) => {
   return true;
 };
 
+// --- 6. USER ROLES REPOSITORY ---
+export const userRepository = {
+  async getUsers() {
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  },
+
+  async inviteUser(email, role, permissions) {
+    // IMPORTANTE: inviteUserByEmail requiere permisos de administrador (service_role key).
+    // Si la inicialización de supabase en cliente se hizo con la anon_key, auth.admin fallará.
+    // Para entornos en producción, se recomienda mover esta función a un Edge Function de Supabase.
+    const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(email);
+    if (authError) throw authError;
+
+    if (authData?.user) {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .insert([{
+          user_id: authData.user.id,
+          email: email,
+          role: role,
+          permissions: permissions
+        }])
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    }
+    return null;
+  },
+
+  async updateUserRole(userId, role, permissions) {
+    const { data, error } = await supabase
+      .from('user_roles')
+      .update({ role, permissions })
+      .eq('user_id', userId)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async deleteUserAccess(userId) {
+    // 1. Eliminar registro de permisos (RLS protege que solo un admin pueda hacer esto)
+    const { error: dbError } = await supabase
+      .from('user_roles')
+      .delete()
+      .eq('user_id', userId);
+    if (dbError) throw dbError;
+
+    // 2. Intentar eliminar usuario de Auth (Requiere service_role key)
+    // Si falla por falta de la service_role, capturamos el error pero no bloqueamos,
+    // ya que sin el registro en user_roles, el usuario igual pierde permisos de app.
+    const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+    if (authError) {
+      console.warn('Rol eliminado, pero el usuario sigue en Auth (requiere service_role key):', authError.message);
+    }
+    return true;
+  }
+};
