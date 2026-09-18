@@ -508,7 +508,7 @@ const Products = () => {
     <div className="products-page">
       <div className="page-header">
         <div>
-          <h1>Catálogo de Juguetes</h1>
+          <h1>Catálogo de Productos</h1>
           <p>Administra los productos de tu tienda.</p>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
@@ -521,7 +521,7 @@ const Products = () => {
             ↻ Refrescar
           </button>
           <button className="btn-primary" onClick={() => handleOpenModal()}>
-            <Plus size={20} strokeWidth={3} /> Agregar Juguete
+            <Plus size={20} strokeWidth={3} /> Agregar Producto
           </button>
         </div>
       </div>
@@ -707,7 +707,7 @@ const Products = () => {
         <div className="modal-overlay">
           <div className="modal-content glass-panel" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{formData.isDuplicate ? 'Duplicar Juguete' : (editingId ? 'Editar Juguete' : 'Nuevo Juguete')}</h2>
+              <h2>{formData.isDuplicate ? 'Duplicar Producto' : (editingId ? 'Editar Producto' : 'Nuevo Producto')}</h2>
               <button className="btn-icon" onClick={handleCloseModal}><X /></button>
             </div>
             <form onSubmit={handleSave} className="modal-form">

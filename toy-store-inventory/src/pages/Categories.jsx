@@ -73,7 +73,7 @@ const Categories = () => {
       <div className="page-header">
         <div>
           <h1>Gestión de Categorías</h1>
-          <p>Organiza tus juguetes en colecciones.</p>
+          <p>Organiza tus productos en colecciones.</p>
         </div>
         <button className="btn-primary" onClick={() => handleOpenModal()}>
           <Plus size={20} strokeWidth={3} /> Nueva Categoría
@@ -92,17 +92,24 @@ const Categories = () => {
               </tr>
             </thead>
             <tbody>
-              {categories.map(category => (
-                <tr key={category.id}>
-                  <td data-label="Nombre" className="highlight-text" style={{ color: 'var(--text-primary)' }}>{category.name}</td>
-                  <td data-label="Descripción" className="text-secondary">{category.description}</td>
-                  <td data-label="Productos Asociados"><span className="badge badge-info">{getProductCount(category.id)} juguetes</span></td>
-                  <td data-label="Acciones" className="actions-cell">
-                    <button className="btn-icon" title="Editar" onClick={() => handleOpenModal(category)}><Edit2 strokeWidth={2.5} /></button>
-                    <button className="btn-icon danger" title="Eliminar" onClick={() => handleDelete(category.id)}><Trash2 strokeWidth={2.5} /></button>
-                  </td>
-                </tr>
-              ))}
+              {categories.map(category => {
+                const count = getProductCount(category.id);
+                return (
+                  <tr key={category.id}>
+                    <td data-label="Nombre" className="highlight-text" style={{ color: 'var(--text-primary)' }}>{category.name}</td>
+                    <td data-label="Descripción" className="text-secondary">{category.description}</td>
+                    <td data-label="Productos Asociados">
+                      <span className="badge badge-info">
+                        {count} {count === 1 ? 'producto' : 'productos'}
+                      </span>
+                    </td>
+                    <td data-label="Acciones" className="actions-cell">
+                      <button className="btn-icon" title="Editar" onClick={() => handleOpenModal(category)}><Edit2 strokeWidth={2.5} /></button>
+                      <button className="btn-icon danger" title="Eliminar" onClick={() => handleDelete(category.id)}><Trash2 strokeWidth={2.5} /></button>
+                    </td>
+                  </tr>
+                );
+              })}
               {categories.length === 0 && (
                 <tr><td colSpan="4" className="empty-state">No hay categorías registradas.</td></tr>
               )}
