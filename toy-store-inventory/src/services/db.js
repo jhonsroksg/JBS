@@ -157,7 +157,37 @@ export const orderRepository = {
 
     const itemsToProcess = (cartItems && cartItems.length > 0) ? cartItems : (order.items || []);
     
-    // Mapeamos explícitamente para asegurar que el JSONB contenga id y product_id al nivel raíz
+    // Validación preventiva de stock en base de datos para pedidos normales (sin layaway_id)
+    if (!order.layaway_id && itemsToProcess.length > 0) {
+      const productIds = itemsToProcess
+        .map(item => item.id || item.product_id || item.productId || item.product?.id)
+        .filter(Boolean);
+
+      if (productIds.length > 0) {
+        const { data: dbProducts, error: prodErr } = await supabase
+          .from('products')
+          .select('id, name, stock')
+          .in('id', productIds);
+
+        if (prodErr) throw prodErr;
+
+        if (dbProducts && dbProducts.length > 0) {
+          for (const item of itemsToProcess) {
+            const finalId = item.id || item.product_id || item.productId || item.product?.id;
+            const dbProd = dbProducts.find(p => p.id === finalId);
+            if (dbProd) {
+              const requestedQty = Number(item.quantity) || 1;
+              const availableStock = Number(dbProd.stock) || 0;
+              if (requestedQty > availableStock) {
+                throw new Error(`El producto "${dbProd.name || item.name || 'Producto'}" no cuenta con suficiente stock disponible.`);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Mapeamos explícitamente para asegurar que el JSONB contenga id y product_id al nivel raíz con UUID
     const formattedItems = itemsToProcess.map(item => {
       const finalId = item.id || item.product_id || item.productId || item.product?.id;
       
@@ -179,7 +209,7 @@ export const orderRepository = {
       return {
         id: finalId,
         product_id: finalId,
-        productId: finalId, // <- Añadido por si el trigger usa camelCase
+        productId: finalId, // Compatibilidad camelCase
         name: item.name || item.product_name || item.product?.name || 'Producto',
         sku: item.sku || item.product_sku || item.product?.sku || '',
         price: parsedPrice,
@@ -187,7 +217,6 @@ export const orderRepository = {
         total: parsedPrice * parsedQty,
         image_url: item.image_url || item.imageUrl || item.product?.imageUrl || '',
         wrap_gift: Boolean(item.wrap_gift),
-        // IMPORTANTE: Restaurar el objeto product anidado por si el trigger lo exige (ej. item->'product'->>'id')
         product: item.product || {
           id: finalId,
           productId: finalId,
@@ -309,8 +338,14 @@ export const db = {
     
     const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(data.path);
     return `${publicUrl}?t=${Date.now()}`;
+  },
+
+  async createOrder(order, cartItems) {
+    return orderRepository.create(order, cartItems);
   }
 };
+
+export const createOrder = (order, cartItems) => orderRepository.create(order, cartItems);
 
 // Helper para generar código aleatorio y amigable (AP- + 5 caracteres alfanuméricos en mayúsculas)
 function generateRandomCode() {

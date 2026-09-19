@@ -1,7 +1,7 @@
 -- 1. Crear la tabla user_roles
 CREATE TABLE IF NOT EXISTS public.user_roles (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
     email TEXT NOT NULL,
     role VARCHAR(50) NOT NULL DEFAULT 'vendedor',
     permissions JSONB DEFAULT '{"pedidos": true, "productos": false, "configuracion": false}'::jsonb,

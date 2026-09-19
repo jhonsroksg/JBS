@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db, layawayRepository, orderRepository, productRepository, customerRepository } from '../services/db';
-import { X, Trash2, CheckCircle, User, Mail, Phone, MapPin, Truck, CreditCard, Copy } from 'lucide-react';
+import { X, Trash2, CheckCircle, User, Mail, Phone, MapPin, Truck, CreditCard, Copy, AlertCircle } from 'lucide-react';
 import { hondurasLocations } from '../data/hondurasLocations';
 import { supabase } from '../lib/supabaseClient';
 import { useToast } from '../hooks/useToast';
@@ -18,6 +18,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
   const [copied, setCopied] = useState(false);
   const [wrapGift, setWrapGift] = useState(false);
   const [deliveryOption, setDeliveryOption] = useState('party');
+  const [checkoutError, setCheckoutError] = useState(null);
 
   const sanitizeCartForStorage = (cart) => {
     return cart.map(item => ({
@@ -55,6 +56,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
       loadCart();
       setOrderComplete(false);
       setCompletedOrderNumber(null);
+      setCheckoutError(null);
       setCustomerInfo({ name: '', email: '', phone: '', address: '', department: '', municipality: '' });
       setLayawayInfo({ eventName: '', eventDate: '' });
       setCopied(false);
@@ -437,35 +439,25 @@ const CheckoutModal = ({ isOpen, onClose }) => {
           console.error('CRITICAL: Error al insertar el pedido en Supabase:', insertErr);
           
           const errMsg = insertErr.message || '';
+          let friendlyError = errMsg;
           
-          // Matches: "STOCK_INSUFICIENTE:..." OR "Stock insuficiente para..."
-          const isStockError = errMsg.toUpperCase().includes('STOCK INSUFICIENTE') || errMsg.toUpperCase().includes('STOCK_INSUFICIENTE');
+          // Matches: "STOCK_INSUFICIENTE:..." OR "Stock insuficiente para..." OR "no cuenta con suficiente stock disponible"
+          const isStockError = errMsg.toUpperCase().includes('STOCK INSUFICIENTE') || 
+                               errMsg.toUpperCase().includes('STOCK_INSUFICIENTE') || 
+                               errMsg.toLowerCase().includes('stock disponible') ||
+                               errMsg.toLowerCase().includes('suficiente stock');
           if (isStockError) {
-            let available = '0';
-            let requested = '1';
-            
-            const dispMatch = errMsg.match(/disponible:\s*(\d+)/i);
-            const solMatch = errMsg.match(/solicitado:\s*(\d+)/i);
-            
-            if (dispMatch) available = dispMatch[1];
-            if (solMatch) requested = solMatch[1];
-            
-            const nameMatch = errMsg.match(/para\s+"([^"]+)"|STOCK_INSUFICIENTE:\s*([^|]+)/i);
-            const productName = nameMatch ? (nameMatch[1] || nameMatch[2]) : 'el producto';
-            
-            showToast(`[Backend] Stock insuficiente para "${productName.trim()}". Disponible: ${available}, solicitado: ${requested}.`, 'error');
-            setIsSubmitting(false);
-            return;
+            friendlyError = errMsg;
+          } else if (insertErr.message?.includes('RLS') || insertErr.code === '42501') {
+            friendlyError = 'Error de permisos al crear el pedido. Por favor contacta al administrador.';
+          } else {
+            friendlyError = `No se pudo procesar tu pedido: ${errMsg || 'Error desconocido'}. Por favor verifica tus datos o intenta nuevamente.`;
           }
           
-          if (insertErr.message?.includes('RLS') || insertErr.code === '42501') {
-            console.warn('Posible problema de permisos RLS en la tabla "orders".');
-            showToast('Error de permisos al crear el pedido. Contacta al administrador.', 'error');
-            setIsSubmitting(false);
-            return;
-          }
-          
-          throw insertErr;
+          setCheckoutError(friendlyError);
+          showToast(friendlyError, 'error');
+          setIsSubmitting(false);
+          return;
         }
 
         const runBackgroundWork = async () => {
@@ -508,7 +500,9 @@ const CheckoutModal = ({ isOpen, onClose }) => {
       }
     } catch (err) {
       console.error('Error detallado en checkout:', err);
-      showToast(`Hubo un error al procesar tu solicitud: ${err.message || 'Error desconocido'}. Inténtalo de nuevo.`, 'error');
+      const msg = err.message || 'Error desconocido al procesar tu solicitud.';
+      setCheckoutError(msg);
+      showToast(`Hubo un error al procesar tu solicitud: ${msg}. Inténtalo de nuevo.`, 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -618,6 +612,23 @@ const CheckoutModal = ({ isOpen, onClose }) => {
 
                 <div className="form-column">
                   <form id="checkout-form-data" className="checkout-form" onSubmit={handleCheckout}>
+                    {checkoutError && (
+                      <div className="checkout-error-card">
+                        <AlertCircle size={20} />
+                        <div className="checkout-error-card-content">
+                          <div className="checkout-error-card-title">Aviso de Validación</div>
+                          <div>{checkoutError}</div>
+                        </div>
+                        <button 
+                          type="button" 
+                          className="checkout-error-card-close" 
+                          onClick={() => setCheckoutError(null)}
+                          title="Descartar aviso"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    )}
                     {isLayawayMode && (
                       <div className="layaway-notice-card" style={{ background: '#fdf2f8', border: '1px solid #fbcfe8', borderRadius: '12px', padding: '16px', marginBottom: '20px', color: '#db2777', fontSize: '0.88rem', fontWeight: 600, display: 'flex', gap: '8px', lineHeight: '1.4' }}>
                         <span>ℹ️</span>

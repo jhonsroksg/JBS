@@ -125,6 +125,8 @@ serve(async (req) => {
     }
 
     // 7. Enviar correo de invitación personalizado con Resend si está configurado
+    let emailStatus = { sent: false, error: null as string | null };
+
     if (RESEND_API_KEY) {
       try {
         const linkToUse = inviteLink || `https://joababyshophn.com/login?mode=recover`;
@@ -163,7 +165,7 @@ serve(async (req) => {
           </html>
         `;
 
-        await fetch('https://api.resend.com/emails', {
+        const mailRes = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -176,19 +178,34 @@ serve(async (req) => {
             html: emailHtml,
           }),
         });
-        console.log(`[Invite User] Correo enviado vía Resend a ${cleanEmail}`);
+
+        const mailData = await mailRes.json();
+        if (!mailRes.ok) {
+          console.error('[Invite User] Error retornado por Resend API:', mailRes.status, JSON.stringify(mailData));
+          emailStatus = { sent: false, error: mailData?.message || `Error de Resend (${mailRes.status})` };
+        } else {
+          console.log(`[Invite User] Correo enviado exitosamente vía Resend a ${cleanEmail}:`, JSON.stringify(mailData));
+          emailStatus = { sent: true, error: null };
+        }
       } catch (mailErr: any) {
-        console.warn('[Invite User] Error enviando correo con Resend:', mailErr?.message);
+        console.warn('[Invite User] Excepción al llamar a Resend:', mailErr?.message);
+        emailStatus = { sent: false, error: mailErr?.message };
       }
+    } else {
+      console.warn('[Invite User] RESEND_API_KEY no está configurada.');
+      emailStatus = { sent: false, error: 'RESEND_API_KEY no configurada' };
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Usuario invitado y registrado exitosamente en el sistema.',
+        message: emailStatus.sent 
+          ? 'Usuario registrado e invitación enviada por correo exitosamente.' 
+          : `Usuario registrado. Aviso de correo: ${emailStatus.error || 'No se pudo enviar el correo'}.`,
         user: targetUser,
         role: roleData || { user_id: targetUser.id, email: cleanEmail, role, permissions },
-        inviteLink: inviteLink || null
+        inviteLink: inviteLink || null,
+        emailStatus
       }),
       {
         status: 200,
