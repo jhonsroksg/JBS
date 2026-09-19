@@ -11,17 +11,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.101.1",
+    "@supabase/supabase-js": "^2.116.0",
     "browser-image-compression": "^2.0.2",
     "date-fns": "^4.1.0",
     "jspdf": "^4.2.1",
-    "jspdf-autotable": "^5.0.7",
+    "jspdf-autotable": "^5.0.8",
     "lucide-react": "^0.577.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-helmet-async": "^3.0.0",
-    "react-router-dom": "^7.13.1",
-    "xlsx": "^0.18.5"
+    "react-router-dom": "^7.18.4",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

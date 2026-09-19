@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { db } from '../services/db';
 import { Users, Edit, Trash2, Search, X, Save } from 'lucide-react';
 
@@ -8,12 +8,27 @@ const Customers = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
 
-  useEffect(() => { loadData(); }, []);
+  const loadData = useCallback(async () => {
+    try {
+      const data = await db.getAll('customers');
+      setCustomers(data || []);
+    } catch (error) {
+      console.error('Error loading customers:', error);
+    }
+  }, []);
 
-  const loadData = async () => {
-    const data = await db.getAll('customers');
-    setCustomers(data);
-  };
+  useEffect(() => {
+    let isMounted = true;
+    const init = async () => {
+      if (isMounted) {
+        await loadData();
+      }
+    };
+    init();
+    return () => {
+      isMounted = false;
+    };
+  }, [loadData]);
 
   const handleEdit = (customer) => {
     setEditingCustomer({ ...customer });

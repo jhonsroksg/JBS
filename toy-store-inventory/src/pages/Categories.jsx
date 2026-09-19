@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { db } from '../services/db';
 import { Plus, Edit2, Trash2, X, Tags } from 'lucide-react';
 import './Products.css';
@@ -13,16 +13,31 @@ const Categories = () => {
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ name: '', description: '' });
 
-  useEffect(() => { loadData(); }, []);
+  const loadData = useCallback(async () => {
+    try {
+      const [cats, prods] = await Promise.all([
+        db.getAll('categories'),
+        db.getAll('products'),
+      ]);
+      setCategories(cats || []);
+      setProducts(prods || []);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    }
+  }, []);
 
-  const loadData = async () => {
-    const [cats, prods] = await Promise.all([
-      db.getAll('categories'),
-      db.getAll('products'),
-    ]);
-    setCategories(cats);
-    setProducts(prods);
-  };
+  useEffect(() => {
+    let isMounted = true;
+    const init = async () => {
+      if (isMounted) {
+        await loadData();
+      }
+    };
+    init();
+    return () => {
+      isMounted = false;
+    };
+  }, [loadData]);
 
   const getProductCount = (categoryId) => products.filter(p => p.categoryId === categoryId).length;
 

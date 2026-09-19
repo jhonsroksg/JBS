@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
@@ -98,7 +99,7 @@ export const AuthProvider = ({ children }) => {
           }
           setLoading(false);
         }
-      } catch (err) {
+      } catch {
         if (mounted) setLoading(false);
       }
     };
@@ -143,7 +144,7 @@ export const AuthProvider = ({ children }) => {
           setMfaLevel(mfaData.currentLevel || 'aal1');
           setHasMfaEnrolled((mfaData.nextLevel || mfaData.currentLevel) === 'aal2');
         }
-      } catch (err) {
+      } catch {
         console.warn('Deferred MFA check failed');
       }
     };

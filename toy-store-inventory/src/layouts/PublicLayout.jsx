@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Outlet, Link, useSearchParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, X } from 'lucide-react';
 import CheckoutModal from '../components/CheckoutModal';
 import { db } from '../services/db';
@@ -10,21 +10,11 @@ import Footer from '../components/Footer';
 import CartSidebar from '../components/CartSidebar';
 import SectionNavBar from '../components/SectionNavBar';
 
-const darkenHex = (hex, percent = 25) => {
-  if (!hex || !hex.startsWith('#')) return hex;
-  const num = parseInt(hex.slice(1), 16);
-  const r = Math.max(0, Math.floor(((num >> 16) & 255) * (1 - percent / 100)));
-  const g = Math.max(0, Math.floor(((num >> 8) & 255) * (1 - percent / 100)));
-  const b = Math.max(0, Math.floor((num & 255) * (1 - percent / 100)));
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
-};
-
 const PublicLayout = () => {
   const { itemCount, isLayawayMode, setIsLayawayMode } = useCart();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [storeInfo, setStoreInfo] = useState({ name: 'Joa Baby Shop' });
-  const [sections, setSections] = useState([]);
   
   // Estados para apartados
   const [isLayawayModalOpen, setIsLayawayModalOpen] = useState(false);
@@ -45,23 +35,11 @@ const PublicLayout = () => {
     };
     loadStoreInfo();
 
-    const loadSections = async () => {
-      try {
-        const data = await db.getAll('main_sections');
-        setSections(data || []);
-      } catch (e) {
-        console.error('Error loading sections in layout:', e);
-      }
-    };
-    loadSections();
-
     window.addEventListener('store_info_updated', loadStoreInfo);
-    window.addEventListener('store_info_updated', loadSections);
 
     return () => {
       window.removeEventListener('open_cart', openSidebar);
       window.removeEventListener('store_info_updated', loadStoreInfo);
-      window.removeEventListener('store_info_updated', loadSections);
     };
   }, []);
 

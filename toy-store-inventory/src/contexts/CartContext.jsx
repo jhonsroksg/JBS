@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useToast } from '../hooks/useToast';
 import { sanitizeCartForStorage, reconcileCartWithLiveProducts } from '../utils/cartCalculations';

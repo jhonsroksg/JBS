@@ -5,7 +5,7 @@ import { Package, LayoutDashboard, Tags, ShoppingCart, Users, Store, Settings as
 import { useAuth } from '../contexts/AuthContext';
 
 const MainLayout = () => {
-  const { signOut, user, profile, role, isAdmin } = useAuth();
+  const { signOut, user, profile, role, isAdmin, permissions } = useAuth();
   const [storeName, setStoreName] = useState('ToyStore Admin');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
@@ -24,10 +24,11 @@ const MainLayout = () => {
     return () => window.removeEventListener('store_info_updated', loadStoreInfo);
   }, []);
 
-  // Close menu when route changes
-  useEffect(() => {
+  const [prevPathname, setPrevPathname] = useState(location.pathname);
+  if (prevPathname !== location.pathname) {
+    setPrevPathname(location.pathname);
     setIsMobileMenuOpen(false);
-  }, [location]);
+  }
 
   const userName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuario';
   const roleLabels = {
@@ -39,6 +40,9 @@ const MainLayout = () => {
     cliente: 'Cliente'
   };
   const roleLabel = roleLabels[role] || (isAdmin ? 'Administrador' : 'Usuario');
+
+  const canManageProducts = isAdmin || permissions?.productos === true;
+  const canManageOrders = isAdmin || permissions?.pedidos === true;
 
   return (
     <div className={`layout-container ${isMobileMenuOpen ? 'mobile-menu-active' : ''}`}>
@@ -58,18 +62,26 @@ const MainLayout = () => {
           <Link to="/admin" className={`nav-link ${location.pathname === '/admin' ? 'active' : ''}`}>
             <LayoutDashboard className="nav-icon" /> Dashboard
           </Link>
-          <Link to="/admin/products" className={`nav-link ${location.pathname === '/admin/products' ? 'active' : ''}`}>
-            <Package className="nav-icon" /> Productos
-          </Link>
-          <Link to="/admin/categories" className={`nav-link ${location.pathname === '/admin/categories' ? 'active' : ''}`}>
-            <Tags className="nav-icon" /> Categorías
-          </Link>
-          <Link to="/admin/orders" className={`nav-link ${location.pathname === '/admin/orders' ? 'active' : ''}`}>
-            <ShoppingCart className="nav-icon" /> Pedidos
-          </Link>
-          <Link to="/admin/customers" className={`nav-link ${location.pathname === '/admin/customers' ? 'active' : ''}`}>
-            <Users className="nav-icon" /> Clientes
-          </Link>
+          {canManageProducts && (
+            <>
+              <Link to="/admin/products" className={`nav-link ${location.pathname === '/admin/products' ? 'active' : ''}`}>
+                <Package className="nav-icon" /> Productos
+              </Link>
+              <Link to="/admin/categories" className={`nav-link ${location.pathname === '/admin/categories' ? 'active' : ''}`}>
+                <Tags className="nav-icon" /> Categorías
+              </Link>
+            </>
+          )}
+          {canManageOrders && (
+            <>
+              <Link to="/admin/orders" className={`nav-link ${location.pathname === '/admin/orders' ? 'active' : ''}`}>
+                <ShoppingCart className="nav-icon" /> Pedidos
+              </Link>
+              <Link to="/admin/customers" className={`nav-link ${location.pathname === '/admin/customers' ? 'active' : ''}`}>
+                <Users className="nav-icon" /> Clientes
+              </Link>
+            </>
+          )}
           {isAdmin && (
             <Link to="/admin/settings" className={`nav-link ${location.pathname === '/admin/settings' ? 'active' : ''}`}>
               <SettingsIcon className="nav-icon" /> Configuración

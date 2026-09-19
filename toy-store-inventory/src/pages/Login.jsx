@@ -232,7 +232,7 @@ const Login = () => {
       } else {
         navigate('/');
       }
-    } catch (_err) {
+    } catch {
       setMfaError('Código 2FA incorrecto o expirado. Intenta de nuevo.');
     } finally {
       setLoading(false);

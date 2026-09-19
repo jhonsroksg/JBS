@@ -76,10 +76,26 @@ function App() {
                       </ProtectedRoute>
                     }>
                       <Route index element={<Dashboard />} />
-                      <Route path="products" element={<Products />} />
-                      <Route path="categories" element={<Categories />} />
-                      <Route path="orders" element={<Orders />} />
-                      <Route path="customers" element={<Customers />} />
+                      <Route path="products" element={
+                        <ProtectedRoute requiredPermission="productos">
+                          <Products />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="categories" element={
+                        <ProtectedRoute requiredPermission="productos">
+                          <Categories />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="orders" element={
+                        <ProtectedRoute requiredPermission="pedidos">
+                          <Orders />
+                        </ProtectedRoute>
+                      } />
+                      <Route path="customers" element={
+                        <ProtectedRoute requiredPermission="pedidos">
+                          <Customers />
+                        </ProtectedRoute>
+                      } />
                       <Route path="settings" element={
                         <ProtectedRoute allowedRoles={['admin']}>
                           <Settings />

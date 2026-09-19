@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, X, History, TrendingUp, Package, Tag, SlidersHorizontal } from 'lucide-react';
 import './SearchBar.css';
 
@@ -49,7 +49,6 @@ export const SearchBar = ({
     }
 
     const term = inputValue.toLowerCase();
-    const matches = [];
 
     // 1. Buscar en nombres de productos
     const productMatches = products

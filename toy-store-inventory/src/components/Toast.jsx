@@ -1,9 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import './Toast.css';
 import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 
 export const Toast = ({ message, type, onClose }) => {
   const [isExiting, setIsExiting] = useState(false);
+
+  const handleClose = useCallback(() => {
+    setIsExiting(true);
+    setTimeout(onClose, 300);
+  }, [onClose]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -11,12 +16,7 @@ export const Toast = ({ message, type, onClose }) => {
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, []);
-
-  const handleClose = () => {
-    setIsExiting(true);
-    setTimeout(onClose, 300);
-  };
+  }, [handleClose]);
 
   const icons = {
     success: <CheckCircle size={20} />,

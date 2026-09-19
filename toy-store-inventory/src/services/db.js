@@ -218,9 +218,6 @@ export const orderRepository = {
       }
 
       const parsedPrice = Number(item.price || item.product?.discountPrice || item.product?.sellingPrice) || 0;
-      if (parsedPrice < 0) {
-        throw new Error(`El precio para "${item.name || item.product?.name || 'Producto'}" no puede ser negativo.`);
-      }
 
       return {
         id: finalId,
@@ -232,65 +229,33 @@ export const orderRepository = {
         quantity: parsedQty,
         total: parsedPrice * parsedQty,
         image_url: item.image_url || item.imageUrl || item.product?.imageUrl || '',
-        wrap_gift: Boolean(item.wrap_gift),
-        product: item.product || {
-          id: finalId,
-          productId: finalId,
-          name: item.name || item.product_name || item.product?.name || 'Producto',
-          sku: item.sku || item.product_sku || item.product?.sku || '',
-          imageUrl: item.image_url || item.imageUrl || item.product?.imageUrl || '',
-          sellingPrice: parsedPrice,
-          discountPrice: null
-        }
+        wrap_gift: Boolean(item.wrap_gift)
       };
     });
 
-    order.items = formattedItems;
+    const payload = {
+      ...order,
+      items: formattedItems
+    };
 
-    // 1. Intentar creación atómica mediante RPC segura de PostgreSQL
-    try {
-      const { data: rpcOrder, error: rpcError } = await supabase
-        .rpc('create_order_atomic', { order_data: order });
+    // Creación atómica mediante RPC segura de PostgreSQL (Cálculo oficial de importes en el servidor)
+    const { data: rpcOrder, error: rpcError } = await supabase
+      .rpc('create_order_atomic', { order_data: payload });
 
-      if (rpcError) {
-        // Si el error es de stock insuficiente o de negocio, lanzarlo de inmediato
-        const isBusinessError = rpcError.message?.includes('STOCK_INSUFICIENTE') || 
-                               rpcError.message?.toLowerCase().includes('stock insuficiente') ||
-                               rpcError.message?.toLowerCase().includes('suficiente stock');
-        
-        // Si la función RPC no existe en la BD (PGRST202 / 42883), aplicar fallback
-        const isRpcMissing = rpcError.code === 'PGRST202' || rpcError.code === '42883';
-        
-        if (isBusinessError || !isRpcMissing) {
-          throw rpcError;
-        }
-
-        console.warn('RPC create_order_atomic no encontrada en Supabase, usando inserción directa...', rpcError.message);
-      } else if (rpcOrder) {
-        // rpcOrder puede ser un objeto JSONB devuelto directamente por la función
-        return typeof rpcOrder === 'string' ? JSON.parse(rpcOrder) : rpcOrder;
+    if (rpcError) {
+      // Si la función RPC no existe en la BD (PGRST202 / 42883), no recurrir a inserción directa en producción
+      const isRpcMissing = rpcError.code === 'PGRST202' || rpcError.code === '42883';
+      if (isRpcMissing) {
+        throw new Error('El servicio seguro de procesamiento de pedidos (create_order_atomic) no está disponible en la base de datos. Por favor contacta con soporte técnico.');
       }
-    } catch (rpcErr) {
-      // Si fue error de negocio (ej. STOCK_INSUFICIENTE), propagar sin intentar fallback para no duplicar
-      const isBusinessError = rpcErr.message?.includes('STOCK_INSUFICIENTE') || 
-                             rpcErr.message?.toLowerCase().includes('stock insuficiente') ||
-                             rpcErr.message?.toLowerCase().includes('suficiente stock');
-      if (isBusinessError) {
-        throw rpcErr;
-      }
-      console.warn('Fallo en RPC create_order_atomic, recurriendo a inserción estándar:', rpcErr);
+      throw rpcError;
     }
 
-    // 2. Fallback de inserción directa (activará el trigger de base de datos trg_validate_stock)
-    const { data: newOrder, error: orderError } = await supabase
-      .from('orders')
-      .insert([order])
-      .select()
-      .single();
-      
-    if (orderError) throw orderError;
+    if (!rpcOrder) {
+      throw new Error('No se recibió confirmación del pedido desde la base de datos.');
+    }
 
-    return newOrder;
+    return typeof rpcOrder === 'string' ? JSON.parse(rpcOrder) : rpcOrder;
   },
 
   async updateStatus(id, status) {

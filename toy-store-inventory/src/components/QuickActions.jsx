@@ -5,7 +5,7 @@ import './QuickActions.css';
 
 const QuickActions = () => {
   const { itemCount, openCart } = useCart();
-  const [chatCount, setChatCount] = useState(1); // Demo notification
+  const [chatCount] = useState(1); // Demo notification
 
   const handleAction = (action) => {
     switch (action) {
@@ -52,7 +52,7 @@ const QuickActions = () => {
         <button className="quick-action-item" onClick={() => handleAction('cart')}>
           <div className="icon-circle">
             <ShoppingCart size={28} strokeWidth={2} />
-            {cartCount > 0 && <span className="action-badge">{cartCount}</span>}
+            {itemCount > 0 && <span className="action-badge">{itemCount}</span>}
           </div>
           <span className="action-label">Mi carrito</span>
         </button>

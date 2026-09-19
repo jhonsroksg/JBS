@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Heart, User, Baby, ShoppingBag, Tag, HelpCircle } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import './SectionCarousel.css';
 
@@ -26,7 +26,6 @@ export const SectionCarousel = ({
   activeSection, 
   onSectionChange 
 }) => {
-  const navigate = useNavigate();
 
   const handleSectionClick = (sectionId) => {
     // Si ya está activa, la desactivamos (volvemos a 'all')

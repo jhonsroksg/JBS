@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { db, userRepository } from '../services/db';
 import { supabase } from '../lib/supabaseClient';
 import { useToast } from '../hooks/useToast';
@@ -82,35 +82,50 @@ const Settings = () => {
   const [mfaLoading, setMfaLoading] = useState(false);
   const [mfaError, setMfaError] = useState('');
 
-  useEffect(() => { loadData(); }, []);
-
-  const loadData = async () => {
-    const [pay, del, coup, statuses, info, sections, usersData] = await Promise.all([
-      db.getAll('payment_methods'),
-      db.getAll('delivery_methods'),
-      db.getAll('coupons'),
-      db.getAll('order_statuses'),
-      db.getStoreInfo(),
-      db.getAll('main_sections').catch(() => []),
-      userRepository.getUsers().catch(() => [])
-    ]);
-    setMethods(pay);
-    setDeliveryMethods(del);
-    setCoupons(coup);
-    setOrderStatuses(statuses);
-    if (info) setStoreInfo(info);
-    if (sections) setMainSections(sections);
-    if (usersData) setUsers(usersData);
-    await loadMFAStatus();
-  };
-
-  const loadMFAStatus = async () => {
+  const loadMFAStatus = useCallback(async () => {
     try {
       const { data, error } = await supabase.auth.mfa.listFactors();
       if (error) throw error;
       setMfaFactors(data.all || []);
     } catch (err) { console.error('Error loading MFA factors:', err); }
-  };
+  }, []);
+
+  const loadData = useCallback(async () => {
+    try {
+      const [pay, del, coup, statuses, info, sections, usersData] = await Promise.all([
+        db.getAll('payment_methods'),
+        db.getAll('delivery_methods'),
+        db.getAll('coupons'),
+        db.getAll('order_statuses'),
+        db.getStoreInfo(),
+        db.getAll('main_sections').catch(() => []),
+        userRepository.getUsers().catch(() => [])
+      ]);
+      setMethods(pay || []);
+      setDeliveryMethods(del || []);
+      setCoupons(coup || []);
+      setOrderStatuses(statuses || []);
+      if (info) setStoreInfo(info);
+      if (sections) setMainSections(sections);
+      if (usersData) setUsers(usersData);
+      await loadMFAStatus();
+    } catch (error) {
+      console.error('Error loading settings data:', error);
+    }
+  }, [loadMFAStatus]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const init = async () => {
+      if (isMounted) {
+        await loadData();
+      }
+    };
+    init();
+    return () => {
+      isMounted = false;
+    };
+  }, [loadData]);
 
   const handleSaveStoreInfo = async (e) => {
     e.preventDefault();
@@ -186,7 +201,7 @@ const Settings = () => {
       await db.insert('payment_methods', { name: newMethod.trim() });
       setNewMethod('');
       await loadData();
-    } catch (error) { alert('Error al agregar forma de pago.'); }
+    } catch { alert('Error al agregar forma de pago.'); }
   };
   const handleEdit = (method) => { setEditingId(method.id); setEditingName(method.name); };
   const handleSaveEdit = async () => {
@@ -196,7 +211,7 @@ const Settings = () => {
       setEditingId(null);
       setEditingName('');
       await loadData();
-    } catch (error) { alert('Error al editar forma de pago.'); }
+    } catch { alert('Error al editar forma de pago.'); }
   };
   const handleDelete = async (id) => {
     if (confirm('¿Seguro que deseas eliminar esta forma de pago?')) {
@@ -216,7 +231,7 @@ const Settings = () => {
       });
       setNewDeliveryName(''); setNewDeliveryCost('');
       await loadData();
-    } catch (error) { alert('Error al agregar método de envío.'); }
+    } catch { alert('Error al agregar método de envío.'); }
   };
   const handleEditDelivery = (method) => {
     setEditingDeliveryId(method.id);
@@ -232,7 +247,7 @@ const Settings = () => {
       });
       setEditingDeliveryId(null);
       await loadData();
-    } catch (error) { alert('Error al editar método de envío.'); }
+    } catch { alert('Error al editar método de envío.'); }
   };
   const handleDeleteDelivery = async (id) => {
     if (confirm('¿Seguro que deseas eliminar este tipo de envío?')) {
@@ -254,7 +269,7 @@ const Settings = () => {
       });
       setNewCouponCode(''); setNewCouponValue('');
       await loadData();
-    } catch (error) { alert('Error al crear cupón.'); }
+    } catch { alert('Error al crear cupón.'); }
   };
   const handleEditCoupon = (coupon) => {
     setEditingCouponId(coupon.id);
@@ -272,7 +287,7 @@ const Settings = () => {
       });
       setEditingCouponId(null);
       await loadData();
-    } catch (error) { alert('Error al actualizar cupón.'); }
+    } catch { alert('Error al actualizar cupón.'); }
   };
   const handleDeleteCoupon = async (id) => {
     if (confirm('¿Seguro que deseas eliminar este cupón?')) {
@@ -296,7 +311,7 @@ const Settings = () => {
       });
       setNewStatusName(''); setNewStatusColor('#3498db');
       await loadData();
-    } catch (error) { alert('Error al agregar estado del pedido.'); }
+    } catch { alert('Error al agregar estado del pedido.'); }
   };
   const handleEditStatus = (status) => {
     setEditingStatusId(status.id);
@@ -312,7 +327,7 @@ const Settings = () => {
       });
       setEditingStatusId(null);
       await loadData();
-    } catch (error) { alert('Error al editar estado del pedido.'); }
+    } catch { alert('Error al editar estado del pedido.'); }
   };
   const handleDeleteStatus = async (id, name) => {
     if (['Pendiente', 'Enviado', 'Completado', 'Cancelado'].includes(name)) {
@@ -323,7 +338,7 @@ const Settings = () => {
     try {
       await db.delete('order_statuses', id);
       await loadData();
-    } catch (error) { alert('Error al eliminar estado.'); }
+    } catch { alert('Error al eliminar estado.'); }
   };
 
   // Main Sections CRUD
@@ -354,7 +369,7 @@ const Settings = () => {
         }
       };
       reader.readAsDataURL(file);
-    } catch (error) {
+    } catch {
       alert('Error al procesar la imagen.');
       setUploadingSectionImage(false);
     }
@@ -417,7 +432,7 @@ const Settings = () => {
       try {
         await db.delete('main_sections', id);
         await loadData();
-      } catch (error) { alert('Error al eliminar sección.'); }
+      } catch { alert('Error al eliminar sección.'); }
     }
   };
 
@@ -707,19 +722,34 @@ const Settings = () => {
                 padding: '16px', background: 'var(--bg-tertiary)', borderRadius: '12px',
                 opacity: c.isActive ? 1 : 0.6
               }}>
-                <div>
-                  <strong style={{ fontSize: '1.1rem' }}>{c.code}</strong>
-                  <span style={{ marginLeft: '12px', color: 'var(--success)' }}>
-                    {c.discountType === 'percentage' ? `${c.discountValue}%` : `L. ${Number(c.discountValue).toFixed(2)}`}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => handleToggleCoupon(c.id, c.isActive)} className="btn-secondary" style={{ fontSize: '0.8rem' }}>
-                    {c.isActive ? 'Desactivar' : 'Activar'}
-                  </button>
-                  <button onClick={() => handleEditCoupon(c)} className="btn-icon"><Edit2 size={16} /></button>
-                  <button onClick={() => handleDeleteCoupon(c.id)} className="btn-icon danger"><Trash2 size={16} /></button>
-                </div>
+                {editingCouponId === c.id ? (
+                  <div style={{ display: 'flex', gap: '8px', flex: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <input type="text" value={editingCouponCode} onChange={e => setEditingCouponCode(e.target.value)} style={{ ...inputStyle, width: '150px' }} />
+                    <select value={editingCouponType} onChange={e => setEditingCouponType(e.target.value)} style={{ ...inputStyle, width: '140px' }}>
+                      <option value="percentage">% Porcentaje</option>
+                      <option value="fixed">Monto Fijo (L.)</option>
+                    </select>
+                    <input type="text" value={editingCouponValue} onChange={e => setEditingCouponValue(e.target.value)} style={{ ...inputStyle, width: '90px' }} />
+                    <button onClick={handleSaveEditCoupon} className="btn-icon" style={{ color: 'var(--success)' }}><Check /></button>
+                    <button onClick={() => setEditingCouponId(null)} className="btn-icon"><X /></button>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <strong style={{ fontSize: '1.1rem' }}>{c.code}</strong>
+                      <span style={{ marginLeft: '12px', color: 'var(--success)' }}>
+                        {c.discountType === 'percentage' ? `${c.discountValue}%` : `L. ${Number(c.discountValue).toFixed(2)}`}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button onClick={() => handleToggleCoupon(c.id, c.isActive)} className="btn-secondary" style={{ fontSize: '0.8rem' }}>
+                        {c.isActive ? 'Desactivar' : 'Activar'}
+                      </button>
+                      <button onClick={() => handleEditCoupon(c)} className="btn-icon"><Edit2 size={16} /></button>
+                      <button onClick={() => handleDeleteCoupon(c.id)} className="btn-icon danger"><Trash2 size={16} /></button>
+                    </div>
+                  </>
+                )}
               </div>
             ))}
           </div>
@@ -830,7 +860,7 @@ const Settings = () => {
                             setMfaEnrollment(null);
                             setMfaVerifyCode('');
                             await loadMFAStatus();
-                          } catch (err) {
+                          } catch {
                             setMfaError('Código incorrecto. Inténtalo de nuevo.');
                           } finally { setMfaLoading(false); }
                         }}

@@ -443,16 +443,38 @@ const Products = () => {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Validación defensiva previa de tipo y tamaño de archivo
+    const validExtensions = ['.xlsx', '.xls'];
+    const fileName = file.name.toLowerCase();
+    const isValidExt = validExtensions.some(ext => fileName.endsWith(ext));
+    if (!isValidExt) {
+      alert('Por favor selecciona un archivo de Excel válido (.xlsx o .xls).');
+      e.target.value = '';
+      return;
+    }
+
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_FILE_SIZE) {
+      alert('El archivo es demasiado grande. El tamaño máximo permitido es 10MB.');
+      e.target.value = '';
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = async (evt) => {
       try {
         const data = evt.target.result;
-        const workbook = XLSX.read(data, { type: 'binary' });
+        const workbook = XLSX.read(data, { type: 'binary', cellFormula: false, cellHTML: false });
+        if (!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0) {
+          alert('El archivo Excel no contiene hojas de cálculo válidas.');
+          return;
+        }
+
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(worksheet);
+        const rows = XLSX.utils.sheet_to_json(worksheet, { defval: '', raw: false });
 
-        if (rows.length === 0) {
+        if (!rows || rows.length === 0) {
           alert('El archivo está vacío o no tiene el formato correcto.');
           return;
         }
@@ -461,8 +483,10 @@ const Products = () => {
         let updated = 0;
 
         for (const row of rows) {
+          if (!row || typeof row !== 'object') continue;
+
           const sku = (row['SKU'] || '').toString().trim();
-          if (!sku) continue;
+          if (!sku || sku === '__proto__' || sku === 'constructor') continue;
 
           const existing = products.find(p => p.sku === sku);
           const categoryName = (row['Categoría'] || '').toString().trim();
@@ -471,18 +495,18 @@ const Products = () => {
           // Preparar datos limpios para Supabase
           const productData = {
             sku: sku,
-            name: (row['Nombre'] || 'Producto sin nombre').toString(),
-            brand: (row['Marca'] || '').toString(),
-            description: (row['Descripción'] || '').toString(),
-            ageRange: (row['Rango de Edad'] || '').toString(),
+            name: (row['Nombre'] || 'Producto sin nombre').toString().slice(0, 200),
+            brand: (row['Marca'] || '').toString().slice(0, 100),
+            description: (row['Descripción'] || '').toString().slice(0, 2000),
+            ageRange: (row['Rango de Edad'] || '').toString().slice(0, 50),
             categoryId: category ? category.id : null, // Crucial: null en lugar de ""
-            costPrice: parseFloat(row['Precio Costo']) || 0,
-            sellingPrice: parseFloat(row['Precio Venta']) || 0,
-            discountPrice: row['Precio Oferta'] && !isNaN(parseFloat(row['Precio Oferta'])) 
+            costPrice: Math.max(0, parseFloat(row['Precio Costo']) || 0),
+            sellingPrice: Math.max(0, parseFloat(row['Precio Venta']) || 0),
+            discountPrice: row['Precio Oferta'] && !isNaN(parseFloat(row['Precio Oferta'])) && parseFloat(row['Precio Oferta']) > 0
               ? parseFloat(row['Precio Oferta']) 
               : null,
-            stock: parseInt(row['Stock']) || 0,
-            minStock: parseInt(row['Stock Mínimo']) || 0,
+            stock: Math.max(0, parseInt(row['Stock'], 10) || 0),
+            minStock: Math.max(0, parseInt(row['Stock Mínimo'], 10) || 0),
           };
 
           if (existing) {

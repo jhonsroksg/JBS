@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { useState, useEffect, useRef } from 'react';
 import './OptimizedImage.css';
 
@@ -25,7 +26,7 @@ export const getOptimizedSupabaseUrl = (url, w, q = 80, format = 'webp') => {
       urlObj.searchParams.set('quality', q.toString());
       urlObj.searchParams.set('format', format);
       return urlObj.toString();
-    } catch (e) {
+    } catch {
       const base = url.split('?')[0];
       const finalWidth = w || 800;
       return `${base}?width=${finalWidth}&quality=${q}&format=${format}`;
