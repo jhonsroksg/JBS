@@ -4,7 +4,22 @@ import { X, Trash2, CheckCircle, User, Mail, Phone, MapPin, Truck, CreditCard, C
 import { hondurasLocations } from '../data/hondurasLocations';
 import { supabase } from '../lib/supabaseClient';
 import { useToast } from '../hooks/useToast';
+import { useCart } from '../contexts/CartContext';
 import { getOptimizedSupabaseUrl } from './OptimizedImage';
+import {
+  sanitizeHTML,
+  validateCustomerName,
+  validateCustomerEmail,
+  validateCustomerPhone
+} from '../utils/checkoutValidation';
+import {
+  calculateCartSubtotal,
+  calculateCouponDiscount,
+  calculateDeliveryCost,
+  calculateCartTotal,
+  aggregateCartByProductId,
+  formatSanitizedCartItems
+} from '../utils/cartCalculations';
 import './CheckoutModal.css';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -12,30 +27,20 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const CheckoutModal = ({ isOpen, onClose }) => {
   const { showToast } = useToast();
-  const [cart, setCart] = useState([]);
-  const [isLayawayMode, setIsLayawayMode] = useState(false);
+  const {
+    cart,
+    isLayawayMode,
+    updateQuantity,
+    removeItem,
+    clearCart,
+    syncCartWithServer
+  } = useCart();
+
   const [layawayInfo, setLayawayInfo] = useState({ eventName: '', eventDate: '' });
   const [copied, setCopied] = useState(false);
   const [wrapGift, setWrapGift] = useState(false);
   const [deliveryOption, setDeliveryOption] = useState('party');
   const [checkoutError, setCheckoutError] = useState(null);
-
-  const sanitizeCartForStorage = (cart) => {
-    return cart.map(item => ({
-      ...item,
-      id: item.id || item.product?.id,
-      product_id: item.product_id || item.product?.id,
-      product: {
-        id: item.product.id,
-        name: item.product.name,
-        sellingPrice: item.product.sellingPrice,
-        discountPrice: item.product.discountPrice,
-        stock: item.product.stock,
-        imageUrl: item.product.imageUrl,
-        sku: item.product.sku
-      }
-    }));
-  };
 
   const [customerInfo, setCustomerInfo] = useState({ name: '', email: '', phone: '', address: '', department: '', municipality: '' });
   const [orderComplete, setOrderComplete] = useState(false);
@@ -45,15 +50,20 @@ const CheckoutModal = ({ isOpen, onClose }) => {
   const [availableDeliveryMethods, setAvailableDeliveryMethods] = useState([]);
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null);
-  const [couponError, setCouponError] = useState('');
-  const [activeCouponsCount, setActiveCouponsCount] = useState(0);
+  const [_couponError, _setCouponError] = useState('');
+  const [_activeCouponsCount, _setActiveCouponsCount] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedOrderNumber, setCompletedOrderNumber] = useState(null);
+
+  const validateCartStock = React.useCallback(async () => {
+    if (!cart || cart.length === 0) return;
+    await syncCartWithServer({ notifyUser: true });
+  }, [cart, syncCartWithServer]);
 
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      loadCart();
+      validateCartStock();
       setOrderComplete(false);
       setCompletedOrderNumber(null);
       setCheckoutError(null);
@@ -62,10 +72,9 @@ const CheckoutModal = ({ isOpen, onClose }) => {
       setCopied(false);
       setWrapGift(false);
       setDeliveryOption('party');
-      setIsLayawayMode(localStorage.getItem('toy_store_layaway_mode') === 'true');
       setCouponInput('');
       setAppliedCoupon(null);
-      setCouponError('');
+      _setCouponError('');
       setDeliveryMethodId('');
 
       const initData = async () => {
@@ -77,7 +86,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
         setAvailableMethods(methods);
         if (methods.length > 0) setPaymentMethod(methods[0].name);
         setAvailableDeliveryMethods(dMethods);
-        setActiveCouponsCount(allCoupons.filter(c => c.isActive).length);
+        _setActiveCouponsCount(allCoupons.filter(c => c.isActive).length);
       };
       initData();
     } else {
@@ -87,82 +96,11 @@ const CheckoutModal = ({ isOpen, onClose }) => {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen]);
+  }, [isOpen, validateCartStock]);
 
-  const loadCart = async () => {
-    const savedCartStr = localStorage.getItem('toy_store_cart') || '[]';
-    const savedCart = JSON.parse(savedCartStr);
-    const sanitizedCart = sanitizeCartForStorage(savedCart);
-    
-    // Validar stock real en DB
-    let cartModified = false;
-    const validatedCart = [];
-    
-    for (const item of sanitizedCart) {
-      if (item.isLayawayItem && item.layawayId) {
-        // Ignoramos validación estricta de stock para artículos ya apartados
-        validatedCart.push(item);
-        continue;
-      }
-      
-      try {
-        const dbProduct = await productRepository.getById(item.product.id);
-        
-        if (!dbProduct || dbProduct.stock === 0) {
-          showToast(`El producto "${item.product.name}" ya no está disponible y fue removido de tu carrito.`, 'error');
-          cartModified = true;
-          continue;
-        }
-        
-        if (dbProduct.stock < item.quantity) {
-          showToast(`El stock de "${item.product.name}" disminuyó. Se ajustó tu cantidad a ${dbProduct.stock}.`, 'warning');
-          item.quantity = dbProduct.stock;
-          cartModified = true;
-        }
-        
-        // Actualizar datos de precio y stock por si cambiaron
-        item.product.stock = dbProduct.stock;
-        item.product.sellingPrice = dbProduct.sellingPrice;
-        item.product.discountPrice = dbProduct.discountPrice;
-        
-        validatedCart.push(item);
-      } catch (err) {
-        console.error("Error validando stock en loadCart:", err);
-        validatedCart.push(item); // En caso de error de red, lo dejamos para validarlo en el checkout
-      }
-    }
-
-    setCart(validatedCart);
-    
-    if (cartModified) {
-      localStorage.setItem('toy_store_cart', JSON.stringify(validatedCart));
-      window.dispatchEvent(new Event('cart_updated'));
-    }
-  };
-
-  const updateQuantity = (index, delta) => {
-    const newCart = [...cart];
-    const item = newCart[index];
-    if (item.quantity + delta > 0 && item.quantity + delta <= item.product.stock) {
-      item.quantity += delta;
-      setCart(newCart);
-      const sanitizedCart = sanitizeCartForStorage(newCart);
-      localStorage.setItem('toy_store_cart', JSON.stringify(sanitizedCart));
-      window.dispatchEvent(new Event('cart_updated'));
-    }
-  };
-
-  const removeItem = (index) => {
-    const newCart = cart.filter((_, i) => i !== index);
-    setCart(newCart);
-    const sanitizedCart = sanitizeCartForStorage(newCart);
-    localStorage.setItem('toy_store_cart', JSON.stringify(sanitizedCart));
-    window.dispatchEvent(new Event('cart_updated'));
-  };
-
-  const handleApplyCoupon = async (e) => {
+  const _handleApplyCoupon = async (e) => {
     e?.preventDefault();
-    setCouponError('');
+    _setCouponError('');
     if (!couponInput.trim()) return;
     const allCoupons = await db.getAll('coupons');
     const validCoupon = allCoupons.find(c => c.code === couponInput.trim().toUpperCase() && c.isActive);
@@ -170,7 +108,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
       setAppliedCoupon(validCoupon);
       setCouponInput('');
     } else {
-      setCouponError('Cupón inválido o expirado.');
+      _setCouponError('Cupón inválido o expirado.');
     }
   };
 
@@ -192,26 +130,26 @@ const CheckoutModal = ({ isOpen, onClose }) => {
     e.preventDefault();
     if (cart.length === 0 || isSubmitting) return;
 
-    const sanitizeHTML = (str) => {
-      if (typeof str !== 'string') return str;
-      return str.replace(/[<>]/g, '').trim();
-    };
+    const nameValidation = validateCustomerName(customerInfo.name);
+    if (!nameValidation.isValid) {
+      showToast(nameValidation.error, 'warning');
+      return;
+    }
+    const sanitizedName = nameValidation.sanitized;
 
-    const sanitizedName = sanitizeHTML(customerInfo.name);
-    if (sanitizedName.length < 3) {
-      showToast('Por favor ingresa un nombre válido (mínimo 3 caracteres).', 'warning');
+    const emailValidation = validateCustomerEmail(customerInfo.email);
+    if (!emailValidation.isValid) {
+      showToast(emailValidation.error, 'warning');
       return;
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(customerInfo.email.trim())) {
-      showToast('Por favor ingresa un correo electrónico válido.', 'warning');
+
+    const phoneValidation = validateCustomerPhone(customerInfo.phone);
+    if (!phoneValidation.isValid) {
+      showToast(phoneValidation.error, 'warning');
       return;
     }
-    const phoneRaw = customerInfo.phone.trim();
-    if (!/^\d{8,}$/.test(phoneRaw)) {
-      showToast('El teléfono debe contener solo números (mínimo 8 dígitos).', 'warning');
-      return;
-    }
+    const phoneRaw = phoneValidation.value;
+
     const sanitizedAddress = sanitizeHTML(customerInfo.address);
     const sanitizedEventName = sanitizeHTML(layawayInfo.eventName);
 
@@ -246,13 +184,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
 
     try {
       // Aggregate quantities by product ID for accurate frontend validation
-      const aggregatedCart = {};
-      for (const item of cart) {
-        if (!aggregatedCart[item.product.id]) {
-          aggregatedCart[item.product.id] = { ...item, quantity: 0 };
-        }
-        aggregatedCart[item.product.id].quantity += item.quantity;
-      }
+      const aggregatedCart = aggregateCartByProductId(cart);
 
       for (const item of Object.values(aggregatedCart)) {
         console.log(`[Frontend Validation] Validating item:`, item.product.name, `ID:`, item.product.id);
@@ -363,38 +295,20 @@ const CheckoutModal = ({ isOpen, onClose }) => {
         runEdgeFunction();
 
         setCompletedOrderNumber(newLayaway.code);
-        localStorage.removeItem('toy_store_cart');
-        localStorage.removeItem('toy_store_layaway_mode');
-        setCart([]);
-        window.dispatchEvent(new Event('cart_updated'));
+        clearCart(true);
         setOrderComplete(true);
       } else {
         const firstLayawayItem = cart.find(item => item.isLayawayItem && item.layawayId);
         const hasLayawayGifts = cart.some(item => item.isLayawayItem);
         const isPartyDelivery = hasLayawayGifts && deliveryOption === 'party';
 
-        const currentSubtotal = cart.reduce((acc, item) => acc + ((item.product.discountPrice || item.product.sellingPrice) * item.quantity), 0);
-        let currentDiscount = 0;
-        if (appliedCoupon) {
-          if (appliedCoupon.discountType === 'percentage') currentDiscount = currentSubtotal * (appliedCoupon.discountValue / 100);
-          else currentDiscount = appliedCoupon.discountValue;
-        }
+        const currentSubtotal = calculateCartSubtotal(cart);
+        const currentDiscount = calculateCouponDiscount(currentSubtotal, appliedCoupon);
         const selectedDelivery = availableDeliveryMethods.find(m => m.id === deliveryMethodId);
-        const deliveryCost = isPartyDelivery ? 0 : (selectedDelivery ? Number(selectedDelivery.cost) : 0);
-        const finalTotal = Math.max(0, currentSubtotal - currentDiscount) + deliveryCost;
+        const deliveryCost = calculateDeliveryCost({ isLayawayMode, hasLayawayGifts, deliveryOption, selectedDelivery });
+        const finalTotal = calculateCartTotal({ subtotal: currentSubtotal, discountAmount: currentDiscount, deliveryCost });
 
-        const sanitizedCart = cart.map(item => ({
-          productId: item.product.id,
-          quantity: item.quantity,
-          product: {
-            id: item.product.id,
-            sku: item.product.sku,
-            name: item.product.name,
-            sellingPrice: item.product.sellingPrice,
-            discountPrice: item.product.discountPrice,
-            imageUrl: item.product.imageUrl
-          }
-        }));
+        const sanitizedCart = formatSanitizedCartItems(cart);
 
         const deliveryMethodName = isPartyDelivery 
           ? 'Entregar directamente el día de la fiesta' 
@@ -447,7 +361,21 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                                errMsg.toLowerCase().includes('stock disponible') ||
                                errMsg.toLowerCase().includes('suficiente stock');
           if (isStockError) {
-            friendlyError = errMsg;
+            let available = null;
+            let requested = null;
+            const dispMatch = errMsg.match(/disponible:\s*(\d+)/i);
+            const solMatch = errMsg.match(/solicitado:\s*(\d+)/i);
+            if (dispMatch) available = dispMatch[1];
+            if (solMatch) requested = solMatch[1];
+
+            const nameMatch = errMsg.match(/STOCK_INSUFICIENTE:\s*([^|]+)|para\s+"([^"]+)"|El producto\s+"([^"]+)"/i);
+            const productName = nameMatch ? (nameMatch[1] || nameMatch[2] || nameMatch[3]) : null;
+
+            if (productName && available !== null && requested !== null) {
+              friendlyError = `Stock insuficiente para "${productName.trim()}". Disponible: ${available}, solicitado: ${requested}.`;
+            } else {
+              friendlyError = errMsg;
+            }
           } else if (insertErr.message?.includes('RLS') || insertErr.code === '42501') {
             friendlyError = 'Error de permisos al crear el pedido. Por favor contacta al administrador.';
           } else {
@@ -493,9 +421,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
         };
         runBackgroundWork();
 
-        localStorage.removeItem('toy_store_cart');
-        setCart([]);
-        window.dispatchEvent(new Event('cart_updated'));
+        clearCart(false);
         setOrderComplete(true);
       }
     } catch (err) {
@@ -510,16 +436,12 @@ const CheckoutModal = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  const cartSubtotal = cart.reduce((acc, item) => acc + ((item.product.discountPrice || item.product.sellingPrice) * item.quantity), 0);
-  let cartDiscountAmount = 0;
-  if (appliedCoupon) {
-    if (appliedCoupon.discountType === 'percentage') cartDiscountAmount = cartSubtotal * (appliedCoupon.discountValue / 100);
-    else cartDiscountAmount = appliedCoupon.discountValue;
-  }
+  const cartSubtotal = calculateCartSubtotal(cart);
+  const cartDiscountAmount = calculateCouponDiscount(cartSubtotal, appliedCoupon);
   const hasLayawayGifts = cart.some(item => item.isLayawayItem);
   const selectedDelivery = availableDeliveryMethods.find(m => m.id === deliveryMethodId);
-  const deliveryCostUI = (!isLayawayMode && hasLayawayGifts && deliveryOption === 'party') ? 0 : (selectedDelivery ? Number(selectedDelivery.cost) : 0);
-  const cartTotalAmount = Math.max(0, cartSubtotal - cartDiscountAmount) + deliveryCostUI;
+  const deliveryCostUI = calculateDeliveryCost({ isLayawayMode, hasLayawayGifts, deliveryOption, selectedDelivery });
+  const cartTotalAmount = calculateCartTotal({ subtotal: cartSubtotal, discountAmount: cartDiscountAmount, deliveryCost: deliveryCostUI });
 
   let filteredDeliveryMethods = availableDeliveryMethods;
   if (customerInfo.municipality !== 'San Pedro Sula') {

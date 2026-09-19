@@ -31,6 +31,40 @@ serve(async (req) => {
       },
     });
 
+    // Validar autorización del solicitante (debe ser admin)
+    const authHeader = req.headers.get('Authorization') || req.headers.get('authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'No autorizado. Se requiere token de sesión administrativo.' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = authHeader.replace(/^Bearer\s+/i, '');
+    const { data: { user: callerUser }, error: callerError } = await supabaseAdmin.auth.getUser(token);
+
+    if (callerError || !callerUser) {
+      return new Response(
+        JSON.stringify({ error: 'Sesión inválida o expirada. Por favor vuelve a iniciar sesión.' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Consultar si el solicitante es admin en user_roles o en user_metadata
+    const { data: callerRoleData } = await supabaseAdmin
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', callerUser.id)
+      .maybeSingle();
+
+    const isCallerAdmin = callerRoleData?.role === 'admin' || callerUser.user_metadata?.role === 'admin';
+    if (!isCallerAdmin) {
+      return new Response(
+        JSON.stringify({ error: 'Acceso denegado. Solo administradores autorizados pueden invitar o modificar usuarios.' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // 3. Datos de la solicitud
     const body = await req.json();
     const { email, role = 'vendedor', permissions = { pedidos: true, productos: false, configuracion: false } } = body;

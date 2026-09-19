@@ -17,11 +17,10 @@ const ProtectedRoute = ({ allowedRoles = ['admin', 'empleado', 'vendedor', 'inve
     return <Navigate to="/login" replace />;
   }
 
-  // Verificar si el rol del usuario está autorizado para esta ruta
+  // Verificar si el rol del usuario está autorizado para esta ruta (Principio Fail-Closed)
   if (allowedRoles && allowedRoles.length > 0) {
-    const currentRole = role || 'admin';
-    if (!allowedRoles.includes(currentRole)) {
-      // Si es un cliente común o no tiene permisos de admin/empleado, redirigir a la tienda
+    if (!role || !allowedRoles.includes(role)) {
+      // Si el rol no puede determinarse o no está en los roles permitidos, denegar acceso y redirigir a la tienda
       return <Navigate to="/" replace />;
     }
   }

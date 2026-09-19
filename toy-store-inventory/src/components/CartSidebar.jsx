@@ -1,33 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { X, ShoppingBag, Trash2, Plus, Minus, ArrowRight } from 'lucide-react';
 import { getOptimizedSupabaseUrl } from './OptimizedImage';
+import { useCart } from '../contexts/CartContext';
 import './CartSidebar.css';
 
 const CartSidebar = ({ isOpen, onClose, onCheckout }) => {
-  const [cart, setCart] = useState([]);
-  const [isLayawayMode, setIsLayawayMode] = useState(false);
-
-  const sanitizeCartForStorage = (cart) => {
-    return cart.map(item => ({
-      ...item,
-      id: item.id || item.product?.id,
-      product_id: item.product_id || item.product?.id,
-      product: {
-        id: item.product.id,
-        name: item.product.name,
-        sellingPrice: item.product.sellingPrice,
-        discountPrice: item.product.discountPrice,
-        stock: item.product.stock,
-        imageUrl: item.product.imageUrl,
-        sku: item.product.sku
-      }
-    }));
-  };
+  const {
+    cart,
+    isLayawayMode,
+    toggleLayawayMode,
+    updateQuantity,
+    removeItem,
+    subtotal,
+    syncCartWithServer
+  } = useCart();
 
   useEffect(() => {
     if (isOpen) {
-      loadCart();
-      setIsLayawayMode(localStorage.getItem('toy_store_layaway_mode') === 'true');
+      syncCartWithServer?.({ notifyUser: true });
       // Solo bloquear scroll en móviles (< 1024px)
       if (window.innerWidth < 1024) {
         document.body.style.overflow = 'hidden';
@@ -36,57 +26,12 @@ const CartSidebar = ({ isOpen, onClose, onCheckout }) => {
       document.body.style.overflow = 'unset';
     }
     
-    const handleCartUpdate = () => {
-      loadCart();
-      setIsLayawayMode(localStorage.getItem('toy_store_layaway_mode') === 'true');
-    };
-    window.addEventListener('cart_updated', handleCartUpdate);
-    
-    // Al cerrar, siempre restaurar scroll
+    // Al desmontar o cerrar, siempre restaurar scroll
     return () => {
-      window.removeEventListener('cart_updated', handleCartUpdate);
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen]);
+  }, [isOpen, syncCartWithServer]);
 
-
-  const loadCart = () => {
-    const savedCart = JSON.parse(localStorage.getItem('toy_store_cart') || '[]');
-    setCart(savedCart);
-  };
-
-  const updateQuantity = (index, delta) => {
-    const newCart = [...cart];
-    const item = newCart[index];
-    if (item.quantity + delta > 0 && item.quantity + delta <= item.product.stock) {
-      item.quantity += delta;
-      setCart(newCart);
-      const sanitizedCart = sanitizeCartForStorage(newCart);
-      localStorage.setItem('toy_store_cart', JSON.stringify(sanitizedCart));
-      window.dispatchEvent(new Event('cart_updated'));
-    }
-  };
-
-  const removeItem = (index) => {
-    const newCart = cart.filter((_, i) => i !== index);
-    setCart(newCart);
-    const sanitizedCart = sanitizeCartForStorage(newCart);
-    localStorage.setItem('toy_store_cart', JSON.stringify(sanitizedCart));
-    window.dispatchEvent(new Event('cart_updated'));
-  };
-
-  const toggleLayawayMode = () => {
-    const nextMode = !isLayawayMode;
-    setIsLayawayMode(nextMode);
-    if (nextMode) {
-      localStorage.setItem('toy_store_layaway_mode', 'true');
-    } else {
-      localStorage.removeItem('toy_store_layaway_mode');
-    }
-    window.dispatchEvent(new Event('cart_updated'));
-  };
-
-  const subtotal = cart.reduce((acc, item) => acc + ((item.product.discountPrice || item.product.sellingPrice) * item.quantity), 0);
   const hasLayawayGifts = cart.some(item => item.isLayawayItem);
   const isGuestMode = hasLayawayGifts || window.location.pathname.startsWith('/apartado/');
 

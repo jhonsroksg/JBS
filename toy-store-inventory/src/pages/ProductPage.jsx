@@ -4,17 +4,19 @@ import { Helmet } from 'react-helmet-async';
 import { 
   MessageCircle, 
   ShoppingCart, 
-  Zap, 
-  X, 
   ArrowLeft, 
   Package, 
   Users, 
   CheckCircle, 
-  Truck 
+  Truck,
+  Heart
 } from 'lucide-react';
 import { productRepository, db } from '../services/db';
 import { OptimizedImage } from '../components/OptimizedImage';
 import { useToast } from '../hooks/useToast';
+import { useCart } from '../contexts/CartContext';
+import { useFavorites } from '../contexts/FavoritesContext';
+import { recordRecentProduct } from '../utils/recentProducts';
 import './Storefront.css'; // Reutilizamos los estilos de la tienda
 
 const ProductJsonLd = ({ product }) => {
@@ -52,6 +54,8 @@ const ProductPage = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { addItem } = useCart();
+  const { isFavorite, toggleFavorite } = useFavorites();
   
   const [product, setProduct] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -74,6 +78,7 @@ const ProductPage = () => {
         }
 
         setProduct(prod);
+        recordRecentProduct(prod.id);
         setCategories(cats);
         setStoreInfo(info || {});
       } catch (error) {
@@ -88,35 +93,7 @@ const ProductPage = () => {
   }, [productId, navigate]);
 
   const handleAddToCart = (product) => {
-    const sanitizeCartForStorage = (cart) => {
-      return cart.map(item => ({
-        ...item,
-        id: item.id || item.product?.id,
-        product_id: item.product_id || item.product?.id,
-        product: {
-          id: item.product.id,
-          name: item.product.name,
-          sellingPrice: item.product.sellingPrice,
-          discountPrice: item.product.discountPrice,
-          stock: item.product.stock,
-          imageUrl: item.product.imageUrl,
-          sku: item.product.sku
-        }
-      }));
-    };
-
-    const currentCart = JSON.parse(localStorage.getItem('toy_store_cart') || '[]');
-    const existing = currentCart.find(item => item.product.id === product.id);
-    if (existing) {
-      if (existing.quantity < product.stock) { existing.quantity += 1; }
-      else { showToast('No hay más stock disponible de este producto.', 'warning'); return; }
-    } else {
-      currentCart.push({ product, quantity: 1 });
-    }
-    const sanitizedCart = sanitizeCartForStorage(currentCart);
-    localStorage.setItem('toy_store_cart', JSON.stringify(sanitizedCart));
-    window.dispatchEvent(new Event('cart_updated'));
-    window.dispatchEvent(new Event('open_cart'));
+    addItem(product);
   };
 
   const handleWhatsAppContact = (product) => {
@@ -240,6 +217,26 @@ const ProductPage = () => {
             </button>
             <button className="btn-add-cart" disabled={product.stock === 0} style={{ padding: '18px', justifyContent: 'center', fontSize: '1.1rem', opacity: product.stock === 0 ? 0.5 : 1 }} onClick={() => handleAddToCart(product)}>
               <ShoppingCart size={24} strokeWidth={2.5} /> Agregar al Carrito
+            </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              style={{
+                padding: '14px',
+                justifyContent: 'center',
+                fontSize: '1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                color: isFavorite(product.id) ? '#f43f5e' : 'inherit',
+                borderColor: isFavorite(product.id) ? '#f43f5e' : 'var(--border-color)',
+                cursor: 'pointer'
+              }}
+              onClick={() => toggleFavorite(product.id, product.name)}
+              aria-label={isFavorite(product.id) ? "Quitar de favoritos" : "Agregar a favoritos"}
+            >
+              <Heart size={20} fill={isFavorite(product.id) ? '#f43f5e' : 'none'} color={isFavorite(product.id) ? '#f43f5e' : 'currentColor'} />
+              {isFavorite(product.id) ? 'En Favoritos' : 'Agregar a Favoritos'}
             </button>
             <p className="micro-copy" style={{ textAlign: 'center', marginTop: '10px' }}>
               <Truck size={16} /> Envío rápido a toda Honduras 🇭🇳

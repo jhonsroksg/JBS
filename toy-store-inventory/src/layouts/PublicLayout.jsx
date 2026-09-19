@@ -4,6 +4,7 @@ import { ShoppingCart, X } from 'lucide-react';
 import CheckoutModal from '../components/CheckoutModal';
 import { db } from '../services/db';
 import { supabase } from '../lib/supabaseClient';
+import { useCart } from '../contexts/CartContext';
 import './PublicLayout.css';
 import Footer from '../components/Footer';
 import CartSidebar from '../components/CartSidebar';
@@ -19,7 +20,7 @@ const darkenHex = (hex, percent = 25) => {
 };
 
 const PublicLayout = () => {
-  const [cartCount, setCartCount] = useState(0);
+  const { itemCount, isLayawayMode, setIsLayawayMode } = useCart();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [storeInfo, setStoreInfo] = useState({ name: 'Joa Baby Shop' });
@@ -27,9 +28,6 @@ const PublicLayout = () => {
   
   // Estados para apartados
   const [isLayawayModalOpen, setIsLayawayModalOpen] = useState(false);
-  const [isLayawayMode, setIsLayawayMode] = useState(
-    localStorage.getItem('toy_store_layaway_mode') === 'true'
-  );
   const [searchCode, setSearchCode] = useState('');
   const [searchError, setSearchError] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -37,9 +35,6 @@ const PublicLayout = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    updateCartCount();
-    window.addEventListener('cart_updated', updateCartCount);
-    
     // Al añadir un producto o abrir el carrito, mostramos la barra lateral
     const openSidebar = () => setIsSidebarOpen(true);
     window.addEventListener('open_cart', openSidebar);
@@ -62,71 +57,21 @@ const PublicLayout = () => {
 
     window.addEventListener('store_info_updated', loadStoreInfo);
     window.addEventListener('store_info_updated', loadSections);
-    
-    // Escuchar cambios de estado para el modo apartado
-    const handleCartUpdate = () => {
-      setIsLayawayMode(localStorage.getItem('toy_store_layaway_mode') === 'true');
-    };
-    window.addEventListener('cart_updated', handleCartUpdate);
 
     return () => {
-      window.removeEventListener('cart_updated', updateCartCount);
       window.removeEventListener('open_cart', openSidebar);
       window.removeEventListener('store_info_updated', loadStoreInfo);
       window.removeEventListener('store_info_updated', loadSections);
-      window.removeEventListener('cart_updated', handleCartUpdate);
     };
   }, []);
 
-  const updateCartCount = () => {
-    const cart = JSON.parse(localStorage.getItem('toy_store_cart') || '[]');
-    const count = cart.reduce((acc, item) => acc + item.quantity, 0);
-    setCartCount(count);
-  };
-
-  const [searchParams] = useSearchParams();
-  const activeSection = (searchParams.get('section') || 'default').toLowerCase();
-
-  const activeColor = useMemo(() => {
-    if (!activeSection || activeSection === 'default' || activeSection === 'all') return null;
-    const match = sections.find(s => (s.name || '').toLowerCase() === activeSection.toLowerCase());
-    return match?.color || null;
-  }, [sections, activeSection]);
-
-  useEffect(() => {
-    const html = document.documentElement;
-    html.setAttribute('data-section', activeSection);
-
-    if (activeColor) {
-      const hover = darkenHex(activeColor, 25);
-      html.style.setProperty('--accent-primary', activeColor);
-      html.style.setProperty('--accent-hover', hover);
-      html.style.setProperty('--accent-gradient', `linear-gradient(135deg, ${activeColor} 0%, ${hover} 100%)`);
-    } else {
-      html.style.removeProperty('--accent-primary');
-      html.style.removeProperty('--accent-hover');
-      html.style.removeProperty('--accent-gradient');
-    }
-
-    return () => {
-      html.removeAttribute('data-section');
-      html.style.removeProperty('--accent-primary');
-      html.style.removeProperty('--accent-hover');
-      html.style.removeProperty('--accent-gradient');
-    };
-  }, [activeSection, activeColor]);
-
   const enableLayawayMode = () => {
-    localStorage.setItem('toy_store_layaway_mode', 'true');
     setIsLayawayMode(true);
     setIsLayawayModalOpen(false);
-    window.dispatchEvent(new Event('cart_updated'));
   };
 
   const disableLayawayMode = () => {
-    localStorage.removeItem('toy_store_layaway_mode');
     setIsLayawayMode(false);
-    window.dispatchEvent(new Event('cart_updated'));
   };
 
   const handleSearchCode = async (e) => {
@@ -186,7 +131,7 @@ const PublicLayout = () => {
         <div className="store-actions">
           <button className="cart-btn" id="open-cart-btn" onClick={() => setIsSidebarOpen(true)}>
             <ShoppingCart className="cart-icon" />
-            {cartCount > 0 && <span className="cart-badge" id="cart-badge-count">{cartCount}</span>}
+            {itemCount > 0 && <span className="cart-badge" id="cart-badge-count">{itemCount}</span>}
           </button>
         </div>
       </header>

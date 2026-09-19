@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { useToast } from '../hooks/useToast';
+import { useCart } from '../contexts/CartContext';
 import { Gift, Calendar, AlertCircle, ArrowLeft, Clock } from 'lucide-react';
 import { getOptimizedSupabaseUrl } from '../components/OptimizedImage';
 import './LayawayView.css';
@@ -9,25 +10,12 @@ import './LayawayView.css';
 const LayawayView = () => {
   const { code } = useParams();
   const { showToast } = useToast();
+  const { cart, addItem } = useCart();
   const [layaway, setLayaway] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [cartState, setCartState] = useState([]);
 
-  useEffect(() => {
-    loadLayaway();
-  }, [code]);
-
-  useEffect(() => {
-    const handleCartUpdate = () => {
-      setCartState(JSON.parse(localStorage.getItem('toy_store_cart') || '[]'));
-    };
-    handleCartUpdate();
-    window.addEventListener('cart_updated', handleCartUpdate);
-    return () => window.removeEventListener('cart_updated', handleCartUpdate);
-  }, []);
-
-  const loadLayaway = async () => {
+  const loadLayaway = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -65,7 +53,11 @@ const LayawayView = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [code]);
+
+  useEffect(() => {
+    loadLayaway();
+  }, [loadLayaway]);
 
   const getRemainingDays = (expiresAtStr) => {
     if (!expiresAtStr) return 0;
@@ -85,47 +77,12 @@ const LayawayView = () => {
       return;
     }
 
-    // Cargar carrito actual
-    const cart = JSON.parse(localStorage.getItem('toy_store_cart') || '[]');
-    
-    // Verificar si ya está en el carrito para esta misma lista
-    const existingIndex = cart.findIndex(
-      c => c.product.id === product.id && c.isLayawayItem && c.layawayId === layaway.id
-    );
-
-    if (existingIndex > -1) {
-      const currentQty = cart[existingIndex].quantity;
-      if (currentQty + 1 > remaining) {
-        showToast(`Solo puedes regalar hasta ${remaining} unidad(es) de este producto.`, 'warning');
-        return;
-      }
-      cart[existingIndex].quantity += 1;
-    } else {
-      cart.push({
-        id: product.id,
-        product_id: product.id,
-        layaway_id: layaway.id,
-        product: {
-          id: product.id,
-          name: product.name,
-          sellingPrice: product.sellingPrice,
-          discountPrice: product.discountPrice,
-          imageUrl: product.imageUrl,
-          stock: product.stock
-        },
-        quantity: 1,
-        isLayawayItem: true,
-        layawayId: layaway.id
-      });
-    }
-
-    localStorage.setItem('toy_store_cart', JSON.stringify(cart));
-    
-    // Disparar eventos para actualizar cabecera y barra lateral
-    window.dispatchEvent(new Event('cart_updated'));
-    window.dispatchEvent(new Event('open_cart'));
-    
-    showToast(`¡"${product.name}" añadido al carrito para el cumpleañero!`, 'success');
+    addItem(product, 1, {
+      isLayawayItem: true,
+      layawayId: layaway.id,
+      maxAllowed: remaining,
+      openSidebar: true
+    });
   };
 
   if (loading) {
@@ -191,7 +148,7 @@ const LayawayView = () => {
               if (!product) return null;
               
               const remaining = item.quantity_reserved - item.quantity_bought;
-              const inCartItem = cartState.find(c => c.product.id === product.id && c.isLayawayItem && c.layawayId === layaway.id);
+              const inCartItem = cart.find(c => c.product.id === product.id && c.isLayawayItem && c.layawayId === layaway.id);
               const itemsInCart = inCartItem ? inCartItem.quantity : 0;
               const available = remaining - itemsInCart;
               const isCompleted = remaining <= 0;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { productRepository, db } from '../services/db';
-import { Plus, Search, Edit2, Trash2, X, Download, Upload, Copy } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Download, Upload, Copy, AlertTriangle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import './Products.css';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -8,6 +9,9 @@ import { useToast } from '../hooks/useToast';
 
 const Products = () => {
   const { showToast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isLowStockFilter = searchParams.get('stock') === 'low';
+
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,6 +28,23 @@ const Products = () => {
     sku: '', name: '', categoryId: '', section: 'TODOS', costPrice: '', sellingPrice: '', discountPrice: '', stock: '', minStock: '', imageUrl: '', images: [], ageRange: '', description: '', brand: '',
     newImageFiles: []
   });
+
+  const loadData = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const [prods, cats] = await Promise.all([
+        productRepository.getAll(),
+        db.getAll('categories'),
+      ]);
+      setProducts(prods || []);
+      setCategories(cats || []);
+    } catch (error) {
+      console.error('Error loading inventory data:', error);
+      showToast('Error al cargar datos del inventario: ' + error.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
 
   useEffect(() => {
     loadData();
@@ -45,36 +66,21 @@ const Products = () => {
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const [prods, cats] = await Promise.all([
-        productRepository.getAll(),
-        db.getAll('categories'),
-      ]);
-      setProducts(prods || []);
-      setCategories(cats || []);
-    } catch (error) {
-      console.error('Error loading inventory data:', error);
-      showToast('Error al cargar datos del inventario: ' + error.message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [loadData]);
 
   // Reset page when filtering
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedCategory, selectedSection]);
+  }, [searchTerm, selectedCategory, selectedSection, isLowStockFilter]);
 
   const filteredProducts = products.filter(p => {
+    if (p.deleted) return false;
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          p.sku.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || p.categoryId === selectedCategory;
     const matchesSection = selectedSection === 'all' || p.section === selectedSection;
-    return matchesSearch && matchesCategory && matchesSection;
+    const matchesLowStock = !isLowStockFilter || Number(p.stock || 0) <= Number(p.minStock || 0);
+    return matchesSearch && matchesCategory && matchesSection && matchesLowStock;
   });
 
   // Pagination logic
@@ -161,7 +167,7 @@ const Products = () => {
 
   const handleDuplicateProduct = async (product) => {
     setEditingId(null);
-    const { id, created_at, updated_at, ...restOfProduct } = product;
+    const { id: _id, created_at: _created_at, updated_at: _updated_at, ...restOfProduct } = product;
 
     const duplicatedData = {
       ...restOfProduct,
@@ -235,7 +241,7 @@ const Products = () => {
     }
   };
 
-  const handleDragOver = (e, index) => {
+  const handleDragOver = (e) => {
     e.preventDefault();
     if(e.dataTransfer) e.dataTransfer.dropEffect = 'move';
   };
@@ -556,6 +562,34 @@ const Products = () => {
               <option value="PAPÁ">PAPÁ</option>
               <option value="BEBÉ">BEBÉ</option>
             </select>
+            <button
+              type="button"
+              className={`btn-secondary ${isLowStockFilter ? 'active' : ''}`}
+              onClick={() => {
+                const newParams = new URLSearchParams(searchParams);
+                if (isLowStockFilter) newParams.delete('stock');
+                else newParams.set('stock', 'low');
+                setSearchParams(newParams);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '0 14px',
+                borderRadius: '12px',
+                border: isLowStockFilter ? '1.5px solid #e74c3c' : '1px solid var(--border-color)',
+                background: isLowStockFilter ? 'rgba(231, 76, 60, 0.12)' : 'var(--bg-secondary)',
+                color: isLowStockFilter ? '#e74c3c' : 'var(--text-primary)',
+                fontWeight: isLowStockFilter ? 700 : 500,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
+              }}
+              title={isLowStockFilter ? "Quitar filtro de stock bajo" : "Filtrar por stock bajo / crítico"}
+            >
+              <AlertTriangle size={16} color={isLowStockFilter ? '#e74c3c' : 'currentColor'} />
+              <span>Stock bajo</span>
+              {isLowStockFilter && <X size={14} style={{ marginLeft: '4px' }} />}
+            </button>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <input type="file" id="import-excel-input" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleImportExcel} />
@@ -567,6 +601,26 @@ const Products = () => {
             </button>
           </div>
         </div>
+
+        {isLowStockFilter && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', background: 'rgba(231, 76, 60, 0.08)', border: '1px solid rgba(231, 76, 60, 0.25)', borderRadius: '12px', marginBottom: '16px', color: '#c0392b' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', fontWeight: 600 }}>
+              <AlertTriangle size={18} />
+              <span>Filtrando por: <strong>Stock bajo o crítico (stock ≤ stock mínimo)</strong></span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const newParams = new URLSearchParams(searchParams);
+                newParams.delete('stock');
+                setSearchParams(newParams);
+              }}
+              style={{ background: 'white', border: '1px solid #e74c3c', color: '#e74c3c', padding: '4px 12px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+            >
+              <X size={14} /> Limpiar filtro
+            </button>
+          </div>
+        )}
 
         <div className="table-responsive">
           <table className="data-table">
@@ -582,7 +636,7 @@ const Products = () => {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="6" style={{ padding: '40px' }}><LoadingSpinner /></td></tr>
+                <tr><td colSpan="12" style={{ padding: '40px' }}><LoadingSpinner /></td></tr>
               ) : paginatedProducts.map(product => (
                 <tr key={product.id}>
                   <td data-label="Producto" className="product-cell">
@@ -661,7 +715,32 @@ const Products = () => {
                 </tr>
               ))}
               {filteredProducts.length === 0 && (
-                <tr><td colSpan="10" className="empty-state">No se encontraron productos.</td></tr>
+                <tr>
+                  <td colSpan="12" className="empty-state" style={{ padding: '48px 20px', textAlign: 'center' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ fontSize: '2.5rem' }}>{isLowStockFilter ? '🎉' : '📦'}</div>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {isLowStockFilter
+                          ? '¡Excelente! No hay productos con stock bajo o crítico.'
+                          : 'No se encontraron productos.'}
+                      </div>
+                      {isLowStockFilter && (
+                        <button
+                          type="button"
+                          className="btn-secondary"
+                          onClick={() => {
+                            const newParams = new URLSearchParams(searchParams);
+                            newParams.delete('stock');
+                            setSearchParams(newParams);
+                          }}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}
+                        >
+                          <X size={16} /> Ver todos los productos
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>

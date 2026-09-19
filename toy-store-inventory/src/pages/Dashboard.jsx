@@ -83,7 +83,7 @@ const Dashboard = () => {
   const [customEnd, setCustomEnd] = useState(() => new Date().toISOString().split('T')[0]);
   const [allOrders, setAllOrders] = useState([]);
   const [products, setProducts] = useState([]);
-  const [customers, setCustomers] = useState([]);
+  const [_customers, setCustomers] = useState([]);
   const [orderStatuses, setOrderStatuses] = useState([]);
   const [layaways, setLayaways] = useState([]);
   const navigate = useNavigate();
@@ -121,6 +121,7 @@ const Dashboard = () => {
   const prevPeriodOrders = useMemo(() => {
     if (period === 'custom') return [];
     const from = startOf(period);
+    /* eslint-disable-next-line react-hooks/purity */
     const duration = Date.now() - from.getTime();
     const prevFrom = new Date(from.getTime() - duration);
     return allOrders.filter(o => !o.isDeleted && new Date(o.date) >= prevFrom && new Date(o.date) < from);
@@ -322,7 +323,20 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="metric-card glass-panel" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', border: lowStock.length > 0 ? '1px solid rgba(231,76,60,0.3)' : '' }} onClick={() => navigate('/admin/products')}>
+        <div 
+          className="metric-card glass-panel" 
+          style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', border: lowStock.length > 0 ? '1px solid rgba(231,76,60,0.3)' : '' }} 
+          onClick={() => navigate('/admin/products?stock=low')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              navigate('/admin/products?stock=low');
+            }
+          }}
+          aria-label={`Ver ${lowStock.length} productos con stock bajo o crítico`}
+        >
           <div className="metric-icon-wrapper" style={{ background: lowStock.length > 0 ? 'rgba(231,76,60,0.12)' : 'rgba(243,156,18,0.12)', color: lowStock.length > 0 ? '#e74c3c' : '#f39c12' }}><AlertTriangle className="metric-icon" /></div>
           <div>
             <div className="metric-label">Alertas de Inventario</div>
@@ -340,7 +354,7 @@ const Dashboard = () => {
               <div className="qa-icon" style={{ background: '#e0f2fe', color: '#0ea5e9' }}><Plus size={20} /></div>
               <span>Añadir Producto</span>
             </button>
-            <button className="quick-action-btn" onClick={() => { localStorage.setItem('toy_store_layaway_mode', 'true'); navigate('/'); }}>
+            <button className="quick-action-btn" onClick={() => { localStorage.setItem('toy_store_layaway_mode', 'true'); window.dispatchEvent(new Event('cart_updated')); navigate('/'); }}>
               <div className="qa-icon" style={{ background: '#fce7f3', color: '#db2777' }}><Gift size={20} /></div>
               <span>Nueva Fiesta / Apartado</span>
             </button>

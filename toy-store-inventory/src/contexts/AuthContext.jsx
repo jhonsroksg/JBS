@@ -35,8 +35,20 @@ export const AuthProvider = ({ children }) => {
         .eq('id', currentUser.id)
         .maybeSingle();
 
-      const resolvedRole = userRoleData?.role || profileData?.role || currentUser.user_metadata?.role || 'admin';
-      const resolvedPermissions = userRoleData?.permissions || { pedidos: true, productos: true, configuracion: resolvedRole === 'admin' };
+      // Fail-closed: solo asignar rol si está explícitamente definido en user_roles, profiles o user_metadata
+      const resolvedRole = userRoleData?.role || profileData?.role || currentUser.user_metadata?.role || null;
+      
+      // Si tiene permisos específicos en user_roles, utilizarlos; de lo contrario asignar según rol estricto
+      let resolvedPermissions = { pedidos: false, productos: false, configuracion: false };
+      if (userRoleData?.permissions) {
+        resolvedPermissions = userRoleData.permissions;
+      } else if (resolvedRole === 'admin') {
+        resolvedPermissions = { pedidos: true, productos: true, configuracion: true };
+      } else if (resolvedRole === 'empleado' || resolvedRole === 'vendedor') {
+        resolvedPermissions = { pedidos: true, productos: false, configuracion: false };
+      } else if (resolvedRole === 'inventario') {
+        resolvedPermissions = { pedidos: false, productos: true, configuracion: false };
+      }
 
       const userProfile = {
         id: currentUser.id,
@@ -52,13 +64,18 @@ export const AuthProvider = ({ children }) => {
       return userProfile;
     } catch (err) {
       console.warn('Error al cargar perfil de usuario:', err);
-      const fallbackRole = currentUser.user_metadata?.role || 'admin';
+      // Fail-closed: si falla la consulta, solo rescatamos el rol explícito de user_metadata si existe, nunca 'admin' por defecto
+      const fallbackRole = currentUser.user_metadata?.role || null;
+      const fallbackPermissions = fallbackRole === 'admin' 
+        ? { pedidos: true, productos: true, configuracion: true }
+        : { pedidos: false, productos: false, configuracion: false };
+
       const fallbackProfile = {
         id: currentUser.id,
         email: currentUser.email,
-        full_name: currentUser.email?.split('@')[0] || 'Usuario',
+        full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Usuario',
         role: fallbackRole,
-        permissions: { pedidos: true, productos: true, configuracion: fallbackRole === 'admin' }
+        permissions: fallbackPermissions
       };
       setProfile(fallbackProfile);
       setRole(fallbackRole);
@@ -135,14 +152,19 @@ export const AuthProvider = ({ children }) => {
     return () => { mounted = false; };
   }, [session]);
 
+  const isUserAdmin = role === 'admin';
+  const isUserEmployee = ['empleado', 'vendedor', 'inventario', 'personalizado'].includes(role);
+  const isUserCustomer = role === 'cliente';
+
   const value = {
     session,
     user,
     profile,
-    role: role || (user ? 'admin' : null),
-    isAdmin: role === 'admin' || (user && !role),
-    isEmployee: role === 'empleado',
-    isCustomer: role === 'cliente',
+    role, // Estrictamente el rol resuelto o null, NUNCA default a 'admin'
+    isAdmin: isUserAdmin, // Estrictamente true solo si role === 'admin'
+    isEmployee: isUserEmployee,
+    isCustomer: isUserCustomer,
+    permissions: profile?.permissions || { pedidos: false, productos: false, configuracion: false },
     mfaLevel,
     hasMfaEnrolled,
     refreshProfile: () => fetchProfile(user),

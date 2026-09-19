@@ -22,7 +22,7 @@ export const productRepository = {
     return data || [];
   },
 
-  async getPaginated({ page = 0, limit = 12, category = 'all', search = '', minPrice = 0, maxPrice = 10000, ageRange = 'all', section = 'all' }) {
+  async getPaginated({ page = 0, limit = 24, category = 'all', search = '', minPrice = 0, maxPrice = 100000, ageRange = 'all', section = 'all' }) {
     let query = supabase
       .from('products')
       .select('*', { count: 'exact' })
@@ -38,13 +38,19 @@ export const productRepository = {
     } else {
       query = query.eq('section', section);
     }
-    if (search) {
+    if (search && search.trim()) {
+      const term = search.trim();
       // Búsqueda en nombre o SKU
-      query = query.or(`name.ilike.%${search}%,sku.ilike.%${search}%`);
+      query = query.or(`name.ilike.%${term}%,sku.ilike.%${term}%`);
     }
     
     // Filtro de precio
-    query = query.gte('sellingPrice', minPrice).lte('sellingPrice', maxPrice);
+    if (minPrice > 0) {
+      query = query.gte('sellingPrice', minPrice);
+    }
+    if (maxPrice !== null && maxPrice !== undefined && Number(maxPrice) < 100000) {
+      query = query.lte('sellingPrice', Number(maxPrice));
+    }
 
     const from = page * limit;
     const to = from + limit - 1;
@@ -56,8 +62,8 @@ export const productRepository = {
     if (error) throw error;
     return { 
       products: data || [], 
-      total: count,
-      hasNextPage: count > to + 1
+      total: count || 0,
+      hasNextPage: (count || 0) > to + 1
     };
   },
 
@@ -79,6 +85,16 @@ export const productRepository = {
       .single();
     if (error) throw error;
     return data;
+  },
+
+  async getByIds(ids) {
+    if (!Array.isArray(ids) || ids.length === 0) return [];
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .in('id', ids);
+    if (error) throw error;
+    return data || [];
   },
 
   async update(id, updates) {
@@ -231,6 +247,41 @@ export const orderRepository = {
 
     order.items = formattedItems;
 
+    // 1. Intentar creación atómica mediante RPC segura de PostgreSQL
+    try {
+      const { data: rpcOrder, error: rpcError } = await supabase
+        .rpc('create_order_atomic', { order_data: order });
+
+      if (rpcError) {
+        // Si el error es de stock insuficiente o de negocio, lanzarlo de inmediato
+        const isBusinessError = rpcError.message?.includes('STOCK_INSUFICIENTE') || 
+                               rpcError.message?.toLowerCase().includes('stock insuficiente') ||
+                               rpcError.message?.toLowerCase().includes('suficiente stock');
+        
+        // Si la función RPC no existe en la BD (PGRST202 / 42883), aplicar fallback
+        const isRpcMissing = rpcError.code === 'PGRST202' || rpcError.code === '42883';
+        
+        if (isBusinessError || !isRpcMissing) {
+          throw rpcError;
+        }
+
+        console.warn('RPC create_order_atomic no encontrada en Supabase, usando inserción directa...', rpcError.message);
+      } else if (rpcOrder) {
+        // rpcOrder puede ser un objeto JSONB devuelto directamente por la función
+        return typeof rpcOrder === 'string' ? JSON.parse(rpcOrder) : rpcOrder;
+      }
+    } catch (rpcErr) {
+      // Si fue error de negocio (ej. STOCK_INSUFICIENTE), propagar sin intentar fallback para no duplicar
+      const isBusinessError = rpcErr.message?.includes('STOCK_INSUFICIENTE') || 
+                             rpcErr.message?.toLowerCase().includes('stock insuficiente') ||
+                             rpcErr.message?.toLowerCase().includes('suficiente stock');
+      if (isBusinessError) {
+        throw rpcErr;
+      }
+      console.warn('Fallo en RPC create_order_atomic, recurriendo a inserción estándar:', rpcErr);
+    }
+
+    // 2. Fallback de inserción directa (activará el trigger de base de datos trg_validate_stock)
     const { data: newOrder, error: orderError } = await supabase
       .from('orders')
       .insert([order])
@@ -455,7 +506,7 @@ export const layawayRepository = {
     return data;
   },
 
-  async cancelLayaway(layawayId, items) {
+  async cancelLayaway(layawayId) {
     // 1. Cambiar estado a 'Cancelado'
     // IMPORTANTE: La base de datos de Supabase ya tiene un trigger (trg_layaway_status_update)
     // que se activa al cambiar de 'active' a 'cancelled' o 'expired' 

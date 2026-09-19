@@ -6,6 +6,8 @@ import Storefront from './pages/Storefront';
 import LoadingSpinner from './components/LoadingSpinner';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './context/ToastContext';
+import { CartProvider } from './contexts/CartContext';
+import { FavoritesProvider } from './contexts/FavoritesContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
@@ -50,45 +52,49 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-      <ToastProvider>
-        <BrowserRouter>
-          <React.Suspense fallback={<div style={{textAlign: 'center', marginTop: '20%'}}>Cargando tienda...</div>}>
-            <Routes>
-              {/* Rutas Públicas */}
-              <Route path="/" element={<PublicLayout />}>
-                <Route index element={<Storefront />} />
-                <Route path="producto/:productId" element={<ProductPage />} />
-                <Route path="apartado/:code" element={<LayawayView />} />
-              </Route>
+        <ToastProvider>
+          <CartProvider>
+            <FavoritesProvider>
+              <BrowserRouter>
+                <React.Suspense fallback={<div style={{textAlign: 'center', marginTop: '20%'}}>Cargando tienda...</div>}>
+                  <Routes>
+                    {/* Rutas Públicas */}
+                    <Route path="/" element={<PublicLayout />}>
+                      <Route index element={<Storefront />} />
+                      <Route path="producto/:productId" element={<ProductPage />} />
+                      <Route path="apartado/:code" element={<LayawayView />} />
+                    </Route>
 
-              {/* Login y Recuperación de Contraseña */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
+                    {/* Login y Recuperación de Contraseña */}
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
 
-              {/* Rutas de Administración Protegidas (Admin y Empleados) */}
-              <Route path="/admin" element={
-                <ProtectedRoute allowedRoles={['admin', 'empleado']}>
-                  <MainLayout />
-                </ProtectedRoute>
-              }>
-                <Route index element={<Dashboard />} />
-                <Route path="products" element={<Products />} />
-                <Route path="categories" element={<Categories />} />
-                <Route path="orders" element={<Orders />} />
-                <Route path="customers" element={<Customers />} />
-                <Route path="settings" element={
-                  <ProtectedRoute allowedRoles={['admin']}>
-                    <Settings />
-                  </ProtectedRoute>
-                } />
-              </Route>
+                    {/* Rutas de Administración Protegidas (Admin y Personal Autorizado) */}
+                    <Route path="/admin" element={
+                      <ProtectedRoute allowedRoles={['admin', 'empleado', 'vendedor', 'inventario', 'personalizado']}>
+                        <MainLayout />
+                      </ProtectedRoute>
+                    }>
+                      <Route index element={<Dashboard />} />
+                      <Route path="products" element={<Products />} />
+                      <Route path="categories" element={<Categories />} />
+                      <Route path="orders" element={<Orders />} />
+                      <Route path="customers" element={<Customers />} />
+                      <Route path="settings" element={
+                        <ProtectedRoute allowedRoles={['admin']}>
+                          <Settings />
+                        </ProtectedRoute>
+                      } />
+                    </Route>
 
-              {/* Redirección por defecto */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </React.Suspense>
-        </BrowserRouter>
-      </ToastProvider>
+                    {/* Redirección por defecto */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </React.Suspense>
+              </BrowserRouter>
+            </FavoritesProvider>
+          </CartProvider>
+        </ToastProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

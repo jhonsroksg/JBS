@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Package, Users, CheckCircle, MessageCircle, Zap, ShoppingCart, Share2, ChevronLeft, ChevronRight, Maximize2, Tag, Calendar } from 'lucide-react';
+import { X, Package, CheckCircle, MessageCircle, Zap, ShoppingCart, Share2, ChevronLeft, ChevronRight, Maximize2, Tag, Calendar, Heart } from 'lucide-react';
 import { OptimizedImage } from './OptimizedImage';
+import { useFavorites } from '../contexts/FavoritesContext';
+import { recordRecentProduct } from '../utils/recentProducts';
 import './ProductModal.css';
 
 export const ProductModal = ({ 
@@ -12,7 +14,15 @@ export const ProductModal = ({
   onAddToCart, 
   onShare 
 }) => {
+  const { isFavorite, toggleFavorite } = useFavorites();
   const [mainImageIndex, setMainImageIndex] = useState(0);
+
+  // Registrar como visto recientemente
+  useEffect(() => {
+    if (product && product.id) {
+      recordRecentProduct(product.id);
+    }
+  }, [product]);
 
   // Navegación por teclado
   useEffect(() => {
@@ -81,7 +91,17 @@ export const ProductModal = ({
         </div>
 
         <div className="modal-info-side">
-          <button className="btn-icon close-modal" onClick={onClose}><X /></button>
+          <button 
+            type="button" 
+            className="btn-icon favorite-modal-header" 
+            onClick={() => toggleFavorite(product.id, product.name)}
+            aria-label={isFavorite(product.id) ? "Quitar de favoritos" : "Agregar a favoritos"}
+            title={isFavorite(product.id) ? "Quitar de favoritos" : "Agregar a favoritos"}
+            style={{ position: 'absolute', top: '16px', right: '60px', color: isFavorite(product.id) ? '#f43f5e' : 'inherit' }}
+          >
+            <Heart size={20} fill={isFavorite(product.id) ? '#f43f5e' : 'none'} color={isFavorite(product.id) ? '#f43f5e' : 'currentColor'} />
+          </button>
+          <button className="btn-icon close-modal" onClick={onClose} aria-label="Cerrar modal"><X /></button>
           
           <h2 className="modal-product-title">{product.name}</h2>
           <p className="modal-product-category">{categories.find(c => c.id === product.categoryId)?.name || 'Sin Categoría'}</p>
@@ -141,9 +161,21 @@ export const ProductModal = ({
                 <MessageCircle size={20} /> WhatsApp
               </button>
             </div>
-            <button className="btn-share" onClick={(e) => onShare(e, product)}>
-              <Share2 size={18} /> Compartir producto
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                type="button"
+                className="btn-secondary"
+                onClick={() => toggleFavorite(product.id, product.name)}
+                aria-label={isFavorite(product.id) ? "Quitar de favoritos" : "Agregar a favoritos"}
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: isFavorite(product.id) ? '#f43f5e' : 'inherit', borderColor: isFavorite(product.id) ? '#f43f5e' : 'var(--border-color)' }}
+              >
+                <Heart size={18} fill={isFavorite(product.id) ? '#f43f5e' : 'none'} color={isFavorite(product.id) ? '#f43f5e' : 'currentColor'} />
+                {isFavorite(product.id) ? 'En Favoritos' : 'Favorito'}
+              </button>
+              <button className="btn-share" style={{ flex: 1 }} onClick={(e) => onShare(e, product)}>
+                <Share2 size={18} /> Compartir
+              </button>
+            </div>
           </div>
         </div>
       </div>

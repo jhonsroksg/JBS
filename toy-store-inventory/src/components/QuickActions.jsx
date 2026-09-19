@@ -1,22 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { MessageCircle, ShoppingCart, Share2 } from 'lucide-react';
+import { useCart } from '../contexts/CartContext';
 import './QuickActions.css';
 
 const QuickActions = () => {
-  const [cartCount, setCartCount] = useState(0);
+  const { itemCount, openCart } = useCart();
   const [chatCount, setChatCount] = useState(1); // Demo notification
-
-  useEffect(() => {
-    const updateCartCount = () => {
-      const cart = JSON.parse(localStorage.getItem('toy_store_cart') || '[]');
-      const total = cart.reduce((acc, item) => acc + item.quantity, 0);
-      setCartCount(total);
-    };
-
-    updateCartCount();
-    window.addEventListener('cart_updated', updateCartCount);
-    return () => window.removeEventListener('cart_updated', updateCartCount);
-  }, []);
 
   const handleAction = (action) => {
     switch (action) {
@@ -26,7 +15,7 @@ const QuickActions = () => {
         break;
 
       case 'cart':
-        window.dispatchEvent(new Event('open_cart'));
+        openCart();
         break;
       case 'share':
         if (navigator.share) {

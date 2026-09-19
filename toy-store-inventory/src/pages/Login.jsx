@@ -67,10 +67,11 @@ const Login = () => {
 
   // Si ya está logueado y completó MFA:
   if (user && (!hasMfaEnrolled || mfaLevel === 'aal2')) {
-    if (role === 'cliente') {
-      return <Navigate to="/" replace />;
+    const isStaff = ['admin', 'empleado', 'vendedor', 'inventario', 'personalizado'].includes(role);
+    if (isStaff) {
+      return <Navigate to="/admin" replace />;
     }
-    return <Navigate to="/admin" replace />;
+    return <Navigate to="/" replace />;
   }
 
   const resetErrorsAndNotifs = () => {
@@ -106,10 +107,10 @@ const Login = () => {
 
       // Redirección según rol
       const userMetaRole = data?.user?.user_metadata?.role;
-      if (userMetaRole === 'cliente') {
-        navigate('/');
-      } else {
+      if (['admin', 'empleado', 'vendedor', 'inventario', 'personalizado'].includes(userMetaRole)) {
         navigate('/admin');
+      } else {
+        navigate('/');
       }
     } catch (err) {
       if (err.message === 'Invalid login credentials') {
@@ -224,8 +225,14 @@ const Login = () => {
 
       if (verifyError) throw verifyError;
 
-      navigate('/admin');
-    } catch (err) {
+      // Redirección según rol tras verificar MFA
+      const isStaff = ['admin', 'empleado', 'vendedor', 'inventario', 'personalizado'].includes(role);
+      if (isStaff) {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
+    } catch (_err) {
       setMfaError('Código 2FA incorrecto o expirado. Intenta de nuevo.');
     } finally {
       setLoading(false);
