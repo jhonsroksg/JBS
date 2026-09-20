@@ -1,3 +1,9 @@
+-- ==============================================================================
+-- ⚠️ OBSOLETO - NO EJECUTAR EN PRODUCCIÓN NI EN STAGING
+-- ==============================================================================
+-- Reemplazado por 04_20260920_secure_orders_atomic_hardening.sql y schema_baseline_v1.0.sql.
+-- ==============================================================================
+
 -- Hotfix to restore layaway logic AND keep custom error formatting + jsonb mapping
 CREATE OR REPLACE FUNCTION validate_and_update_stock()
 RETURNS TRIGGER 

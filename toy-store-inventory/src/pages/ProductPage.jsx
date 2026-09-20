@@ -20,24 +20,32 @@ import { recordRecentProduct } from '../utils/recentProducts';
 import './Storefront.css'; // Reutilizamos los estilos de la tienda
 
 const ProductJsonLd = ({ product }) => {
+  const productImage = product.imageUrl || (product.images && product.images[0]) || 'https://joababyshophn.com/og-image.jpg';
+  const effectivePrice = Number(product.discountPrice || product.sellingPrice || 0);
+
   const jsonLd = {
     "@context": "https://schema.org/",
     "@type": "Product",
     "name": product.name,
-    "image": product.imageUrl || (product.images && product.images[0]),
-    "description": product.description || `Compra ${product.name} en Joa Baby Shop.`,
-    "sku": product.sku,
+    "image": [productImage],
+    "description": product.description || `Compra ${product.name} en Joa Baby Shop. Juguetería y accesorios premium para bebés en Honduras.`,
+    "sku": product.sku || product.id,
     "brand": {
       "@type": "Brand",
       "name": product.brand || "Joa Baby Shop"
     },
     "offers": {
       "@type": "Offer",
-      "url": window.location.href,
+      "url": `https://joababyshophn.com/producto/${product.id}`,
       "priceCurrency": "HNL",
-      "price": product.discountPrice || product.sellingPrice,
+      "price": effectivePrice,
+      "priceValidUntil": "2026-12-31",
       "availability": product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-      "itemCondition": "https://schema.org/NewCondition"
+      "itemCondition": "https://schema.org/NewCondition",
+      "seller": {
+        "@type": "Organization",
+        "name": "Joa Baby Shop"
+      }
     }
   };
 
@@ -121,12 +129,38 @@ const ProductPage = () => {
   if (!product) return null;
 
   const categoryName = categories.find(c => c.id === product.categoryId)?.name || 'Sin Categoría';
+  const productImage = product.imageUrl || (product.images && product.images[0]) || 'https://joababyshophn.com/og-image.jpg';
+  const productUrl = `https://joababyshophn.com/producto/${product.id}`;
+  const effectivePrice = Number(product.discountPrice || product.sellingPrice || 0);
+  const pageTitle = `${product.name} | Joa Baby Shop`;
+  const pageDescription = product.description 
+    ? (product.description.length > 155 ? `${product.description.slice(0, 152)}...` : product.description)
+    : `Compra ${product.name} por L. ${effectivePrice.toLocaleString('en-US', { minimumFractionDigits: 2 })} en Joa Baby Shop. Envíos a toda Honduras.`;
 
   return (
     <div className="storefront" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
       <Helmet>
-        <title>{`${product.name} | Joa Baby Shop`}</title>
-        <meta name="description" content={product.description || `Compra ${product.name} en Joa Baby Shop.`} />
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <link rel="canonical" href={productUrl} />
+
+        {/* Open Graph / Facebook / WhatsApp */}
+        <meta property="og:site_name" content="Joa Baby Shop" />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
+        <meta property="og:image" content={productImage} />
+        <meta property="og:url" content={productUrl} />
+        <meta property="og:type" content="product" />
+        <meta property="og:locale" content="es_HN" />
+        <meta property="product:price:amount" content={String(effectivePrice)} />
+        <meta property="product:price:currency" content="HNL" />
+        <meta property="product:availability" content={product.stock > 0 ? "in stock" : "out of stock"} />
+
+        {/* Twitter Cards */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={pageDescription} />
+        <meta name="twitter:image" content={productImage} />
       </Helmet>
       <ProductJsonLd product={product} />
 

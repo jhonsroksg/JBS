@@ -19,16 +19,22 @@ const ProtectedRoute = ({
     return <Navigate to="/login" replace />;
   }
 
+  // 1. Si el usuario es admin y NO tiene MFA configurado, forzar enrolamiento
+  if (role === 'admin' && !hasMfaEnrolled) {
+    return <Navigate to="/mfa-setup" replace />;
+  }
+
+  // 2. Si el usuario tiene MFA configurado pero la sesión no ha alcanzado AAL2
   if (hasMfaEnrolled && mfaLevel !== 'aal2') {
     return <Navigate to="/login" replace />;
   }
 
-  // 1. Verificar si el rol del usuario está autorizado (Fail-Closed)
+  // 3. Verificar si el rol del usuario está autorizado (Fail-Closed)
   if (!isRoleAllowed(role, allowedRoles)) {
     return <Navigate to={redirectTo || "/"} replace />;
   }
 
-  // 2. Verificar si cuenta con el permiso granular requerido (Fail-Closed)
+  // 4. Verificar si cuenta con el permiso granular requerido (Fail-Closed)
   if (requiredPermission && !hasPermissionAccess(role, permissions, requiredPermission)) {
     return <Navigate to={redirectTo || "/admin"} replace />;
   }

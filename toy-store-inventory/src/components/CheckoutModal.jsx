@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { db, layawayRepository, orderRepository, productRepository, customerRepository } from '../services/db';
+import { db, layawayRepository, orderRepository, productRepository } from '../services/db';
 import { X, Trash2, CheckCircle, User, Mail, Phone, MapPin, Truck, CreditCard, Copy, AlertCircle } from 'lucide-react';
 import { hondurasLocations } from '../data/hondurasLocations';
-import { supabase } from '../lib/supabaseClient';
 import { useToast } from '../hooks/useToast';
 import { useCart } from '../contexts/CartContext';
 import { getOptimizedSupabaseUrl } from './OptimizedImage';
@@ -78,15 +77,13 @@ const CheckoutModal = ({ isOpen, onClose }) => {
       setDeliveryMethodId('');
 
       const initData = async () => {
-        const [methods, dMethods, allCoupons] = await Promise.all([
+        const [methods, dMethods] = await Promise.all([
           db.getAll('payment_methods'),
           db.getAll('delivery_methods'),
-          db.getAll('coupons'),
         ]);
         setAvailableMethods(methods);
         if (methods.length > 0) setPaymentMethod(methods[0].name);
         setAvailableDeliveryMethods(dMethods);
-        _setActiveCouponsCount(allCoupons.filter(c => c.isActive).length);
       };
       initData();
     } else {
@@ -102,13 +99,28 @@ const CheckoutModal = ({ isOpen, onClose }) => {
     e?.preventDefault();
     _setCouponError('');
     if (!couponInput.trim()) return;
-    const allCoupons = await db.getAll('coupons');
-    const validCoupon = allCoupons.find(c => c.code === couponInput.trim().toUpperCase() && c.isActive);
-    if (validCoupon) {
-      setAppliedCoupon(validCoupon);
-      setCouponInput('');
-    } else {
-      _setCouponError('Cupón inválido o expirado.');
+
+    try {
+      const response = await db.validateCoupon(couponInput.trim(), {
+        subtotal: cartSubtotal,
+        customerEmail: customerInfo.email
+      });
+
+      if (response && response.valid) {
+        setAppliedCoupon({
+          code: response.code,
+          discountType: response.discountType,
+          discountValue: response.discountValue,
+          discountAmount: response.discountAmount
+        });
+        setCouponInput('');
+        showToast(response.message || '¡Cupón aplicado exitosamente!', 'success');
+      } else {
+        _setCouponError(response?.message || 'Cupón inválido o expirado.');
+      }
+    } catch (err) {
+      console.error('Error al validar cupón:', err);
+      _setCouponError('Ocurrió un error al validar el cupón.');
     }
   };
 
@@ -198,31 +210,28 @@ const CheckoutModal = ({ isOpen, onClose }) => {
 
         console.log(`[Frontend Validation] DB Stock for ${item.product.name} is:`, dbProduct.stock);
 
-        if (item.isLayawayItem && item.layawayId) {
-          // Check layaway_items for reserved stock
-          const { data: layawayItemData } = await supabase
-            .from('layaway_items')
-            .select('quantity_reserved, quantity_bought')
-            .eq('layaway_id', item.layawayId)
-            .eq('product_id', item.product.id)
-            .maybeSingle();
+        if (item.isLayawayItem && (item.layawayCode || item.layawayId)) {
+          // Validar disponibilidad de apartado mediante RPC pública segura
+          try {
+            const layawayPublic = await layawayRepository.getPublicByCode(item.layawayCode || item.layawayId);
+            if (layawayPublic && layawayPublic.items) {
+              const matchingItem = layawayPublic.items.find(i => (i.product_id || i.id) === item.product.id);
+              if (matchingItem) {
+                const remaining = matchingItem.quantity_remaining !== undefined 
+                  ? matchingItem.quantity_remaining 
+                  : (matchingItem.quantity_reserved - matchingItem.quantity_bought);
 
-          if (layawayItemData) {
-            const remainingReserved = layawayItemData.quantity_reserved - layawayItemData.quantity_bought;
-            console.log(`[Frontend Validation] Layaway remaining reserved:`, remainingReserved);
-            
-            let extraNeeded = 0;
-            if (item.quantity > remainingReserved) {
-              extraNeeded = item.quantity - remainingReserved;
+                if (remaining <= 0 && dbProduct.stock <= 0) {
+                  showToast(`El artículo "${item.product.name}" ya fue completado y no hay más stock general disponible.`, 'error');
+                  setIsSubmitting(false);
+                  return;
+                }
+              }
             }
-
-            if (extraNeeded > 0 && dbProduct.stock < extraNeeded) {
-               showToast(`El artículo "${item.product.name}" ya fue comprado por alguien más y no hay más stock general disponible.`, 'error');
-               setIsSubmitting(false);
-               return;
-            }
-            continue; // Passes layaway validation
+          } catch (layErr) {
+            console.warn('[CheckoutModal] No se pudo verificar apartado previamente:', layErr);
           }
+          continue; // Pasa validación previa; el backend create_order_atomic valida con bloqueo
         }
 
         if (dbProduct.stock < item.quantity) {
@@ -259,34 +268,18 @@ const CheckoutModal = ({ isOpen, onClose }) => {
 
         const runEdgeFunction = async () => {
           try {
-            const { data: fullLayaway } = await supabase
-              .from('layaways')
-              .select('*, items:layaway_items(*)')
-              .eq('id', newLayaway.id)
-              .single();
-
-            if (fullLayaway && fullLayaway.items) {
-              const itemsWithProduct = await Promise.all(
-                fullLayaway.items.map(async (item) => {
-                  const prod = cart.find(c => c.product.id === item.product_id)?.product || await productRepository.getById(item.product_id);
-                  return {
-                    ...item,
-                    product_name: prod?.name || 'Producto',
-                    product: prod
-                  };
-                })
-              );
-              fullLayaway.items = itemsWithProduct;
-            }
-
             const functionUrl = `${supabaseUrl}/functions/v1/send-layaway-code`;
+            const payload = {
+              layaway_id: newLayaway.id || newLayaway.code
+            };
+
             await fetch(functionUrl, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${supabaseKey}`
               },
-              body: JSON.stringify(fullLayaway)
+              body: JSON.stringify(payload)
             });
           } catch (funcErr) {
             console.warn('Llamada a Edge Function falló (no crítica):', funcErr.message);
@@ -335,7 +328,8 @@ const CheckoutModal = ({ isOpen, onClose }) => {
           status: 'Pendiente',
           date: new Date().toISOString(),
           is_layaway_order: !!firstLayawayItem,
-          layaway_id: firstLayawayItem ? firstLayawayItem.layawayId : null,
+          layaway_id: firstLayawayItem ? (firstLayawayItem.layawayId || firstLayawayItem.layawayCode) : null,
+          layaway_code: firstLayawayItem ? (firstLayawayItem.layawayCode || firstLayawayItem.layawayId) : null,
           delivery_type: isPartyDelivery ? 'party' : 'standard',
           wrap_gift: hasLayawayGifts ? wrapGift : false
         };
@@ -387,39 +381,6 @@ const CheckoutModal = ({ isOpen, onClose }) => {
           setIsSubmitting(false);
           return;
         }
-
-        const runBackgroundWork = async () => {
-          try {
-            const bgTasks = [];
-            bgTasks.push((async () => {
-              try {
-                const existingCust = await customerRepository.getByEmail(customerInfo.email.trim());
-                if (existingCust) {
-                  return db.update('customers', existingCust.id, {
-                    totalOrders: (existingCust.totalOrders || 0) + 1,
-                    phone: customerInfo.phone || existingCust.phone,
-                    address: orderData.customerAddress
-                  });
-                } else {
-                  return db.insert('customers', {
-                    name: sanitizedName,
-                    email: customerInfo.email.trim(),
-                    phone: phoneRaw,
-                    address: orderData.customerAddress,
-                    totalOrders: 1
-                  });
-                }
-              } catch (custErr) {
-                console.warn('Tarea de cliente falló (no crítica):', custErr.message);
-              }
-            })());
-
-            await Promise.all(bgTasks);
-          } catch (bgErr) {
-            console.warn('Algunas tareas de fondo fallaron:', bgErr);
-          }
-        };
-        runBackgroundWork();
 
         clearCart(false);
         setOrderComplete(true);

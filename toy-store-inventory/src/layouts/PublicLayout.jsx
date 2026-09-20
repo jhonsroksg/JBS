@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, X } from 'lucide-react';
 import CheckoutModal from '../components/CheckoutModal';
-import { db } from '../services/db';
-import { supabase } from '../lib/supabaseClient';
+import { db, layawayRepository } from '../services/db';
 import { useCart } from '../contexts/CartContext';
 import './PublicLayout.css';
 import Footer from '../components/Footer';
@@ -29,17 +28,18 @@ const PublicLayout = () => {
     const openSidebar = () => setIsSidebarOpen(true);
     window.addEventListener('open_cart', openSidebar);
 
-    const loadStoreInfo = async () => {
-      const info = await db.getStoreInfo();
+    const loadStoreInfo = async ({ forceRefresh = false } = {}) => {
+      const info = await db.getStoreInfo({ forceRefresh });
       if (info) setStoreInfo(info);
     };
     loadStoreInfo();
 
-    window.addEventListener('store_info_updated', loadStoreInfo);
+    const handleUpdated = () => loadStoreInfo({ forceRefresh: true });
+    window.addEventListener('store_info_updated', handleUpdated);
 
     return () => {
       window.removeEventListener('open_cart', openSidebar);
-      window.removeEventListener('store_info_updated', loadStoreInfo);
+      window.removeEventListener('store_info_updated', handleUpdated);
     };
   }, []);
 
@@ -61,16 +61,10 @@ const PublicLayout = () => {
     setSearchError('');
     
     try {
-      const { data, error } = await supabase
-        .from('layaways')
-        .select('id, code, status')
-        .eq('code', code)
-        .maybeSingle();
-
-      if (error) throw error;
+      const data = await layawayRepository.getPublicByCode(code);
 
       if (!data) {
-        setSearchError('El código de apartado no existe.');
+        setSearchError('El código de apartado no existe o ha expirado.');
       } else if (data.status !== 'active') {
         setSearchError('Este apartado ya no está activo.');
       } else {
@@ -80,7 +74,7 @@ const PublicLayout = () => {
       }
     } catch (err) {
       console.error('Error buscando apartado:', err);
-      setSearchError('Error de red. Intenta de nuevo.');
+      setSearchError('Error al consultar código. Intenta de nuevo.');
     } finally {
       setIsSearching(false);
     }

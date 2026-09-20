@@ -11,9 +11,9 @@ const SectionNavBar = ({ onOpenLayawayModal }) => {
   const activeSection = searchParams.get('section') || 'all';
 
   useEffect(() => {
-    const loadSections = async () => {
+    const loadSections = async ({ forceRefresh = false } = {}) => {
       try {
-        const data = await db.getAll('main_sections');
+        const data = await db.getAll('main_sections', { forceRefresh });
         setSections(data || []);
       } catch (error) {
         console.error('Error loading sections for navbar:', error);
@@ -22,8 +22,9 @@ const SectionNavBar = ({ onOpenLayawayModal }) => {
     loadSections();
     
     // Escuchar actualizaciones de secciones (por si se cambian en admin)
-    window.addEventListener('store_info_updated', loadSections);
-    return () => window.removeEventListener('store_info_updated', loadSections);
+    const handleUpdated = () => loadSections({ forceRefresh: true });
+    window.addEventListener('store_info_updated', handleUpdated);
+    return () => window.removeEventListener('store_info_updated', handleUpdated);
   }, []);
 
   const handleSectionClick = (sectionId) => {

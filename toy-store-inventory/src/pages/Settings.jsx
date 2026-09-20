@@ -1,12 +1,27 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { db, userRepository } from '../services/db';
 import { supabase } from '../lib/supabaseClient';
+import { useAuth } from '../contexts/AuthContext';
+import { validateStorageFile } from '../utils/storageValidation';
 import { useToast } from '../hooks/useToast';
-import { Plus, Trash2, Edit2, Check, X, Save, Image as ImageIcon, Upload, Shield, HelpCircle, Loader2 } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
+import { 
+  Plus, Trash2, Edit2, Check, X, Save, Image as ImageIcon, Upload, Shield, HelpCircle, Loader2,
+  Heart, User, Baby, ShoppingBag, Tag, Gift, Star, Truck, Home, Settings as SettingsIcon,
+  Search, ShoppingBasket, Smile, Sun, Moon, Package, Zap, Flame, Sparkles
+} from 'lucide-react';
+
+const SECTION_ICON_MAP = {
+  Heart, User, Baby, ShoppingBag, Tag, HelpCircle,
+  Gift, Star, Truck, Home, Settings: SettingsIcon,
+  Search, ShoppingBasket, Smile, Sun, Moon, Package,
+  Zap, Flame, Sparkles
+};
 
 const Settings = () => {
   const { showToast } = useToast();
+  const navigate = useNavigate();
+  const { role, mfaLevel, refreshProfile } = useAuth();
   const [methods, setMethods] = useState([]);
   const [newMethod, setNewMethod] = useState('');
   const [editingId, setEditingId] = useState(null);
@@ -345,6 +360,13 @@ const Settings = () => {
   const handleSectionImageUpload = async (e, isEditing = false) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    const validation = validateStorageFile(file);
+    if (!validation.valid) {
+      showToast(validation.error || 'Archivo de imagen no válido.', 'error');
+      return;
+    }
+
     setUploadingSectionImage(true);
     try {
       const reader = new FileReader();
@@ -787,13 +809,29 @@ const Settings = () => {
                     </div>
                     <button 
                       onClick={async () => {
-                        if (confirm('¿Seguro que deseas desactivar la seguridad de 2 pasos? Esto reducirá la protección de tu cuenta.')) {
+                        if (mfaLevel !== 'aal2') {
+                          showToast('Se requiere una sesión AAL2 verificada para modificar factores de seguridad.', 'error');
+                          return;
+                        }
+
+                        const confirmMsg = role === 'admin'
+                          ? '⚠️ ADVERTENCIA: Como Administrador, la autenticación 2FA es OBLIGATORIA. Al desactivar este factor, tu acceso al panel quedará bloqueado hasta que vincules un nuevo autenticador en /mfa-setup. ¿Deseas continuar?'
+                          : '¿Seguro que deseas desactivar la seguridad de 2 pasos? Esto reducirá la protección de tu cuenta.';
+
+                        if (confirm(confirmMsg)) {
                           try {
                             const { error } = await supabase.auth.mfa.unenroll({ factorId: factor.id });
                             if (error) throw error;
-                            alert('2FA desactivado correctamente.');
+                            showToast('Factor 2FA desactivado correctamente.', 'success');
+                            await refreshProfile();
                             await loadMFAStatus();
-                          } catch (err) { alert('Error al desactivar: ' + err.message); }
+
+                            if (role === 'admin') {
+                              navigate('/mfa-setup', { replace: true });
+                            }
+                          } catch (err) { 
+                            showToast('Error al desactivar: ' + err.message, 'error'); 
+                          }
                         }
                       }}
                       className="btn-icon danger" 
@@ -996,7 +1034,7 @@ const Settings = () => {
                         display: 'flex', alignItems: 'center', justifyContent: 'center'
                       }}>
                         {(() => {
-                          const IconComp = LucideIcons[s.icon] || LucideIcons.HelpCircle;
+                          const IconComp = SECTION_ICON_MAP[s.icon] || HelpCircle;
                           return <IconComp size={20} />;
                         })()}
                       </div>

@@ -1,3 +1,10 @@
+-- ==============================================================================
+-- ⚠️ OBSOLETO - NO EJECUTAR EN PRODUCCIÓN NI EN STAGING
+-- ==============================================================================
+-- Reemplazado por 03_20260920_secure_layaways_hardening.sql y schema_baseline_v1.0.sql.
+-- Contiene políticas permisivas antiguas superadas.
+-- ==============================================================================
+
 -- ========================================================
 -- 1. SECUENCIA Y GENERACIÓN DE CÓDIGOS DE APARTADOS (LAYAWAYS)
 -- ========================================================

@@ -9,14 +9,36 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) return 'vendor';
-            if (id.includes('lucide')) return 'icons';
-            if (id.includes('xlsx') || id.includes('jspdf') || id.includes('html2canvas') || id.includes('dompurify')) return 'utils';
-            return 'vendor';
+            if (id.includes('node_modules/xlsx')) {
+              return 'xlsx-export';
+            }
+            if (
+              id.includes('node_modules/jspdf') ||
+              id.includes('node_modules/jspdf-autotable') ||
+              id.includes('node_modules/html2canvas') ||
+              id.includes('node_modules/dompurify') ||
+              id.includes('node_modules/fflate') ||
+              id.includes('node_modules/canvg') ||
+              id.includes('node_modules/fast-png')
+            ) {
+              return 'pdf-export';
+            }
+            if (id.includes('node_modules/@supabase')) {
+              return 'supabase';
+            }
+            if (
+              id.includes('node_modules/react/') ||
+              id.includes('node_modules/react-dom/') ||
+              id.includes('node_modules/react-router-dom/') ||
+              id.includes('node_modules/react-router/') ||
+              id.includes('node_modules/react-helmet-async/')
+            ) {
+              return 'react-core';
+            }
           }
         }
       }
     },
-    chunkSizeWarningLimit: 1000
+    chunkSizeWarningLimit: 500
   }
 })

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { productRepository, db } from '../services/db';
+import { productRepository, db, dataCache } from '../services/db';
+import { validateStorageFile, generateSecureStoragePath } from '../utils/storageValidation';
 import { Plus, Search, Edit2, Trash2, X, Download, Upload, Copy, AlertTriangle } from 'lucide-react';
-import * as XLSX from 'xlsx';
 import './Products.css';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useToast } from '../hooks/useToast';
@@ -21,6 +21,8 @@ const Products = () => {
   const itemsPerPage = 10;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
+  const [isImportingExcel, setIsImportingExcel] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [draggedImageIndex, setDraggedImageIndex] = useState(null);
 
@@ -290,6 +292,15 @@ const Products = () => {
       return;
     }
 
+    // Validación de seguridad previa (Fail-closed)
+    for (const file of files) {
+      const validation = validateStorageFile(file);
+      if (!validation.valid) {
+        showToast(validation.error || 'Archivo de imagen no válido.', 'error');
+        return;
+      }
+    }
+
     const readers = files.map(file => new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = async (event) => {
@@ -335,9 +346,7 @@ const Products = () => {
       for (let i = 0; i < (formData.images || []).length; i++) {
         const img = formData.images[i];
         if (img.isNew) {
-          const fileExt = img.file.name.split('.').pop();
-          const safeSku = (formData.sku || 'prod').replace(/[^a-zA-Z0-9]/g, '_');
-          const fileName = `${safeSku}_${Date.now()}_${i}.${fileExt}`;
+          const fileName = generateSecureStoragePath({ sku: formData.sku, index: i, ext: 'jpg' });
           const uploadedUrl = await db.uploadFile('product-images', fileName, img.file);
           finalImages.push(uploadedUrl);
         } else {
@@ -373,12 +382,8 @@ const Products = () => {
 
       
       await loadData();
-      // Limpiar todo el caché de la tienda para asegurar consistencia
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('joa_cache_')) {
-          localStorage.removeItem(key);
-        }
-      });
+      // Limpiar caché de productos para asegurar consistencia en la tienda
+      dataCache.invalidate('products');
       
       handleCloseModal();
       if (formData.isDuplicate) {
@@ -418,25 +423,35 @@ const Products = () => {
     }
   };
 
-  const handleExportExcel = () => {
-    const data = products.map(p => ({
-      'SKU': p.sku || '',
-      'Nombre': p.name || '',
-      'Categoría': getCategoryName(p.categoryId),
-      'Marca': p.brand || '',
-      'Descripción': p.description || '',
-      'Rango de Edad': p.ageRange || '',
-      'Precio Costo': Number(p.costPrice) || 0,
-      'Precio Venta': Number(p.sellingPrice) || 0,
-      'Precio Oferta': p.discountPrice ? Number(p.discountPrice) : '',
-      'Stock': Number(p.stock) || 0,
-      'Stock Mínimo': Number(p.minStock) || 0,
-    }));
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    worksheet['!cols'] = [{ wch: 12 }, { wch: 35 }, { wch: 20 }, { wch: 18 }, { wch: 40 }, { wch: 15 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 8 }, { wch: 14 }];
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Productos');
-    XLSX.writeFile(workbook, `Catalogo_Productos_${new Date().toISOString().split('T')[0]}.xlsx`);
+  const handleExportExcel = async () => {
+    setIsExportingExcel(true);
+    try {
+      const XLSX = await import('xlsx');
+      const data = products.map(p => ({
+        'SKU': p.sku || '',
+        'Nombre': p.name || '',
+        'Categoría': getCategoryName(p.categoryId),
+        'Marca': p.brand || '',
+        'Descripción': p.description || '',
+        'Rango de Edad': p.ageRange || '',
+        'Precio Costo': Number(p.costPrice) || 0,
+        'Precio Venta': Number(p.sellingPrice) || 0,
+        'Precio Oferta': p.discountPrice ? Number(p.discountPrice) : '',
+        'Stock': Number(p.stock) || 0,
+        'Stock Mínimo': Number(p.minStock) || 0,
+      }));
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      worksheet['!cols'] = [{ wch: 12 }, { wch: 35 }, { wch: 20 }, { wch: 18 }, { wch: 40 }, { wch: 15 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 8 }, { wch: 14 }];
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Productos');
+      XLSX.writeFile(workbook, `Catalogo_Productos_${new Date().toISOString().split('T')[0]}.xlsx`);
+      showToast('Catálogo de productos exportado exitosamente', 'success');
+    } catch (err) {
+      console.error('Error exportando Excel:', err);
+      showToast('Error al cargar el módulo de exportación o generar el archivo Excel.', 'error');
+    } finally {
+      setIsExportingExcel(false);
+    }
   };
 
   const handleImportExcel = (e) => {
@@ -460,9 +475,11 @@ const Products = () => {
       return;
     }
 
+    setIsImportingExcel(true);
     const reader = new FileReader();
     reader.onload = async (evt) => {
       try {
+        const XLSX = await import('xlsx');
         const data = evt.target.result;
         const workbook = XLSX.read(data, { type: 'binary', cellFormula: false, cellHTML: false });
         if (!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0) {
@@ -499,7 +516,7 @@ const Products = () => {
             brand: (row['Marca'] || '').toString().slice(0, 100),
             description: (row['Descripción'] || '').toString().slice(0, 2000),
             ageRange: (row['Rango de Edad'] || '').toString().slice(0, 50),
-            categoryId: category ? category.id : null, // Crucial: null en lugar de ""
+            categoryId: category ? category.id : null,
             costPrice: Math.max(0, parseFloat(row['Precio Costo']) || 0),
             sellingPrice: Math.max(0, parseFloat(row['Precio Venta']) || 0),
             discountPrice: row['Precio Oferta'] && !isNaN(parseFloat(row['Precio Oferta'])) && parseFloat(row['Precio Oferta']) > 0
@@ -520,18 +537,19 @@ const Products = () => {
             });
             imported++;
           }
-
         }
 
         await loadData();
-        alert(`✅ Importación exitosa:\n- ${imported} productos nuevos\n- ${updated} productos actualizados`);
+        showToast(`Importación exitosa: ${imported} creados, ${updated} actualizados.`, 'success');
       } catch (error) {
         console.error('Error importando Excel:', error);
-        alert('Error al procesar el archivo Excel. Asegúrate de que las columnas tengan los nombres correctos.');
+        showToast('Error al procesar el archivo Excel. Asegúrate de que las columnas tengan el formato correcto.', 'error');
+      } finally {
+        setIsImportingExcel(false);
+        e.target.value = '';
       }
     };
     reader.readAsBinaryString(file);
-    e.target.value = '';
   };
 
   return (
@@ -617,11 +635,21 @@ const Products = () => {
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <input type="file" id="import-excel-input" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleImportExcel} />
-            <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#27ae60', borderColor: 'rgba(39,174,96,0.35)' }} onClick={() => document.getElementById('import-excel-input').click()}>
-              <Upload size={16} /> Importar Excel
+            <button 
+              className="btn-secondary" 
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#27ae60', borderColor: 'rgba(39,174,96,0.35)' }} 
+              onClick={() => document.getElementById('import-excel-input').click()}
+              disabled={isImportingExcel || isExportingExcel}
+            >
+              <Upload size={16} /> {isImportingExcel ? 'Importando...' : 'Importar Excel'}
             </button>
-            <button className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#2980b9', borderColor: 'rgba(41,128,185,0.35)' }} onClick={handleExportExcel}>
-              <Download size={16} /> Exportar Excel
+            <button 
+              className="btn-secondary" 
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#2980b9', borderColor: 'rgba(41,128,185,0.35)' }} 
+              onClick={handleExportExcel}
+              disabled={isExportingExcel || isImportingExcel}
+            >
+              <Download size={16} /> {isExportingExcel ? 'Exportando...' : 'Exportar Excel'}
             </button>
           </div>
         </div>

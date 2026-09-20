@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense, useRe
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { ShoppingCart, X, Search, Filter, MessageCircle, Package, Users, CheckCircle, Truck, Share2, ChevronLeft, ChevronRight, Maximize2, RotateCcw, SlidersHorizontal, Plus, Heart, Clock } from 'lucide-react';
-import { productRepository, db } from '../services/db';
+import { productRepository, db, dataCache } from '../services/db';
 import { OptimizedImage, getOptimizedSupabaseUrl } from '../components/OptimizedImage';
 import { SkeletonGrid } from '../components/SkeletonLoader';
 import { ProductCard } from '../components/ProductCard';
@@ -96,40 +96,14 @@ const Storefront = () => {
   const isFavoritesOnly = searchParams.get('fav') === 'true' || activeCategory === 'favorites';
 
   const { recentProducts } = useRecentProducts(selectedProductId);
-  const getCache = (key) => {
-    try {
-      const cachedStr = localStorage.getItem(`joa_cache_${key}`);
-      if (!cachedStr) return null;
-      
-      const cached = JSON.parse(cachedStr);
-      const now = new Date().getTime();
-      
-      // Validar expiración (5 minutos)
-      if (cached.expiresAt && now > cached.expiresAt) {
-        localStorage.removeItem(`joa_cache_${key}`);
-        return null;
-      }
-      
-      return cached.data;
-    } catch {
-      return null;
-    }
-  };
 
-  const setCache = (key, data) => {
-    try { 
-      const expiresAt = new Date().getTime() + (5 * 60 * 1000); 
-      localStorage.setItem(`joa_cache_${key}`, JSON.stringify({ data, expiresAt })); 
-    } catch {
-      // Ignorar quota exceeded en localStorage
-    }
-  };
+  const initialProductsCache = dataCache.get('products:paginated:all:all:all:0:100000::0:24');
 
-  const [products, setProducts] = useState(getCache('products:all:all:all:null::0')?.products || []);
-  const [totalProducts, setTotalProducts] = useState(getCache('products:all:all:all:null::0')?.total || 0);
-  const [categories, setCategories] = useState(getCache('categories') || []);
-  const [sections, setSections] = useState(getCache('main_sections') || []);
-  const [storeInfo, setStoreInfo] = useState(getCache('storeInfo') || { name: 'Joa Baby Shop' });
+  const [products, setProducts] = useState(initialProductsCache?.products || []);
+  const [totalProducts, setTotalProducts] = useState(initialProductsCache?.total || 0);
+  const [categories, setCategories] = useState(dataCache.get('collection:categories') || []);
+  const [sections, setSections] = useState(dataCache.get('collection:main_sections') || []);
+  const [storeInfo, setStoreInfo] = useState(dataCache.get('store_info') || { name: 'Joa Baby Shop' });
   const [isLoading, setIsLoading] = useState(false);
   
   // --- Estados de Paginación ---
@@ -217,7 +191,7 @@ const Storefront = () => {
   }, [sections, activeSection]);
 
   // --- Estrategia de Carga Granular (Paginada por demanda con protección contra race conditions) ---
-  const fetchProducts = useCallback(async (pageToFetch, isNewSearch = false) => {
+  const fetchProducts = useCallback(async (pageToFetch = 0, { forceRefresh = false } = {}) => {
     const currentReqId = ++requestIdRef.current;
 
     if (isFavoritesOnly) {
@@ -267,18 +241,6 @@ const Storefront = () => {
       return;
     }
 
-    const cacheKey = `products:${activeCategory}:${activeSection}:${activeAgeRange}:${priceRange}:${searchTerm}:${pageToFetch}`;
-    const cachedData = getCache(cacheKey);
-
-    if (cachedData && !isNewSearch) {
-      if (currentReqId === requestIdRef.current) {
-        setProducts(cachedData.products || []);
-        setTotalProducts(cachedData.total || 0);
-        setIsLoading(false);
-      }
-      return;
-    }
-
     setIsLoading(true);
 
     try {
@@ -290,7 +252,7 @@ const Storefront = () => {
         search: searchTerm,
         maxPrice: priceRange !== null ? priceRange : 100000,
         ageRange: activeAgeRange
-      });
+      }, { forceRefresh });
 
       // Si llegó otra petición posterior mientras esta se procesaba, descartar
       if (currentReqId !== requestIdRef.current) return;
@@ -300,7 +262,6 @@ const Storefront = () => {
 
       setProducts(newProducts);
       setTotalProducts(total);
-      setCache(cacheKey, { products: newProducts, total, hasNextPage: result.hasNextPage });
     } catch (error) {
       if (currentReqId === requestIdRef.current) {
         console.error("Error fetching products:", error);
@@ -312,24 +273,21 @@ const Storefront = () => {
     }
   }, [activeCategory, activeSection, activeAgeRange, priceRange, searchTerm, isFavoritesOnly, favorites]);
 
-  const revalidateStaticData = useCallback(async () => {
+  const revalidateStaticData = useCallback(async ({ forceRefresh = false } = {}) => {
     try {
       const [info, categoriesData, sectionsData] = await Promise.all([
-        db.getStoreInfo(),
-        db.getCategories(),
-        db.getAll('main_sections').catch(() => [])
+        db.getStoreInfo({ forceRefresh }),
+        db.getCategories({ forceRefresh }),
+        db.getAll('main_sections', { forceRefresh }).catch(() => [])
       ]);
       if (info) {
         setStoreInfo(info);
-        setCache('storeInfo', info);
       }
       if (categoriesData) {
         setCategories(categoriesData);
-        setCache('categories', categoriesData);
       }
       if (sectionsData && sectionsData.length > 0) {
         setSections(sectionsData);
-        setCache('main_sections', sectionsData);
       }
     } catch (error) {
       console.error('Error revalidating static data:', error);
@@ -339,20 +297,24 @@ const Storefront = () => {
   // Carga inicial y cambio de cualquier filtro: resetea a página 1 y consulta desde página 0
   useEffect(() => {
     setCurrentPage(1);
-    fetchProducts(0, true);
+    fetchProducts(0, { forceRefresh: false });
   }, [fetchProducts]);
 
   useEffect(() => {
-    revalidateStaticData();
-    const intervalId = setInterval(() => revalidateStaticData(), 60000);
+    revalidateStaticData({ forceRefresh: false });
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        revalidateStaticData();
+        revalidateStaticData({ forceRefresh: false });
       }
     };
 
+    const handleStoreInfoUpdated = () => {
+      revalidateStaticData({ forceRefresh: true });
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('store_info_updated', handleStoreInfoUpdated);
     
     const handleKeyDown = (e) => {
       if (!selectedProduct) return;
@@ -362,8 +324,8 @@ const Storefront = () => {
     window.addEventListener('keydown', handleKeyDown);
     
     return () => {
-      clearInterval(intervalId);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('store_info_updated', handleStoreInfoUpdated);
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [selectedProduct, revalidateStaticData, setSelectedProduct]);

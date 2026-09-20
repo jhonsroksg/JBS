@@ -1,3 +1,10 @@
+-- ==============================================================================
+-- ⚠️ OBSOLETO - NO EJECUTAR EN PRODUCCIÓN NI EN STAGING
+-- ==============================================================================
+-- Este script ha sido reemplazado por la migración 01_20260920_fail_closed_user_roles_hardening.sql.
+-- Para instalaciones nuevas, ejecuta: supabase/schema_baseline_v1.0.sql
+-- ==============================================================================
+
 -- 1. Crear la tabla user_roles
 CREATE TABLE IF NOT EXISTS public.user_roles (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,

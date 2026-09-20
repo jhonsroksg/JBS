@@ -1,6 +1,12 @@
 import { supabase } from '../lib/supabaseClient';
+import { dataCache, CACHE_TTL } from './dataCache';
+import { 
+  isStorageBucketAllowed, 
+  sanitizeStoragePath, 
+  validateStorageFile 
+} from '../utils/storageValidation';
 
-export { supabase };
+export { supabase, dataCache, CACHE_TTL };
 
 /**
  * REPOSITORY PATTERN - CENTRALIZED DATA ACCESS
@@ -19,49 +25,53 @@ export const productRepository = {
     return data || [];
   },
 
-  async getPaginated({ page = 0, limit = 24, category = 'all', search = '', minPrice = 0, maxPrice = 100000, ageRange = 'all', section = 'all' }) {
-    let query = supabase
-      .from('products')
-      .select('*', { count: 'exact' })
-      .gt('stock', 0);
+  async getPaginated({ page = 0, limit = 24, category = 'all', search = '', minPrice = 0, maxPrice = 100000, ageRange = 'all', section = 'all' }, { forceRefresh = false } = {}) {
+    const cacheKey = `products:paginated:${category}:${section}:${ageRange}:${minPrice}:${maxPrice}:${search}:${page}:${limit}`;
 
-    if (category !== 'all') query = query.eq('categoryId', category);
-    if (ageRange !== 'all') query = query.eq('ageRange', ageRange);
-    // Filtrado por sección con regla especial para 'all':
-    // - 'all' (home): mostrar solo BEBÉ y TODOS, excluir MAMÁ y PAPÁ
-    // - cualquier sección específica: filtrado estricto (igual a esa sección)
-    if (section === 'all') {
-      query = query.in('section', ['BEBÉ', 'TODOS']);
-    } else {
-      query = query.eq('section', section);
-    }
-    if (search && search.trim()) {
-      const term = search.trim();
-      // Búsqueda en nombre o SKU
-      query = query.or(`name.ilike.%${term}%,sku.ilike.%${term}%`);
-    }
-    
-    // Filtro de precio
-    if (minPrice > 0) {
-      query = query.gte('sellingPrice', minPrice);
-    }
-    if (maxPrice !== null && maxPrice !== undefined && Number(maxPrice) < 100000) {
-      query = query.lte('sellingPrice', Number(maxPrice));
-    }
+    return dataCache.fetchWithCache(cacheKey, async () => {
+      let query = supabase
+        .from('products')
+        .select('*', { count: 'exact' })
+        .gt('stock', 0);
 
-    const from = page * limit;
-    const to = from + limit - 1;
+      if (category !== 'all') query = query.eq('categoryId', category);
+      if (ageRange !== 'all') query = query.eq('ageRange', ageRange);
+      // Filtrado por sección con regla especial para 'all':
+      // - 'all' (home): mostrar solo BEBÉ y TODOS, excluir MAMÁ y PAPÁ
+      // - cualquier sección específica: filtrado estricto (igual a esa sección)
+      if (section === 'all') {
+        query = query.in('section', ['BEBÉ', 'TODOS']);
+      } else {
+        query = query.eq('section', section);
+      }
+      if (search && search.trim()) {
+        const term = search.trim();
+        // Búsqueda en nombre o SKU
+        query = query.or(`name.ilike.%${term}%,sku.ilike.%${term}%`);
+      }
+      
+      // Filtro de precio
+      if (minPrice > 0) {
+        query = query.gte('sellingPrice', minPrice);
+      }
+      if (maxPrice !== null && maxPrice !== undefined && Number(maxPrice) < 100000) {
+        query = query.lte('sellingPrice', Number(maxPrice));
+      }
 
-    const { data, error, count } = await query
-      .order('created_at', { ascending: false })
-      .range(from, to);
+      const from = page * limit;
+      const to = from + limit - 1;
 
-    if (error) throw error;
-    return { 
-      products: data || [], 
-      total: count || 0,
-      hasNextPage: (count || 0) > to + 1
-    };
+      const { data, error, count } = await query
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (error) throw error;
+      return { 
+        products: data || [], 
+        total: count || 0,
+        hasNextPage: (count || 0) > to + 1
+      };
+    }, { ttl: CACHE_TTL.CATALOG, forceRefresh });
   },
 
   async getActive() {
@@ -74,18 +84,21 @@ export const productRepository = {
     return data || [];
   },
 
-  async getById(id) {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .eq('id', id)
-      .single();
-    if (error) throw error;
-    return data;
+  async getById(id, { forceRefresh = false } = {}) {
+    return dataCache.fetchWithCache(`product:${id}`, async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', id)
+        .single();
+      if (error) throw error;
+      return data;
+    }, { ttl: CACHE_TTL.CATALOG, forceRefresh });
   },
 
   async getByIds(ids) {
     if (!Array.isArray(ids) || ids.length === 0) return [];
+    // LIVE QUERY (Bypass cache) para garantizar stock exacto en checkout y reconciliación
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -105,6 +118,8 @@ export const productRepository = {
       .select()
       .single();
     if (error) throw error;
+    dataCache.invalidate('products');
+    dataCache.invalidate(`product:${id}`);
     return data;
   },
 
@@ -115,16 +130,18 @@ export const productRepository = {
       .select()
       .single();
     if (error) throw error;
+    dataCache.invalidate('products');
     return data;
   },
 
   async delete(id) {
-
     const { error } = await supabase
       .from('products')
       .delete()
       .eq('id', id);
     if (error) throw error;
+    dataCache.invalidate('products');
+    dataCache.invalidate(`product:${id}`);
     return true;
   }
 };
@@ -270,10 +287,26 @@ export const orderRepository = {
 // --- 4. UTILITY / GLOBAL REPOSITORY ---
 export const db = {
   // Mantener compatibilidad con llamadas genéricas si es necesario
-  async getAll(collection) {
+  async getAll(collection, { forceRefresh = false, bypassCache = false } = {}) {
+    const isStaticCollection = ['main_sections', 'categories', 'payment_methods', 'delivery_methods', 'coupons'].includes(collection);
+    
+    if (isStaticCollection && !bypassCache) {
+      return dataCache.fetchWithCache(`collection:${collection}`, async () => {
+        let query = supabase.from(collection).select('*');
+        if (collection === 'categories') {
+          query = query.order('name');
+        }
+        const { data, error } = await query;
+        if (error) throw error;
+        return data || [];
+      }, { ttl: CACHE_TTL.STATIC_CONFIG, forceRefresh });
+    }
+
     let query = supabase.from(collection).select('*');
     if (collection === 'layaways') {
       query = query.order('created_at', { ascending: false });
+    } else if (collection === 'categories') {
+      query = query.order('name');
     }
     const { data, error } = await query;
     if (error) throw error;
@@ -283,6 +316,8 @@ export const db = {
   async insert(collection, item) {
     const { data, error } = await supabase.from(collection).insert([item]).select().single();
     if (error) throw error;
+    dataCache.invalidate(`collection:${collection}`);
+    dataCache.invalidate(collection);
     return data;
   },
 
@@ -292,12 +327,16 @@ export const db = {
     }
     const { data, error } = await supabase.from(collection).update(updates).eq('id', id).select().single();
     if (error) throw error;
+    dataCache.invalidate(`collection:${collection}`);
+    dataCache.invalidate(collection);
     return data;
   },
 
   async delete(collection, id) {
     const { error } = await supabase.from(collection).delete().eq('id', id);
     if (error) throw error;
+    dataCache.invalidate(`collection:${collection}`);
+    dataCache.invalidate(collection);
     return true;
   },
 
@@ -309,32 +348,47 @@ export const db = {
       .select()
       .single();
     if (error) throw error;
+    dataCache.invalidate('store_info');
     return data;
   },
 
-  async getStoreInfo() {
-    const { data, error } = await supabase
-      .from('store_info')
-      .select('*')
-      .eq('id', 1)
-      .single();
-    if (error) return null;
-    return data;
+  async getStoreInfo({ forceRefresh = false } = {}) {
+    return dataCache.fetchWithCache('store_info', async () => {
+      const { data, error } = await supabase
+        .from('store_info')
+        .select('*')
+        .eq('id', 1)
+        .single();
+      if (error) return null;
+      return data;
+    }, { ttl: CACHE_TTL.STATIC_CONFIG, forceRefresh });
   },
 
-  async getCategories() {
-    const { data, error } = await supabase
-      .from('categories')
-      .select('*')
-      .order('name');
-    if (error) throw error;
-    return data || [];
+  async getCategories({ forceRefresh = false } = {}) {
+    return dataCache.fetchWithCache('collection:categories', async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
+      if (error) throw error;
+      return data || [];
+    }, { ttl: CACHE_TTL.STATIC_CONFIG, forceRefresh });
   },
 
   async uploadFile(bucket, path, file) {
+    if (!isStorageBucketAllowed(bucket)) {
+      throw new Error(`Bucket de almacenamiento no permitido: '${bucket}'`);
+    }
+
+    const cleanPath = sanitizeStoragePath(path);
+    const validation = validateStorageFile(file);
+    if (!validation.valid) {
+      throw new Error(validation.error);
+    }
+
     let { data, error } = await supabase.storage
       .from(bucket)
-      .upload(path, file, { upsert: true });
+      .upload(cleanPath, file, { upsert: true });
       
     // Fallback: Si el upsert falla por políticas de seguridad (ej. falta permiso de UPDATE), 
     // intentamos una subida normal (insert puro) por si el archivo no existía.
@@ -342,7 +396,7 @@ export const db = {
       console.warn('Upsert failed due to RLS, attempting standard insert...', error);
       const fallbackResult = await supabase.storage
         .from(bucket)
-        .upload(path, file, { upsert: false });
+        .upload(cleanPath, file, { upsert: false });
       data = fallbackResult.data;
       error = fallbackResult.error;
     }
@@ -353,22 +407,47 @@ export const db = {
     return `${publicUrl}?t=${Date.now()}`;
   },
 
+  async deleteFile(bucket, paths) {
+    if (!isStorageBucketAllowed(bucket)) {
+      throw new Error(`Bucket de almacenamiento no permitido: '${bucket}'`);
+    }
+    const pathList = Array.isArray(paths) ? paths : [paths];
+    const cleanPaths = pathList.map(p => sanitizeStoragePath(p));
+    const { data, error } = await supabase.storage.from(bucket).remove(cleanPaths);
+    if (error) throw error;
+    return data;
+  },
+
   async createOrder(order, cartItems) {
     return orderRepository.create(order, cartItems);
+  },
+
+  async validateCoupon(code, context = {}) {
+    return couponRepository.validate(code, context);
   }
 };
 
 export const createOrder = (order, cartItems) => orderRepository.create(order, cartItems);
 
-// Helper para generar código aleatorio y amigable (AP- + 5 caracteres alfanuméricos en mayúsculas)
-function generateRandomCode() {
-  const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  let result = '';
-  for (let i = 0; i < 5; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
+// --- 4b. COUPON REPOSITORY ---
+export const couponRepository = {
+  async validate(code, context = {}) {
+    if (!code || typeof code !== 'string' || !code.trim()) {
+      return { valid: false, message: 'Código de cupón no especificado.' };
+    }
+    const cleanCode = code.trim().toUpperCase();
+    const { data, error } = await supabase.rpc('validate_coupon', {
+      p_code: cleanCode,
+      p_context: context
+    });
+    if (error) {
+      console.error('Error validating coupon via RPC:', error);
+      return { valid: false, message: 'Error al validar el cupón.' };
+    }
+    return data;
   }
-  return `AP-${result}`;
-}
+};
+
 
 // --- 5. LAYAWAY REPOSITORY ---
 export const layawayRepository = {
@@ -377,72 +456,38 @@ export const layawayRepository = {
       throw new Error("El apartado debe contener al menos un producto.");
     }
 
-    for (const item of itemsData) {
+    const formattedItems = itemsData.map(item => {
       const finalId = item.product?.id || item.product_id || item.id;
       if (!finalId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(finalId)) {
         throw new Error(`El producto "${item.product?.name || 'Desconocido'}" no tiene un ID UUID válido.`);
       }
-      
-      const parsedQty = Number(item.quantity) || 1;
-      if (parsedQty <= 0 || !Number.isInteger(parsedQty)) {
-        throw new Error(`La cantidad para reservar "${item.product?.name || 'Producto'}" debe ser un entero positivo.`);
-      }
+      return {
+        product_id: finalId,
+        quantity: Number(item.quantity || item.quantity_reserved) || 1
+      };
+    });
 
-      const parsedPrice = Number(item.product?.discountPrice || item.product?.sellingPrice) || 0;
-      if (parsedPrice < 0) {
-        throw new Error(`El precio para "${item.product?.name || 'Producto'}" no puede ser negativo.`);
-      }
-    }
+    const { data, error } = await supabase.rpc('create_layaway_atomic', {
+      p_layaway_data: layawayData,
+      p_items_data: formattedItems
+    });
 
-    let uniqueCode = '';
-    let isUnique = false;
-    let attempts = 0;
+    if (error) throw error;
+    return data;
+  },
 
-    while (!isUnique && attempts < 10) {
-      uniqueCode = generateRandomCode();
-      const { data, error } = await supabase
-        .from('layaways')
-        .select('id')
-        .eq('code', uniqueCode)
-        .maybeSingle();
+  async getPublicByCode(code) {
+    if (!code || typeof code !== 'string' || !code.trim()) return null;
+    const cleanCode = code.trim().toUpperCase();
+    const { data, error } = await supabase.rpc('get_public_layaway_by_code', {
+      p_code: cleanCode
+    });
+    if (error) throw error;
+    return data;
+  },
 
-      if (!error && !data) {
-        isUnique = true;
-      }
-      attempts++;
-    }
-
-    if (!isUnique) {
-      throw new Error("No se pudo generar un código único para el apartado después de varios intentos.");
-    }
-
-    const finalLayawayData = {
-      ...layawayData,
-      code: uniqueCode
-    };
-
-    const { data: newLayaway, error: layawayErr } = await supabase
-      .from('layaways')
-      .insert([finalLayawayData])
-      .select()
-      .single();
-
-    if (layawayErr) throw layawayErr;
-
-    const layawayItems = itemsData.map(item => ({
-      layaway_id: newLayaway.id,
-      product_id: item.product.id || item.product_id || item.id,
-      quantity_reserved: Number(item.quantity) || 1,
-      quantity_bought: 0
-    }));
-
-    const { error: itemsErr } = await supabase
-      .from('layaway_items')
-      .insert(layawayItems);
-
-    if (itemsErr) throw itemsErr;
-
-    return newLayaway;
+  async getByCode(code) {
+    return this.getPublicByCode(code);
   },
 
   async getLayaways() {
@@ -483,25 +528,6 @@ export const layawayRepository = {
     
     if (error) throw error;
 
-    return data;
-  },
-
-  async getByCode(code) {
-    const { data, error } = await supabase
-      .from('layaways')
-      .select(`
-        *,
-        items:layaway_items(
-          id,
-          quantity_reserved,
-          quantity_bought,
-          product:products(*)
-        )
-      `)
-      .eq('code', code)
-      .maybeSingle();
-
-    if (error) throw error;
     return data;
   },
 

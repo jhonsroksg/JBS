@@ -36,6 +36,31 @@ export const hasPermissionAccess = (role, permissions, requiredPermission) => {
 };
 
 /**
+ * Determina el estado de cumplimiento de MFA para una sesión.
+ * @param {Object} params
+ * @param {string|null} params.role
+ * @param {boolean} [params.hasMfaEnrolled]
+ * @param {string} [params.mfaLevel]
+ * @returns {{ needsEnrollment: boolean, needsChallenge: boolean, isAal2Ready: boolean }}
+ */
+export const getAdminMfaStatus = ({
+  role,
+  hasMfaEnrolled = false,
+  mfaLevel = 'aal1'
+} = {}) => {
+  const isAdmin = role === 'admin';
+  const needsEnrollment = isAdmin && !hasMfaEnrolled;
+  const needsChallenge = hasMfaEnrolled && mfaLevel !== 'aal2';
+  const isAal2Ready = mfaLevel === 'aal2';
+
+  return {
+    needsEnrollment,
+    needsChallenge,
+    isAal2Ready
+  };
+};
+
+/**
  * Valida de forma completa y fail-closed si una sesión cumple todos los criterios.
  * 
  * @param {Object} params
@@ -58,7 +83,11 @@ export const canAccessRoute = ({
   hasMfaEnrolled = false,
 } = {}) => {
   if (!user) return false;
+  
+  // Regla obligatoria: Administradores requieren obligatoriamente tener factor y estar en AAL2
+  if (role === 'admin' && !hasMfaEnrolled) return false;
   if (hasMfaEnrolled && mfaLevel !== 'aal2') return false;
+  
   if (!isRoleAllowed(role, allowedRoles)) return false;
   if (!hasPermissionAccess(role, permissions, requiredPermission)) return false;
   return true;

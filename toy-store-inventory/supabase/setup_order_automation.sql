@@ -1,4 +1,10 @@
 
+-- ==============================================================================
+-- ⚠️ OBSOLETO - NO EJECUTAR EN PRODUCCIÓN NI EN STAGING
+-- ==============================================================================
+-- Reemplazado por 04_20260920_secure_orders_atomic_hardening.sql y schema_baseline_v1.0.sql.
+-- ==============================================================================
+
 -- 1. Función para generar el ID personalizado automáticamente
 CREATE OR REPLACE FUNCTION generate_order_id_custom()
 RETURNS TRIGGER AS $$

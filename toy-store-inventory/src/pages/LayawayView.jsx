@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { layawayRepository } from '../services/db';
 import { useToast } from '../hooks/useToast';
 import { useCart } from '../contexts/CartContext';
 import { Gift, Calendar, AlertCircle, ArrowLeft, Clock } from 'lucide-react';
@@ -19,28 +19,9 @@ const LayawayView = () => {
     setLoading(true);
     setError('');
     try {
-      const { data, error: dbErr } = await supabase
-        .from('layaways')
-        .select(`
-          *,
-          items:layaway_items(
-            id,
-            quantity_reserved,
-            quantity_bought,
-            product:products(
-              id,
-              name,
-              sellingPrice,
-              discountPrice,
-              imageUrl,
-              stock
-            )
-          )
-        `)
-        .eq('code', code)
-        .maybeSingle();
+      const data = await layawayRepository.getPublicByCode(code);
 
-      if (dbErr || !data) {
+      if (!data) {
         setError('No se pudo encontrar el apartado. Verifica el código e intenta de nuevo.');
       } else if (data.status !== 'active') {
         setError('Este apartado ya no se encuentra activo o ha expirado.');
@@ -49,7 +30,9 @@ const LayawayView = () => {
       }
     } catch (err) {
       console.error('Error cargando apartado:', err);
-      setError('Ocurrió un error al cargar la lista de regalos.');
+      setError(err?.message?.includes('Demasiadas consultas') 
+        ? 'Demasiadas consultas. Por favor espera un momento antes de reintentar.'
+        : 'Ocurrió un error al cargar la lista de regalos.');
     } finally {
       setLoading(false);
     }
@@ -71,7 +54,10 @@ const LayawayView = () => {
     const product = item.product;
     if (!product) return;
 
-    const remaining = item.quantity_reserved - item.quantity_bought;
+    const remaining = item.quantity_remaining !== undefined 
+      ? item.quantity_remaining 
+      : (item.quantity_reserved - item.quantity_bought);
+
     if (remaining <= 0) {
       showToast('Este regalo ya ha sido completado por otros invitados.', 'info');
       return;
@@ -79,7 +65,8 @@ const LayawayView = () => {
 
     addItem(product, 1, {
       isLayawayItem: true,
-      layawayId: layaway.id,
+      layawayCode: layaway.code,
+      layawayId: layaway.id || layaway.code,
       maxAllowed: remaining,
       openSidebar: true
     });
@@ -118,7 +105,6 @@ const LayawayView = () => {
       <header className="layaway-guest-header">
         <div className="occasion-badge">🎉 Lista de Regalos / Apartado</div>
         <h2>{layaway.event_name || 'Celebración Especial'}</h2>
-        <p className="host-name">Creado por: <strong>{layaway.customer_name}</strong></p>
         
         <div className="event-meta">
           <div className="meta-item">

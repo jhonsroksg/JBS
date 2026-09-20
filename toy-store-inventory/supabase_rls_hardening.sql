@@ -1,4 +1,11 @@
 -- ==============================================================================
+-- ⚠️ OBSOLETO - NO EJECUTAR EN PRODUCCIÓN NI EN STAGING
+-- ==============================================================================
+-- Este script ha sido consolidado en las migraciones numeradas en supabase/migrations/
+-- y en el baseline canónico supabase/schema_baseline_v1.0.sql.
+-- ==============================================================================
+
+-- ==============================================================================
 -- JOA BABY SHOP - REFUERZO DE AUTORIZACIÓN Y POLÍTICAS RLS (Row Level Security)
 -- ==============================================================================
 -- Este script es reversible y refuerza la autorización granular en la base de datos
@@ -251,11 +258,11 @@ WITH CHECK (public.has_permission(auth.uid(), 'productos'));
 -- ------------------------------------------------------------------------------
 -- 6. POLÍTICAS NUEVAS: PEDIDOS Y CLIENTES (Permiso 'pedidos' o 'admin')
 -- ------------------------------------------------------------------------------
--- orders
-CREATE POLICY "Permitir insercion anonima de pedidos"
-ON public.orders FOR INSERT
-TO anon, authenticated
-WITH CHECK (true);
+-- orders (Creación pública restringida a RPC create_order_atomic)
+DROP POLICY IF EXISTS "Permitir insercion anonima de pedidos" ON public.orders;
+DROP POLICY IF EXISTS "Allow public insert" ON public.orders;
+REVOKE INSERT ON public.orders FROM anon;
+REVOKE INSERT ON public.orders FROM public;
 
 CREATE POLICY "Staff con permiso pedidos puede gestionar pedidos"
 ON public.orders FOR ALL
@@ -263,11 +270,12 @@ TO authenticated
 USING (public.has_permission(auth.uid(), 'pedidos'))
 WITH CHECK (public.has_permission(auth.uid(), 'pedidos'));
 
--- customers
-CREATE POLICY "Permitir insercion y upsert de clientes durante checkout"
-ON public.customers FOR INSERT
-TO anon, authenticated
-WITH CHECK (true);
+-- customers (Creación pública gestionada atómicamente por create_order_atomic)
+DROP POLICY IF EXISTS "Permitir insercion y upsert de clientes durante checkout" ON public.customers;
+DROP POLICY IF EXISTS "Permitir inserción de clientes" ON public.customers;
+DROP POLICY IF EXISTS "Allow public insert" ON public.customers;
+REVOKE INSERT, UPDATE, DELETE ON public.customers FROM anon;
+REVOKE INSERT, UPDATE, DELETE ON public.customers FROM public;
 
 CREATE POLICY "Staff con permiso pedidos puede gestionar clientes"
 ON public.customers FOR ALL

@@ -1,7 +1,18 @@
 import React from 'react';
-import { Heart, User, Baby, ShoppingBag, Tag, HelpCircle } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
+import { 
+  Heart, User, Baby, ShoppingBag, Tag, HelpCircle,
+  Gift, Star, Truck, Home, Settings as SettingsIcon,
+  Search, ShoppingBasket, Smile, Sun, Moon, Package,
+  Zap, Flame, Sparkles
+} from 'lucide-react';
 import './SectionCarousel.css';
+
+const SECTION_ICON_MAP = {
+  Heart, User, Baby, ShoppingBag, Tag, HelpCircle,
+  Gift, Star, Truck, Home, Settings: SettingsIcon,
+  Search, ShoppingBasket, Smile, Sun, Moon, Package,
+  Zap, Flame, Sparkles
+};
 
 /**
  * DEFAULT_SECTIONS define las secciones principales con sus iconos y colores.
@@ -40,10 +51,10 @@ export const SectionCarousel = ({
     <div className="section-carousel-container">
       <div className="section-carousel-scroll">
         {sections.map((section) => {
-          // Resolve icon: if it's a string, find it in LucideIcons; otherwise use it directly
+          // Resolve icon: if it's a string, find it in SECTION_ICON_MAP; otherwise use it directly
           const Icon = typeof section.icon === 'string' 
-            ? LucideIcons[section.icon] || LucideIcons.HelpCircle 
-            : section.icon || LucideIcons.HelpCircle;
+            ? SECTION_ICON_MAP[section.icon] || HelpCircle 
+            : section.icon || HelpCircle;
             
           const isActive = activeSection === section.id || activeSection === section.name;
           const sectionId = section.id || section.name;

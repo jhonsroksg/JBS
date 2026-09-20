@@ -65,12 +65,14 @@ describe('permissionValidation utils', () => {
   describe('Full Route Authorization Matrix (canAccessRoute)', () => {
     const mockUser = { id: 'usr-123', email: 'test@joababy.com' };
 
-    // 1. Admin con acceso total
+    // 1. Admin con acceso total (requiere MFA verificado AAL2)
     it('Scenairo 1: admin con acceso total', () => {
       const adminCtx = {
         user: mockUser,
         role: 'admin',
-        permissions: { pedidos: true, productos: true, configuracion: true }
+        permissions: { pedidos: true, productos: true, configuracion: true },
+        hasMfaEnrolled: true,
+        mfaLevel: 'aal2'
       };
 
       // /admin

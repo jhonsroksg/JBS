@@ -22,27 +22,36 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      // 1. Intentar obtener rol desde user_roles (administrado desde Settings)
-      const { data: userRoleData } = await supabase
+      // 1. Obtener rol y permisos EXCLUSIVAMENTE desde public.user_roles (única fuente autorizada)
+      const { data: userRoleData, error: roleError } = await supabase
         .from('user_roles')
         .select('*')
         .eq('user_id', currentUser.id)
         .maybeSingle();
 
-      // 2. Intentar obtener perfil desde profiles
+      if (roleError) {
+        console.warn('Error al consultar user_roles:', roleError.message);
+      }
+
+      // 2. Obtener datos cosméticos de perfil desde profiles si existe
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('*')
+        .select('full_name, phone')
         .eq('id', currentUser.id)
         .maybeSingle();
 
-      // Fail-closed: solo asignar rol si está explícitamente definido en user_roles, profiles o user_metadata
-      const resolvedRole = userRoleData?.role || profileData?.role || currentUser.user_metadata?.role || null;
+      // Fail-closed estricto: solo asignar rol si está explícitamente definido en public.user_roles
+      // user_metadata NO tiene autoridad y nunca se usa para conceder roles
+      const resolvedRole = userRoleData?.role || null;
       
       // Si tiene permisos específicos en user_roles, utilizarlos; de lo contrario asignar según rol estricto
       let resolvedPermissions = { pedidos: false, productos: false, configuracion: false };
-      if (userRoleData?.permissions) {
-        resolvedPermissions = userRoleData.permissions;
+      if (userRoleData?.permissions && typeof userRoleData.permissions === 'object') {
+        resolvedPermissions = {
+          pedidos: Boolean(userRoleData.permissions.pedidos),
+          productos: Boolean(userRoleData.permissions.productos),
+          configuracion: Boolean(userRoleData.permissions.configuracion)
+        };
       } else if (resolvedRole === 'admin') {
         resolvedPermissions = { pedidos: true, productos: true, configuracion: true };
       } else if (resolvedRole === 'empleado' || resolvedRole === 'vendedor') {
@@ -64,17 +73,16 @@ export const AuthProvider = ({ children }) => {
       setRole(resolvedRole);
       return userProfile;
     } catch (err) {
-      console.warn('Error al cargar perfil de usuario:', err);
-      // Fail-closed: si falla la consulta, solo rescatamos el rol explícito de user_metadata si existe, nunca 'admin' por defecto
-      const fallbackRole = currentUser.user_metadata?.role || null;
-      const fallbackPermissions = fallbackRole === 'admin' 
-        ? { pedidos: true, productos: true, configuracion: true }
-        : { pedidos: false, productos: false, configuracion: false };
+      console.warn('Error al cargar perfil de usuario (Fail-closed activo):', err);
+      // Fail-closed: si falla la consulta, NUNCA asumir admin ni leer user_metadata.role
+      const fallbackRole = null;
+      const fallbackPermissions = { pedidos: false, productos: false, configuracion: false };
 
       const fallbackProfile = {
         id: currentUser.id,
         email: currentUser.email,
         full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Usuario',
+        phone: currentUser.user_metadata?.phone || '',
         role: fallbackRole,
         permissions: fallbackPermissions
       };
@@ -125,37 +133,70 @@ export const AuthProvider = ({ children }) => {
     };
   }, [fetchProfile]);
 
-  // Verificación de MFA
-  useEffect(() => {
-    let mounted = true;
-
-    const checkMFA = async () => {
-      if (!session) {
+  // Verificación y sincronización de MFA
+  const refreshMFA = useCallback(async () => {
+    try {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession) {
         setMfaLevel('aal1');
         setHasMfaEnrolled(false);
+        return { currentLevel: 'aal1', hasEnrolled: false };
+      }
+
+      const [{ data: mfaData }, { data: factorsData }] = await Promise.all([
+        supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+        supabase.auth.mfa.listFactors().catch(() => ({ data: null }))
+      ]);
+
+      const verifiedFactors = factorsData?.totp?.filter(f => f.status === 'verified') || [];
+      const hasEnrolled = verifiedFactors.length > 0 || (mfaData?.nextLevel || mfaData?.currentLevel) === 'aal2';
+      const currentLevel = mfaData?.currentLevel || 'aal1';
+
+      setMfaLevel(currentLevel);
+      setHasMfaEnrolled(hasEnrolled);
+      return { currentLevel, hasEnrolled };
+    } catch (err) {
+      console.warn('Error verificando estado MFA:', err);
+      return { currentLevel: 'aal1', hasEnrolled: false };
+    }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const syncMFA = async () => {
+      if (!session) {
+        if (active) {
+          setMfaLevel('aal1');
+          setHasMfaEnrolled(false);
+        }
         return;
       }
 
       try {
-        await new Promise(resolve => setTimeout(resolve, 0));
-        if (!mounted) return;
-        const { data: mfaData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-        if (mounted && mfaData) {
-          setMfaLevel(mfaData.currentLevel || 'aal1');
-          setHasMfaEnrolled((mfaData.nextLevel || mfaData.currentLevel) === 'aal2');
+        const [{ data: mfaData }, { data: factorsData }] = await Promise.all([
+          supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+          supabase.auth.mfa.listFactors().catch(() => ({ data: null }))
+        ]);
+        if (active) {
+          const verifiedFactors = factorsData?.totp?.filter(f => f.status === 'verified') || [];
+          const hasEnrolled = verifiedFactors.length > 0 || (mfaData?.nextLevel || mfaData?.currentLevel) === 'aal2';
+          const currentLevel = mfaData?.currentLevel || 'aal1';
+          setMfaLevel(currentLevel);
+          setHasMfaEnrolled(hasEnrolled);
         }
-      } catch {
-        console.warn('Deferred MFA check failed');
+      } catch (err) {
+        console.warn('Error en syncMFA:', err);
       }
     };
 
-    checkMFA();
-    return () => { mounted = false; };
+    syncMFA();
+    return () => { active = false; };
   }, [session]);
 
   const isUserAdmin = role === 'admin';
   const isUserEmployee = ['empleado', 'vendedor', 'inventario', 'personalizado'].includes(role);
   const isUserCustomer = role === 'cliente';
+  const needsMfaEnrollment = isUserAdmin && !hasMfaEnrolled;
 
   const value = {
     session,
@@ -168,7 +209,13 @@ export const AuthProvider = ({ children }) => {
     permissions: profile?.permissions || { pedidos: false, productos: false, configuracion: false },
     mfaLevel,
     hasMfaEnrolled,
-    refreshProfile: () => fetchProfile(user),
+    needsMfaEnrollment,
+    refreshMFA,
+    refreshProfile: async (customUser) => {
+      const res = await fetchProfile(customUser || user);
+      await refreshMFA();
+      return res;
+    },
     signOut: () => supabase.auth.signOut(),
   };
 

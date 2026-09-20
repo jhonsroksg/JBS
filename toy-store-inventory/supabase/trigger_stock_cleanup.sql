@@ -1,3 +1,9 @@
+-- ==============================================================================
+-- ⚠️ OBSOLETO - NO EJECUTAR EN PRODUCCIÓN NI EN STAGING
+-- ==============================================================================
+-- Este script contiene SQL dinámico destructivo antiguo superado por las migraciones.
+-- ==============================================================================
+
 -- 1. Destrucción Dinámica (Borra TODOS los triggers de la tabla orders EXCEPTO los de webhooks y correos)
 DO $$ 
 DECLARE

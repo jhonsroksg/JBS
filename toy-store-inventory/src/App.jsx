@@ -20,6 +20,7 @@ const LayawayView = React.lazy(() => import('./pages/LayawayView'));
 const Settings = React.lazy(() => import('./pages/Settings'));
 const Login = React.lazy(() => import('./pages/Login'));
 const ResetPassword = React.lazy(() => import('./pages/ResetPassword'));
+const MfaSetup = React.lazy(() => import('./pages/MfaSetup'));
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -65,9 +66,10 @@ function App() {
                       <Route path="apartado/:code" element={<LayawayView />} />
                     </Route>
 
-                    {/* Login y Recuperación de Contraseña */}
+                    {/* Login, Recuperación y MFA */}
                     <Route path="/login" element={<Login />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route path="/mfa-setup" element={<MfaSetup />} />
 
                     {/* Rutas de Administración Protegidas (Admin y Personal Autorizado) */}
                     <Route path="/admin" element={

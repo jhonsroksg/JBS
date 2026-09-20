@@ -39,7 +39,7 @@ const Login = () => {
   const [successMessage, setSuccessMessage] = useState(null);
   
   // MFA States (se preservan al 100%)
-  const { user, role, mfaLevel, hasMfaEnrolled } = useAuth();
+  const { user, role, mfaLevel, hasMfaEnrolled, refreshProfile } = useAuth();
   const [showMfa, setShowMfa] = useState(false);
   const [mfaCode, setMfaCode] = useState('');
   const [mfaError, setMfaError] = useState(null);
@@ -67,6 +67,9 @@ const Login = () => {
 
   // Si ya está logueado y completó MFA:
   if (user && (!hasMfaEnrolled || mfaLevel === 'aal2')) {
+    if (role === 'admin' && !hasMfaEnrolled) {
+      return <Navigate to="/mfa-setup" replace />;
+    }
     const isStaff = ['admin', 'empleado', 'vendedor', 'inventario', 'personalizado'].includes(role);
     if (isStaff) {
       return <Navigate to="/admin" replace />;
@@ -105,9 +108,15 @@ const Login = () => {
         }
       }
 
-      // Redirección según rol
-      const userMetaRole = data?.user?.user_metadata?.role;
-      if (['admin', 'empleado', 'vendedor', 'inventario', 'personalizado'].includes(userMetaRole)) {
+      // Redirección segura fail-closed basada en public.user_roles (sin depender de user_metadata)
+      const resolvedProfile = await refreshProfile(data?.user);
+      if (resolvedProfile?.role === 'admin') {
+        navigate('/mfa-setup');
+        return;
+      }
+
+      const isStaff = ['admin', 'empleado', 'vendedor', 'inventario', 'personalizado'].includes(resolvedProfile?.role);
+      if (isStaff) {
         navigate('/admin');
       } else {
         navigate('/');
@@ -150,7 +159,8 @@ const Login = () => {
           data: {
             full_name: fullName.trim(),
             phone: phone.trim(),
-            role: 'cliente', // Registro público se crea por defecto como cliente
+            // NOTA DE SEGURIDAD: user_metadata.role es solo informativo/visual y NO otorga permisos ni autorización
+            role: 'cliente',
           }
         }
       });
@@ -225,8 +235,9 @@ const Login = () => {
 
       if (verifyError) throw verifyError;
 
-      // Redirección según rol tras verificar MFA
-      const isStaff = ['admin', 'empleado', 'vendedor', 'inventario', 'personalizado'].includes(role);
+      // Redirección segura según rol tras verificar MFA
+      const resolvedProfile = await refreshProfile(user);
+      const isStaff = ['admin', 'empleado', 'vendedor', 'inventario', 'personalizado'].includes(resolvedProfile?.role || role);
       if (isStaff) {
         navigate('/admin');
       } else {

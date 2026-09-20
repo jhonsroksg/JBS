@@ -1,3 +1,12 @@
+-- ==============================================================================
+-- ⚠️ OBSOLETO - NO EJECUTAR EN PRODUCCIÓN NI EN STAGING
+-- ==============================================================================
+-- Este script corresponde a una versión inicial no endurecida y contiene 
+-- políticas permisivas superadas (USING true para anon).
+-- Para instalaciones nuevas, ejecuta: supabase/schema_baseline_v1.0.sql
+-- Para migraciones incrementales, revisa: supabase/migrations/
+-- ==============================================================================
+
 -- ==========================================
 -- 1. CREACIÓN DE TABLAS (SI NO EXISTEN)
 -- ==========================================
