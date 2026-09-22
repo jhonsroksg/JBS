@@ -77,13 +77,17 @@ const CheckoutModal = ({ isOpen, onClose }) => {
       setDeliveryMethodId('');
 
       const initData = async () => {
-        const [methods, dMethods] = await Promise.all([
-          db.getAll('payment_methods'),
-          db.getAll('delivery_methods'),
-        ]);
-        setAvailableMethods(methods);
-        if (methods.length > 0) setPaymentMethod(methods[0].name);
-        setAvailableDeliveryMethods(dMethods);
+        try {
+          const [methods, dMethods] = await Promise.all([
+            db.getAll('payment_methods').catch(e => { console.error('Error fetching payment methods:', e); return []; }),
+            db.getAll('delivery_methods').catch(e => { console.error('Error fetching delivery methods:', e); return []; }),
+          ]);
+          setAvailableMethods(methods);
+          if (methods.length > 0) setPaymentMethod(methods[0].name);
+          setAvailableDeliveryMethods(dMethods);
+        } catch (error) {
+          console.error('Critical error in initData:', error);
+        }
       };
       initData();
     } else {
@@ -646,11 +650,15 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                               <Truck className="input-icon" size={18} />
                               <select required value={deliveryMethodId} onChange={e => setDeliveryMethodId(e.target.value)}>
                                 <option value="" disabled>Método de entrega...</option>
-                                {filteredDeliveryMethods.map(m => (
-                                  <option key={m.id} value={m.id}>
-                                    {m.name} {Number(m.cost) > 0 ? `(+ L. ${Number(m.cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})` : '(Gratis)'}
-                                  </option>
-                                ))}
+                                {filteredDeliveryMethods.length === 0 ? (
+                                  <option value="" disabled>No hay envíos disponibles para esta zona</option>
+                                ) : (
+                                  filteredDeliveryMethods.map(m => (
+                                    <option key={m.id} value={m.id}>
+                                      {m.name} {Number(m.cost) > 0 ? `(+ L. ${Number(m.cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})` : '(Gratis)'}
+                                    </option>
+                                  ))
+                                )}
                               </select>
                             </div>
                           </div>
@@ -665,7 +673,11 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                             <CreditCard className="input-icon" size={18} />
                             <select required value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
                               <option value="" disabled>Método de pago...</option>
-                              {availableMethods.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+                              {availableMethods.length === 0 ? (
+                                <option value="" disabled>No hay métodos de pago configurados</option>
+                              ) : (
+                                availableMethods.map(m => <option key={m.id} value={m.name}>{m.name}</option>)
+                              )}
                             </select>
                           </div>
                         </div>
