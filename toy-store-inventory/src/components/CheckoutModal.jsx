@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db, layawayRepository, orderRepository, productRepository } from '../services/db';
-import { X, Trash2, CheckCircle, User, Mail, Phone, MapPin, Truck, CreditCard, Copy, AlertCircle } from 'lucide-react';
+import { X, Trash2, CheckCircle, User, Mail, Phone, MapPin, Truck, CreditCard, Copy, AlertCircle, ChevronDown } from 'lucide-react';
 import { hondurasLocations } from '../data/hondurasLocations';
 import { useToast } from '../hooks/useToast';
 import { useCart } from '../contexts/CartContext';
@@ -40,6 +40,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
   const [wrapGift, setWrapGift] = useState(false);
   const [deliveryOption, setDeliveryOption] = useState('party');
   const [checkoutError, setCheckoutError] = useState(null);
+  const [isCartExpandedMobile, setIsCartExpandedMobile] = useState(false);
 
   const [customerInfo, setCustomerInfo] = useState({ name: '', email: '', phone: '', address: '', department: '', municipality: '' });
   const [orderComplete, setOrderComplete] = useState(false);
@@ -53,6 +54,14 @@ const CheckoutModal = ({ isOpen, onClose }) => {
   const [_activeCouponsCount, _setActiveCouponsCount] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedOrderNumber, setCompletedOrderNumber] = useState(null);
+
+  const focusAndScrollToField = (selector) => {
+    const el = document.querySelector(selector);
+    if (el) {
+      el.focus();
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  };
 
   const validateCartStock = React.useCallback(async () => {
     if (!cart || cart.length === 0) return;
@@ -75,6 +84,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
       setAppliedCoupon(null);
       _setCouponError('');
       setDeliveryMethodId('');
+      setIsCartExpandedMobile(false);
 
       const initData = async () => {
         try {
@@ -149,6 +159,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
     const nameValidation = validateCustomerName(customerInfo.name);
     if (!nameValidation.isValid) {
       showToast(nameValidation.error, 'warning');
+      focusAndScrollToField('#checkout-name-input');
       return;
     }
     const sanitizedName = nameValidation.sanitized;
@@ -156,12 +167,14 @@ const CheckoutModal = ({ isOpen, onClose }) => {
     const emailValidation = validateCustomerEmail(customerInfo.email);
     if (!emailValidation.isValid) {
       showToast(emailValidation.error, 'warning');
+      focusAndScrollToField('#checkout-email-input');
       return;
     }
 
     const phoneValidation = validateCustomerPhone(customerInfo.phone);
     if (!phoneValidation.isValid) {
       showToast(phoneValidation.error, 'warning');
+      focusAndScrollToField('#checkout-phone-input');
       return;
     }
     const phoneRaw = phoneValidation.value;
@@ -173,25 +186,42 @@ const CheckoutModal = ({ isOpen, onClose }) => {
     const isPartyDelivery = hasLayawayGifts && deliveryOption === 'party';
 
     if (!isLayawayMode) {
-      if (!isPartyDelivery && !isPickUp && !sanitizedAddress) {
-        showToast('La dirección de envío es requerida.', 'warning');
-        return;
+      if (!isPartyDelivery && !isPickUp) {
+        if (!customerInfo.department) {
+          showToast('Por favor selecciona un departamento.', 'warning');
+          focusAndScrollToField('#checkout-department-select');
+          return;
+        }
+        if (!customerInfo.municipality) {
+          showToast('Por favor selecciona un municipio.', 'warning');
+          focusAndScrollToField('#checkout-municipality-select');
+          return;
+        }
+        if (!sanitizedAddress) {
+          showToast('La dirección de envío es requerida.', 'warning');
+          focusAndScrollToField('#checkout-address-input');
+          return;
+        }
       }
       if (!isPartyDelivery && !deliveryMethodId) {
         showToast('Por favor selecciona un método de envío.', 'warning');
+        focusAndScrollToField('#checkout-delivery-select');
         return;
       }
       if (!paymentMethod) {
         showToast('Por favor selecciona un método de pago.', 'warning');
+        focusAndScrollToField('#checkout-payment-select');
         return;
       }
     } else {
       if (!sanitizedEventName) {
         showToast('El nombre del cumpleañero u ocasión es requerido.', 'warning');
+        focusAndScrollToField('#checkout-event-name-input');
         return;
       }
       if (!layawayInfo.eventDate) {
         showToast('La fecha del evento es requerida.', 'warning');
+        focusAndScrollToField('#checkout-event-date-input');
         return;
       }
     }
@@ -415,11 +445,11 @@ const CheckoutModal = ({ isOpen, onClose }) => {
   const isPickUp = !!selectedDelivery && (selectedDelivery.name.toLowerCase().includes('pick up') || selectedDelivery.name.toLowerCase().includes('pickup'));
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay checkout-modal-overlay" onClick={onClose}>
       <div className="modal-content glass-panel checkout-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h2>{isLayawayMode ? 'Crear Lista de Apartado' : 'Carrito de Compras'}</h2>
-          <button type="button" className="btn-close-modal" onClick={onClose}><X size={20} /></button>
+          <button type="button" className="btn-close-modal" aria-label="Cerrar modal de checkout" onClick={onClose}><X size={20} /></button>
         </div>
 
         <div className="checkout-body">
@@ -463,11 +493,56 @@ const CheckoutModal = ({ isOpen, onClose }) => {
             <>
               <div className="checkout-content">
                 <div className="cart-column">
-                  <h3 className="column-title">{isLayawayMode ? 'Juguetes a Reservar' : 'Carrito de Compras'}</h3>
+                  {cart.length > 0 && (
+                    <div 
+                      className="cart-column-mobile-summary"
+                      onClick={() => setIsCartExpandedMobile(!isCartExpandedMobile)}
+                      role="button"
+                      tabIndex={0}
+                      aria-expanded={isCartExpandedMobile}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setIsCartExpandedMobile(!isCartExpandedMobile);
+                        }
+                      }}
+                    >
+                      <div className="cart-column-mobile-info">
+                        <span className="cart-column-mobile-title">
+                          {isLayawayMode ? 'Juguetes a Reservar' : 'Resumen del Carrito'}
+                        </span>
+                        <span className="cart-column-mobile-count">
+                          ({cart.reduce((acc, item) => acc + item.quantity, 0)} {cart.reduce((acc, item) => acc + item.quantity, 0) === 1 ? 'producto' : 'productos'})
+                        </span>
+                      </div>
+                      <div className="cart-column-mobile-action">
+                        <span className="cart-column-mobile-subtotal">
+                          L. {cartSubtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                        <button 
+                          type="button" 
+                          className="cart-toggle-btn"
+                          aria-label={isCartExpandedMobile ? 'Ocultar productos' : 'Ver productos'}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsCartExpandedMobile(!isCartExpandedMobile);
+                          }}
+                        >
+                          <span>{isCartExpandedMobile ? 'Ocultar' : 'Ver'}</span>
+                          <ChevronDown 
+                            size={18} 
+                            className={`cart-toggle-icon ${isCartExpandedMobile ? 'open' : ''}`} 
+                          />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <h3 className="column-title desktop-only-title">{isLayawayMode ? 'Juguetes a Reservar' : 'Carrito de Compras'}</h3>
                   {cart.length === 0 ? (
                     <p className="empty-state">Tu carrito está vacío.</p>
                   ) : (
-                    <div className="cart-items-scroll">
+                    <div className={`cart-items-scroll ${isCartExpandedMobile ? 'mobile-expanded' : 'mobile-collapsed'}`}>
                       <div className="cart-items-list">
                         {cart.map((item, index) => (
                           <div key={item.product.id} className="cart-item-card">
@@ -478,14 +553,14 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                               </div>
                               <div className="item-card-footer">
                                 <div className="item-qty-selector">
-                                  <button type="button" onClick={() => updateQuantity(index, -1)} disabled={item.quantity <= 1}>-</button>
+                                  <button type="button" aria-label="Disminuir cantidad" onClick={() => updateQuantity(index, -1)} disabled={item.quantity <= 1}>-</button>
                                   <span>{item.quantity}</span>
-                                  <button type="button" onClick={() => updateQuantity(index, 1)}>+</button>
+                                  <button type="button" aria-label="Aumentar cantidad" onClick={() => updateQuantity(index, 1)}>+</button>
                                 </div>
                                 <div className="item-card-subtotal">
                                   L. {((item.product.discountPrice || item.product.sellingPrice) * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </div>
-                                <button type="button" className="item-remove-btn" onClick={() => removeItem(index)}>
+                                <button type="button" className="item-remove-btn" aria-label={`Eliminar ${item.product.name}`} onClick={() => removeItem(index)}>
                                   <Trash2 size={16} />
                                 </button>
                               </div>
@@ -498,7 +573,14 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                 </div>
 
                 <div className="form-column">
-                  <form id="checkout-form-data" className="checkout-form" onSubmit={handleCheckout}>
+                  <form 
+                    id="checkout-form-data" 
+                    className="checkout-form" 
+                    onSubmit={handleCheckout}
+                    onInvalid={(e) => {
+                      e.target?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                    }}
+                  >
                     {checkoutError && (
                       <div className="checkout-error-card">
                         <AlertCircle size={20} />
@@ -509,6 +591,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                         <button 
                           type="button" 
                           className="checkout-error-card-close" 
+                          aria-label="Descartar aviso de error"
                           onClick={() => setCheckoutError(null)}
                           title="Descartar aviso"
                         >
@@ -529,15 +612,36 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                       </div>
                       <div className="form-input-group">
                         <User className="input-icon" size={18} />
-                        <input type="text" placeholder="Nombre completo" required value={customerInfo.name} onChange={e => setCustomerInfo({ ...customerInfo, name: e.target.value })} />
+                        <input 
+                          id="checkout-name-input"
+                          type="text" 
+                          placeholder="Nombre completo" 
+                          required 
+                          value={customerInfo.name} 
+                          onChange={e => setCustomerInfo({ ...customerInfo, name: e.target.value })} 
+                        />
                       </div>
                       <div className="form-input-group">
                         <Mail className="input-icon" size={18} />
-                        <input type="email" placeholder="Correo electrónico" required value={customerInfo.email} onChange={e => setCustomerInfo({ ...customerInfo, email: e.target.value })} />
+                        <input 
+                          id="checkout-email-input"
+                          type="email" 
+                          placeholder="Correo electrónico" 
+                          required 
+                          value={customerInfo.email} 
+                          onChange={e => setCustomerInfo({ ...customerInfo, email: e.target.value })} 
+                        />
                       </div>
                       <div className="form-input-group">
                         <Phone className="input-icon" size={18} />
-                        <input type="tel" placeholder="Teléfono móvil" required value={customerInfo.phone} onChange={e => setCustomerInfo({ ...customerInfo, phone: e.target.value })} />
+                        <input 
+                          id="checkout-phone-input"
+                          type="tel" 
+                          placeholder="Teléfono móvil" 
+                          required 
+                          value={customerInfo.phone} 
+                          onChange={e => setCustomerInfo({ ...customerInfo, phone: e.target.value })} 
+                        />
                       </div>
                     </div>
 
@@ -592,6 +696,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                         <div className="form-input-group">
                           <User className="input-icon" size={18} style={{ top: '13px' }} />
                           <input 
+                            id="checkout-event-name-input"
                             type="text" 
                             placeholder="Nombre del Cumpleañero u Ocasión" 
                             required 
@@ -602,6 +707,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                         <div className="form-input-group" style={{ display: 'block' }}>
                           <span className="input-helper-text" style={{ marginBottom: '8px', marginLeft: '0', display: 'block', fontWeight: 600, fontSize: '0.85rem', color: '#64748b' }}>Fecha de la Fiesta / Evento</span>
                           <input 
+                            id="checkout-event-date-input"
                             type="date" 
                             required 
                             value={layawayInfo.eventDate} 
@@ -621,17 +727,30 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                             <div className="form-row-nested location-row">
                               <div className="form-input-group">
                                 <MapPin className="input-icon" size={18} />
-                                <select className="ellipsis-select" required value={customerInfo.department} onChange={e => setCustomerInfo({ ...customerInfo, department: e.target.value, municipality: '' })}>
+                                <select 
+                                  id="checkout-department-select"
+                                  className="ellipsis-select" 
+                                  required 
+                                  value={customerInfo.department} 
+                                  onChange={e => setCustomerInfo({ ...customerInfo, department: e.target.value, municipality: '' })}
+                                >
                                   <option value="" disabled>Departamento</option>
                                   {Object.keys(hondurasLocations).sort().map(dept => <option key={dept} value={dept}>{dept}</option>)}
                                 </select>
                               </div>
                               <div className="form-input-group">
                                 <MapPin className="input-icon" size={18} />
-                                <select className="ellipsis-select" required onChange={e => {
-                                  const newMuni = e.target.value;
-                                  setCustomerInfo({ ...customerInfo, municipality: newMuni });
-                                }} disabled={!customerInfo.department} value={customerInfo.municipality}>
+                                <select 
+                                  id="checkout-municipality-select"
+                                  className="ellipsis-select" 
+                                  required 
+                                  onChange={e => {
+                                    const newMuni = e.target.value;
+                                    setCustomerInfo({ ...customerInfo, municipality: newMuni });
+                                  }} 
+                                  disabled={!customerInfo.department} 
+                                  value={customerInfo.municipality}
+                                >
                                   <option value="" disabled>Municipio</option>
                                   {customerInfo.department && hondurasLocations[customerInfo.department].sort().map(muni => <option key={muni} value={muni}>{muni}</option>)}
                                 </select>
@@ -642,13 +761,26 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                               <div className="form-input-group">
                                 <span className="input-helper-text" style={{ marginBottom: '8px', marginLeft: '0' }}>Dirección Completa</span>
                                 <MapPin className="input-icon" size={18} style={{ top: '45px', transform: 'none' }} />
-                                <textarea placeholder="Punto de referencia o dirección exacta..." required rows="2" value={customerInfo.address} onChange={e => setCustomerInfo({ ...customerInfo, address: e.target.value })} style={{ paddingTop: '16px' }} />
+                                <textarea 
+                                  id="checkout-address-input"
+                                  placeholder="Punto de referencia o dirección exacta..." 
+                                  required 
+                                  rows="2" 
+                                  value={customerInfo.address} 
+                                  onChange={e => setCustomerInfo({ ...customerInfo, address: e.target.value })} 
+                                  style={{ paddingTop: '16px' }} 
+                                />
                               </div>
                             )}
 
                             <div className="form-input-group">
                               <Truck className="input-icon" size={18} />
-                              <select required value={deliveryMethodId} onChange={e => setDeliveryMethodId(e.target.value)}>
+                              <select 
+                                id="checkout-delivery-select"
+                                required 
+                                value={deliveryMethodId} 
+                                onChange={e => setDeliveryMethodId(e.target.value)}
+                              >
                                 <option value="" disabled>Método de entrega...</option>
                                 {filteredDeliveryMethods.length === 0 ? (
                                   <option value="" disabled>No hay envíos disponibles para esta zona</option>
@@ -671,7 +803,12 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                           </div>
                           <div className="form-input-group">
                             <CreditCard className="input-icon" size={18} />
-                            <select required value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
+                            <select 
+                              id="checkout-payment-select"
+                              required 
+                              value={paymentMethod} 
+                              onChange={e => setPaymentMethod(e.target.value)}
+                            >
                               <option value="" disabled>Método de pago...</option>
                               {availableMethods.length === 0 ? (
                                 <option value="" disabled>No hay métodos de pago configurados</option>
@@ -739,3 +876,4 @@ const CheckoutModal = ({ isOpen, onClose }) => {
 };
 
 export default CheckoutModal;
+
