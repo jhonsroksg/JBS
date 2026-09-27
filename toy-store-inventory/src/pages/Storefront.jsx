@@ -569,7 +569,11 @@ const Storefront = () => {
             {isLoading ? (
               <SkeletonGrid count={8} />
             ) : (
-              <div className="products-grid">
+              <div
+                className={`products-grid ${
+                  currentProducts.length === 1 ? 'products-grid--single' : ''
+                }`}
+              >
                 {currentProducts.map((product, index) => (
                   <ProductCard
                     key={product.id}

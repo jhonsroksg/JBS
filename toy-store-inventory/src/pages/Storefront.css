@@ -81,14 +81,38 @@
 
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
+  width: 100%;
+}
+
+.products-grid--single {
+  grid-template-columns: minmax(0, 420px);
+  justify-content: center;
+}
+
+.products-grid--single .product-card {
+  max-width: 420px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.products-grid--single .card-actions-icons {
+  display: grid;
+  grid-template-columns: repeat(4, 44px);
+  justify-content: center;
+  gap: 16px;
 }
 
 @media (min-width: 1024px) {
   .products-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 32px;
+  }
+
+  .products-grid--single {
+    grid-template-columns: minmax(0, 420px);
+    justify-content: center;
   }
 }
 
@@ -370,6 +394,8 @@
   border: 1px solid var(--border-color);
   box-shadow: 0 2px 12px rgba(0,0,0,0.10);
   transition: all 0.3s ease;
+  width: 100%;
+  min-width: 0;
 }
 
 .product-image-container {
@@ -378,6 +404,11 @@
   position: relative;
   overflow: hidden;
   background-color: #F9F9F9;
+  min-width: 0;
+}
+
+.product-image-container .optimized-image-element {
+  object-fit: contain !important;
 }
 
 .skeleton-image {
@@ -443,6 +474,14 @@
   flex: 1;
   gap: 12px;
   min-height: 180px;
+  min-width: 0;
+}
+
+.product-card-top-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 
 .product-title {
@@ -453,12 +492,43 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  line-height: 1.35;
+  min-height: 2.7em;
+  margin: 0;
+}
+
+.product-category {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.product-price-container {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+  margin-top: 4px;
 }
 
 .product-price-current {
   font-size: 1.125rem;
   font-weight: 800;
   color: #22C55E;
+  white-space: nowrap;
+}
+
+.product-price-old {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  text-decoration: line-through;
+  white-space: nowrap;
 }
 
 .card-actions-icons {
@@ -476,11 +546,14 @@
   color: #22C1C3;
   width: 44px;
   height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
+  cursor: pointer;
 }
 
 .icon-action-btn:hover {
@@ -491,10 +564,10 @@
 
 .floating-whatsapp-btn {
   position: fixed;
-  bottom: 30px;
-  right: 30px;
-  width: 60px;
-  height: 60px;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  right: calc(24px + env(safe-area-inset-right, 0px));
+  width: 56px;
+  height: 56px;
   background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
   color: white;
   border-radius: 50%;
@@ -502,7 +575,7 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 10px 25px rgba(37, 211, 102, 0.4);
-  z-index: 1500;
+  z-index: 990;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   animation: waPulse 2s infinite;
@@ -556,7 +629,7 @@
 /* --- HERO SECTION MOBILE FIXES --- */
 @media (max-width: 768px) {
   .storefront {
-    padding: 16px 12px;
+    padding: 16px 12px calc(80px + env(safe-area-inset-bottom, 0px)) 12px;
   }
 
   .search-and-filter-container {
@@ -581,51 +654,94 @@
   .hero-content p {
     font-size: clamp(0.9rem, 4vw, 1rem);
   }
-}
 
-/* Responsive fixes for WhatsApp button */
-@media (max-width: 768px) {
   .floating-whatsapp-btn {
-    bottom: 20px;
-    right: 20px;
-    width: 54px;
-    height: 54px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    right: calc(16px + env(safe-area-inset-right, 0px));
+    width: 50px;
+    height: 50px;
   }
+
+  .floating-whatsapp-btn svg {
+    width: 26px;
+    height: 26px;
+  }
+
   .floating-whatsapp-btn .tooltip {
     display: none; /* Hide text on mobile to keep it clean */
   }
 
-  /* --- PRODUCT CARDS MOBILE FIXES --- */
+  /* --- PRODUCT CARDS MOBILE FIXES (<=768px) --- */
   .products-grid {
     gap: 12px;
   }
-  @media (max-width: 360px) {
-    .products-grid {
-      grid-template-columns: 1fr;
-    }
+
+  /* En 2 columnas móviles, ocultamos el botón de favorito inferior para evitar que queden 4 botones amontonados, ya que el corazón superior en la imagen cumple esa función */
+  .products-grid:not(.products-grid--single) .card-actions-icons .favorite-action-btn {
+    display: none;
   }
+
+  .products-grid:not(.products-grid--single) .card-actions-icons {
+    display: flex;
+    justify-content: space-around;
+    gap: 4px;
+    padding-top: 12px;
+    flex-wrap: nowrap;
+  }
+
+  .products-grid:not(.products-grid--single) .icon-action-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 40px;
+    flex-shrink: 0;
+  }
+
   .product-info {
     padding: 12px;
-    min-height: 150px;
+    min-height: 140px;
   }
+
   .product-title {
     font-size: 0.8rem;
   }
+
   .product-price-current {
-    font-size: 1rem;
+    font-size: 0.98rem;
   }
-  .card-actions-icons {
-    flex-wrap: wrap;
-    gap: 6px;
-    padding-top: 12px;
-  }
-  .icon-action-btn {
+
+  .card-heart-badge {
     width: 44px;
     height: 44px;
+    min-width: 44px;
+    min-height: 44px;
   }
-  .icon-action-btn svg {
-    width: 20px;
-    height: 20px;
+}
+
+/* Media Query Independiente para pantallas ultra compactas (<= 360px) */
+@media (max-width: 360px) {
+  .products-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 14px;
+  }
+
+  .products-grid--single {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .product-card {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .products-grid .card-actions-icons .favorite-action-btn {
+    display: flex !important;
+  }
+
+  .card-actions-icons {
+    display: grid !important;
+    grid-template-columns: repeat(4, 44px) !important;
+    justify-content: center !important;
+    gap: 8px !important;
   }
 }
 

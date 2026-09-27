@@ -37,7 +37,7 @@ export const ProductCard = ({
           className="product-image" 
           priority={priority}
           width="400" 
-          height="300"
+          height="400"
           quality={75}
         />
         <button
