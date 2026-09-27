@@ -61,6 +61,17 @@
   padding: 0;
 }
 
+/* Evitar zoom automático en iOS al enfocar campos de texto */
+input, select, textarea {
+  font-size: 16px !important;
+}
+
+/* Accesibilidad: mantener siempre visible el foco de teclado */
+:focus-visible {
+  outline: 2px solid var(--accent-primary) !important;
+  outline-offset: 2px !important;
+}
+
 body {
   font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background: var(--bg-primary);
@@ -70,6 +81,7 @@ body {
   background-attachment: fixed;
   transition: background-color 0.6s ease, background-image 0.6s ease;
   min-height: 100vh;
+  min-height: 100dvh;
   color: var(--text-primary);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -104,6 +116,7 @@ h1, h2, h3, h4, h5, h6 {
 .layout-container {
   display: flex;
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100vw;
   overflow: hidden;
   position: relative;
@@ -413,6 +426,10 @@ h1, h2, h3, h4, h5, h6 {
   .page-content {
     padding: 20px;
   }
+  
+  input, select, textarea {
+    font-size: 16px; /* Prevents auto-zoom on iOS */
+  }
 }
 
 @media (max-width: 768px) {
@@ -531,6 +548,7 @@ h1, h2, h3, h4, h5, h6 {
   width: 100%;
   max-width: 650px;
   max-height: 90vh;
+  max-height: 90dvh;
   background: var(--bg-secondary);
   border-radius: 24px;
   overflow-y: auto;
@@ -688,4 +706,14 @@ html[data-section]:not([data-section="default"]):not([data-section="all"]) body:
 
 html {
   transition: background-color 0.6s ease;
+}
+
+/* --- ACCESSIBILITY --- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

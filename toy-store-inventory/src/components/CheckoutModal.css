@@ -2,6 +2,7 @@
   max-width: 1100px !important;
   width: 95% !important;
   max-height: 90vh !important;
+  max-height: 90dvh !important;
   border-radius: 32px !important;
   overflow: hidden;
   background: white !important;
@@ -357,7 +358,8 @@
   padding: 12px 16px 12px 46px !important;
   border: 2px solid #edf2f7 !important;
   border-radius: 14px !important;
-  font-size: 0.95rem !important;
+  font-size: 16px !important; /* Minimum 16px to prevent iOS zoom */
+  min-height: 44px; /* Minimum touch target */
   font-weight: 500 !important;
   background: #f8fafc !important;
   color: #2d3748 !important;
@@ -439,7 +441,7 @@
   margin-top: 12px;
   background: linear-gradient(135deg, var(--accent-primary) 0%, #17a9ab 100%);
   width: 100%;
-  height: 52px;
+  min-height: 52px;
   border: none;
   color: white;
   border-radius: 14px;
@@ -541,11 +543,25 @@
     gap: 8px !important;
   }
 
+  .checkout-modal {
+    width: 100% !important;
+    max-height: 100dvh !important;
+    height: 100dvh !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    overflow-y: auto !important;
+    display: block !important;
+  }
+  
+  .checkout-body {
+    padding-bottom: env(safe-area-inset-bottom);
+    overflow-y: visible !important;
+    flex: none !important;
+  }
+
   .item-card-header {
-    flex-direction: row !important; /* Keep price on the same line but wrap if necessary */
     flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
+    gap: 8px;
   }
 
   .item-card-header h4 {
@@ -561,14 +577,8 @@
 
   .cart-item-card {
     flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-
-  .item-card-header {
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
+    align-items: flex-start;
+    text-align: left;
   }
 
   .item-card-footer {
@@ -576,7 +586,7 @@
     justify-content: space-between !important;
     gap: 10px;
     flex-direction: row !important;
-    flex-wrap: nowrap !important;
+    flex-wrap: wrap !important;
   }
 
   .item-qty-selector {

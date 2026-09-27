@@ -39,6 +39,7 @@
   font-size: 0.88rem;
   font-weight: 600;
   padding: 8px 18px;
+  min-height: 44px;
   cursor: pointer;
   white-space: nowrap;
   display: flex;
@@ -117,6 +118,7 @@
   .section-nav-link {
     font-size: 0.85rem;
     padding: 8px 12px;
+    min-height: 44px;
   }
 
   .section-nav-link.active::after {

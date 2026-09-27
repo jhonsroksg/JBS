@@ -1,4 +1,4 @@
-.modal-content {
+.product-modal-content {
   max-width: 950px;
   width: 95%;
   padding: 0;
@@ -109,7 +109,7 @@
   flex-direction: column;
 }
 
-.close-modal {
+.product-close-modal {
   position: absolute;
   top: 20px;
   right: 20px;
@@ -209,10 +209,10 @@
   margin-top: auto;
 }
 
-.btn-primary.buy-now {
+.product-btn-primary.buy-now {
   background: linear-gradient(135deg, #22C1C3 0%, #2D8E91 100%);
   color: white;
-  height: 54px;
+  min-height: 54px;
   border-radius: 16px;
   font-weight: 700;
   font-size: 1.05rem;
@@ -225,15 +225,15 @@
   transition: all 0.3s ease;
 }
 
-.btn-primary.buy-now:hover {
+.product-btn-primary.buy-now:hover {
   transform: translateY(-2px);
   box-shadow: 0 15px 30px rgba(34, 193, 195, 0.4);
 }
 
-.btn-secondary {
+.product-btn-secondary {
   background: white;
   border: 1.5px solid #E5E7EB;
-  height: 50px;
+  min-height: 50px;
   border-radius: 14px;
   font-weight: 600;
   color: var(--text-primary);
@@ -244,18 +244,18 @@
   transition: all 0.2s ease;
 }
 
-.btn-secondary:hover {
+.product-btn-secondary:hover {
   border-color: var(--accent-primary);
   color: var(--accent-primary);
   background: var(--accent-light);
 }
 
-.btn-secondary.whatsapp {
+.product-btn-secondary.whatsapp {
   border-color: #25D366;
   color: #128C7E;
 }
 
-.btn-secondary.whatsapp:hover {
+.product-btn-secondary.whatsapp:hover {
   background: #E8F9EE;
 }
 
@@ -269,6 +269,7 @@
   background: none;
   border: 1px solid var(--border-color);
   padding: 10px;
+  min-height: 50px;
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -279,9 +280,9 @@
 }
 
 @media (max-width: 900px) {
-  .modal-content {
+  .product-modal-content {
     flex-direction: column;
-    max-height: 90vh;
+    max-height: 90dvh;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -297,11 +298,13 @@
     padding: 24px;
     overflow: visible;
   }
-  .close-modal {
+  .product-close-modal {
     position: fixed;
     top: 16px;
     right: 16px;
     z-index: 1050;
+    min-width: 44px;
+    min-height: 44px;
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(8px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);

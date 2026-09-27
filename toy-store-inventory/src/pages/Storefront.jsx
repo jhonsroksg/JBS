@@ -125,7 +125,7 @@ const Storefront = () => {
   }, [searchParams, setSearchParams]);
 
   const setActiveCategory = useCallback((cat) => updateParams({ cat }), [updateParams]);
-  const setActiveSection = useCallback((section) => updateParams({ section }), [updateParams]);
+
   const setSearchTerm = useCallback((q) => updateParams({ q }), [updateParams]);
   const toggleFavoritesFilter = useCallback(() => updateParams({ fav: isFavoritesOnly ? null : 'true' }), [updateParams, isFavoritesOnly]);
   const setSelectedProduct = useCallback((product) => {
@@ -477,7 +477,7 @@ const Storefront = () => {
               {favoritesCount > 0 && <span className="favorites-badge">{favoritesCount}</span>}
             </button>
 
-            <button className="btn-clear-inline" onClick={() => { setActiveCategory('all'); setActiveSection('all'); setActiveAgeRange('all'); setSearchTerm(''); setPriceRange(null); updateParams({ fav: null }); }}>
+            <button className="btn-clear-inline" onClick={() => { setActiveAgeRange('all'); setPriceRange(null); updateParams({ cat: null, section: null, q: null, fav: null }); }}>
               <RotateCcw size={14} style={{ marginRight: '6px' }} /> Limpiar
             </button>
           </div>
@@ -510,7 +510,7 @@ const Storefront = () => {
               <div className="category-list">
                 <button 
                   className={`category-item-btn ${activeCategory === 'all' && !isFavoritesOnly ? 'active' : ''}`}
-                  onClick={() => { setActiveCategory('all'); updateParams({ fav: null }); setIsMobileFiltersOpen(false); }}
+                  onClick={() => { updateParams({ cat: null, fav: null }); setIsMobileFiltersOpen(false); }}
                 >
                   Todas las categorías
                 </button>
@@ -518,7 +518,7 @@ const Storefront = () => {
                   <button 
                     key={cat.id} 
                     className={`category-item-btn ${activeCategory === cat.id && !isFavoritesOnly ? 'active' : ''}`}
-                    onClick={() => { setActiveCategory(cat.id); updateParams({ fav: null }); setIsMobileFiltersOpen(false); }}
+                    onClick={() => { updateParams({ cat: cat.id, fav: null }); setIsMobileFiltersOpen(false); }}
                   >
                     {cat.name}
                   </button>
@@ -559,7 +559,7 @@ const Storefront = () => {
               <button className="btn-primary" style={{ width: '100%', height: '48px' }} onClick={() => setIsMobileFiltersOpen(false)}>
                 Aplicar Filtros
               </button>
-              <button className="btn-clear-filters" style={{ width: '100%' }} onClick={() => { setActiveCategory('all'); setActiveSection('all'); setActiveAgeRange('all'); setSearchTerm(''); setPriceRange(null); updateParams({ fav: null }); setIsMobileFiltersOpen(false); }}>
+              <button className="btn-clear-filters" style={{ width: '100%' }} onClick={() => { setActiveAgeRange('all'); setPriceRange(null); updateParams({ cat: null, section: null, q: null, fav: null }); setIsMobileFiltersOpen(false); }}>
                 Limpiar todo
               </button>
             </div>

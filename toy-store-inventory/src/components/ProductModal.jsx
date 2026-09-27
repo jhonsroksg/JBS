@@ -45,8 +45,8 @@ export const ProductModal = ({
   const images = product.images || [product.imageUrl || 'https://via.placeholder.com/400'];
 
   return (
-    <div className="modal-overlay" style={{ zIndex: 1000 }}>
-      <div className="modal-content glass-panel" onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay product-modal-overlay" style={{ zIndex: 1000 }}>
+      <div className="product-modal-content glass-panel" onClick={e => e.stopPropagation()}>
         <div className="modal-gallery-side">
           <div className="modal-main-image-wrapper">
             <OptimizedImage 
@@ -101,7 +101,7 @@ export const ProductModal = ({
           >
             <Heart size={20} fill={isFavorite(product.id) ? '#f43f5e' : 'none'} color={isFavorite(product.id) ? '#f43f5e' : 'currentColor'} />
           </button>
-          <button className="btn-icon close-modal" onClick={onClose} aria-label="Cerrar modal"><X /></button>
+          <button className="btn-icon product-close-modal" onClick={onClose} aria-label="Cerrar modal"><X /></button>
           
           <h2 className="modal-product-title">{product.name}</h2>
           <p className="modal-product-category">{categories.find(c => c.id === product.categoryId)?.name || 'Sin Categoría'}</p>
@@ -141,7 +141,7 @@ export const ProductModal = ({
 
           <div className="modal-actions-container">
             <button 
-              className="btn-primary buy-now" 
+              className="product-btn-primary buy-now" 
               onClick={() => onBuyNow(product)}
               disabled={product.stock <= 0}
               style={product.stock <= 0 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
@@ -150,21 +150,21 @@ export const ProductModal = ({
             </button>
             <div className="secondary-actions">
               <button 
-                className="btn-secondary add-cart" 
+                className="product-btn-secondary add-cart" 
                 onClick={() => onAddToCart(product)}
                 disabled={product.stock <= 0}
                 style={product.stock <= 0 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
               >
                 <ShoppingCart size={20} /> Carrito
               </button>
-              <button className="btn-secondary whatsapp" onClick={() => onWhatsApp(product)}>
+              <button className="product-btn-secondary whatsapp" onClick={() => onWhatsApp(product)}>
                 <MessageCircle size={20} /> WhatsApp
               </button>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button 
                 type="button"
-                className="btn-secondary"
+                className="product-btn-secondary"
                 onClick={() => toggleFavorite(product.id, product.name)}
                 aria-label={isFavorite(product.id) ? "Quitar de favoritos" : "Agregar a favoritos"}
                 style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: isFavorite(product.id) ? '#f43f5e' : 'inherit', borderColor: isFavorite(product.id) ? '#f43f5e' : 'var(--border-color)' }}

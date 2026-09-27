@@ -633,7 +633,7 @@ const Products = () => {
               {isLowStockFilter && <X size={14} style={{ marginLeft: '4px' }} />}
             </button>
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <input type="file" id="import-excel-input" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleImportExcel} />
             <button 
               className="btn-secondary" 
@@ -835,13 +835,13 @@ const Products = () => {
       </div>
 
       {isModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content glass-panel" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className="products-modal-overlay">
+          <div className="products-modal-content glass-panel" onClick={e => e.stopPropagation()}>
+            <div className="products-modal-header">
               <h2>{formData.isDuplicate ? 'Duplicar Producto' : (editingId ? 'Editar Producto' : 'Nuevo Producto')}</h2>
               <button className="btn-icon" onClick={handleCloseModal}><X /></button>
             </div>
-            <form onSubmit={handleSave} className="modal-form">
+            <form onSubmit={handleSave} className="products-modal-form">
               <div className="form-row">
                 <div className="form-group">
                   <label>SKU</label>
@@ -938,7 +938,7 @@ const Products = () => {
                   )}
                 </div>
               </div>
-              <div className="modal-actions">
+              <div className="products-modal-actions">
                 <button type="button" className="btn-secondary" onClick={handleCloseModal}>Cancelar</button>
                 <button type="submit" className="btn-primary">Guardar cambios</button>
               </div>

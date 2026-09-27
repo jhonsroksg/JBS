@@ -599,6 +599,11 @@
   .products-grid {
     gap: 12px;
   }
+  @media (max-width: 360px) {
+    .products-grid {
+      grid-template-columns: 1fr;
+    }
+  }
   .product-info {
     padding: 12px;
     min-height: 150px;
@@ -615,12 +620,12 @@
     padding-top: 12px;
   }
   .icon-action-btn {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
   }
   .icon-action-btn svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
   }
 }
 
@@ -640,6 +645,7 @@
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
+  min-height: 44px;
   border-radius: 9999px;
   border: 1px solid #e2e8f0;
   background-color: #ffffff;
@@ -671,8 +677,8 @@
 }
 
 .pagination-number-btn {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -714,8 +720,8 @@
     padding: 8px 12px;
   }
   .pagination-number-btn {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     font-size: 13px;
   }
 }

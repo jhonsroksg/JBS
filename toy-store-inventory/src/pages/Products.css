@@ -160,8 +160,8 @@
   box-shadow: 0 8px 20px rgba(231, 76, 60, 0.4);
 }
 
-/* Modal Styles */
-.modal-overlay {
+/* Modal Styles scoped to Admin Products */
+.products-modal-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0, 0, 0, 0.6);
@@ -172,24 +172,25 @@
   justify-content: center;
 }
 
-.modal-content {
+.products-modal-content {
   width: 100%;
   max-width: 600px;
   background: var(--bg-secondary);
   padding: 0;
   overflow: hidden;
   max-height: 90vh;
+  max-height: 90dvh;
   display: flex;
   flex-direction: column;
-  animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: productsModalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes modalIn {
+@keyframes productsModalIn {
   from { opacity: 0; transform: translateY(20px) scale(0.95); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.modal-header {
+.products-modal-header {
   padding: 20px 24px;
   border-bottom: 1px solid var(--border-color);
   display: flex;
@@ -198,31 +199,31 @@
   flex-shrink: 0;
 }
 
-.modal-header h2 {
+.products-modal-header h2 {
   font-size: 1.25rem;
   margin: 0;
 }
 
-.modal-form {
+.products-modal-form {
   padding: 24px;
   overflow-y: auto;
   flex: 1;
 }
 
-.form-row {
+.products-modal-form .form-row {
   display: flex;
   gap: 16px;
 }
 
-.form-row .form-group {
+.products-modal-form .form-row .form-group {
   flex: 1;
 }
 
-.form-group {
+.products-modal-form .form-group {
   margin-bottom: 16px;
 }
 
-.form-group label {
+.products-modal-form .form-group label {
   display: block;
   font-size: 0.85rem;
   color: var(--text-secondary);
@@ -230,7 +231,7 @@
   font-weight: 500;
 }
 
-.form-group input, .form-group select {
+.products-modal-form .form-group input, .products-modal-form .form-group select {
   width: 100%;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
@@ -242,11 +243,11 @@
   transition: border-color var(--transition-fast);
 }
 
-.form-group input:focus, .form-group select:focus {
+.products-modal-form .form-group input:focus, .products-modal-form .form-group select:focus {
   border-color: var(--accent-primary);
 }
 
-.modal-actions {
+.products-modal-actions {
   position: sticky;
   bottom: 0;
   display: flex;
@@ -297,7 +298,8 @@
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
-  min-width: 38px;
+  min-width: 44px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -497,4 +499,4 @@
   padding: 10px 4px !important;
 }
   
-.products-content { width: 100%%; max-width: 100%%; box-sizing: border-box; } 
+.products-content { width: 100%; max-width: 100%; box-sizing: border-box; }
