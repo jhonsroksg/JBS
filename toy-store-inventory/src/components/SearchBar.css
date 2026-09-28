@@ -2,8 +2,8 @@
   position: relative;
   width: 100%;
   max-width: 700px;
-  margin: 0 auto 32px auto;
-  z-index: 100;
+  margin: 0 auto;
+  z-index: 20;
 }
 
 .search-input-box {
@@ -16,7 +16,7 @@
   border-radius: 16px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-  position: relative; /* Para botones absolutos */
+  position: relative;
 }
 
 .search-input-box.focused {
@@ -51,8 +51,10 @@
   background: var(--bg-secondary);
   border: none;
   color: var(--text-secondary);
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
   flex-shrink: 0;
   border-radius: 50%;
   display: flex;
@@ -71,8 +73,10 @@
   background: var(--accent-primary);
   border: none;
   border-radius: 12px;
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -100,6 +104,11 @@
   top: calc(100% + 10px);
   left: 0;
   right: 0;
+  z-index: 30;
+  max-height: min(420px, 60dvh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(10px);
   border: 1px solid var(--border-color);
@@ -136,7 +145,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
+  padding: 10px 12px;
+  min-height: 44px;
   border-radius: 12px;
   border: none;
   background: transparent;
@@ -155,7 +165,7 @@
 }
 
 .suggestion-item.complex {
-  padding: 10px 12px;
+  padding: 8px 12px;
 }
 
 .suggestion-icon {
@@ -197,13 +207,17 @@
 .popular-tag {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  padding: 6px 14px;
+  padding: 8px 16px;
+  min-height: 38px;
   border-radius: 20px;
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-primary);
   cursor: pointer;
   transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .popular-tag:hover {
@@ -223,11 +237,20 @@
 @media (max-width: 768px) {
   .global-search-wrapper {
     box-sizing: border-box;
-    width: calc(100% - 32px);
-    margin: 16px auto;
+    width: 100%;
+    margin: 0 auto;
     padding: 0;
   }
   
+  .search-dropdown {
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: min(55dvh, 380px);
+    padding: 12px;
+    border-radius: 16px;
+  }
+
   .search-input-box {
     width: 100%;
     gap: 8px;
@@ -240,14 +263,20 @@
   .btn-clear-search {
     position: static;
     transform: none;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
   }
 
   .btn-filter-trigger-inline {
     position: static;
     transform: none;
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 10px;
   }
 }
 
@@ -256,3 +285,4 @@
     display: none;
   }
 }
+

@@ -112,6 +112,7 @@ const Storefront = () => {
   const [priceRange, setPriceRange] = useState(null); 
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [urlProduct, setUrlProduct] = useState(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const requestIdRef = useRef(0);
 
@@ -397,7 +398,7 @@ const Storefront = () => {
     || storeInfo.welcomeMessage || '¡Bienvenido a nuestra tienda!';
 
   return (
-    <div className="storefront">
+    <div className={`storefront ${isSearchOpen ? 'search-open' : ''}`}>
       <StorefrontSEO 
         activeCategory={activeCategory} 
         categories={categories} 
@@ -430,6 +431,7 @@ const Storefront = () => {
           products={products}
           categories={categories}
           onFilterClick={() => setIsMobileFiltersOpen(true)}
+          onOpenChange={setIsSearchOpen}
         />
 
         <div className="filter-bar">

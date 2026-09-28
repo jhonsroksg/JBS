@@ -11,7 +11,8 @@ export const SearchBar = ({
   onSelect, 
   products = [], 
   categories = [],
-  onFilterClick
+  onFilterClick,
+  onOpenChange
 }) => {
   const [inputValue, setInputValue] = useState(value);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -20,10 +21,21 @@ export const SearchBar = ({
   const [cursor, setCursor] = useState(-1);
   const searchRef = useRef(null);
 
+  // Notificar cambios de visibilidad del dropdown
+  useEffect(() => {
+    onOpenChange?.(showSuggestions);
+  }, [showSuggestions, onOpenChange]);
+
   // Cargar historial al montar
   useEffect(() => {
     const saved = localStorage.getItem('joa_search_history');
-    if (saved) setHistory(JSON.parse(saved));
+    if (saved) {
+      try {
+        setHistory(JSON.parse(saved));
+      } catch (err) {
+        console.warn('Error parsing search history:', err);
+      }
+    }
   }, []);
 
   // Debounce para actualizar el término de búsqueda global
@@ -52,7 +64,7 @@ export const SearchBar = ({
 
     // 1. Buscar en nombres de productos
     const productMatches = products
-      .filter(p => p.name.toLowerCase().includes(term))
+      .filter(p => p.name && p.name.toLowerCase().includes(term))
       .slice(0, 3)
       .map(p => ({ type: 'product', id: p.id, text: p.name, sub: p.brand || 'Joa Baby Shop' }));
 
@@ -64,7 +76,7 @@ export const SearchBar = ({
 
     // 3. Buscar en Categorías
     const categoryMatches = categories
-      .filter(c => c.name.toLowerCase().includes(term))
+      .filter(c => c.name && c.name.toLowerCase().includes(term))
       .slice(0, 2)
       .map(c => ({ type: 'category', id: c.id, text: c.name, sub: 'Ver categoría' }));
 
@@ -79,7 +91,11 @@ export const SearchBar = ({
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   const handleSelect = (term, type = 'term') => {
@@ -120,6 +136,7 @@ export const SearchBar = ({
       <div className={`search-input-box ${showSuggestions ? 'focused' : ''}`}>
         <Search className="search-icon" size={18} />
         <input 
+          id="global-search-input"
           type="text" 
           placeholder="Busca por nombre, SKU, marca o categoría..." 
           value={inputValue}
@@ -131,6 +148,10 @@ export const SearchBar = ({
           onFocus={() => setShowSuggestions(true)}
           onKeyDown={handleKeyDown}
           aria-label="Barra de búsqueda global"
+          role="combobox"
+          aria-expanded={showSuggestions}
+          aria-controls="search-suggestions-dropdown"
+          aria-autocomplete="list"
         />
         {onFilterClick && (
           <button className="btn-filter-trigger-inline" onClick={onFilterClick} aria-label="Abrir filtros">
@@ -145,7 +166,12 @@ export const SearchBar = ({
       </div>
 
       {showSuggestions && (
-        <div className="search-dropdown glass-panel">
+        <div 
+          id="search-suggestions-dropdown" 
+          className="search-dropdown glass-panel" 
+          role="listbox" 
+          aria-label="Sugerencias de búsqueda"
+        >
           {/* Historial y Sugerencias Rápidas */}
           {!inputValue && (
             <div className="dropdown-section">
@@ -153,7 +179,13 @@ export const SearchBar = ({
                 <>
                   <h5 className="dropdown-title"><History size={14} /> Recientes</h5>
                   {history.map((h, i) => (
-                    <button key={i} className="suggestion-item" onClick={() => handleSelect(h)}>
+                    <button 
+                      key={i} 
+                      className="suggestion-item" 
+                      onClick={() => handleSelect(h)}
+                      role="option"
+                      aria-selected={false}
+                    >
                       <span>{h}</span>
                     </button>
                   ))}
@@ -177,6 +209,8 @@ export const SearchBar = ({
                   key={i} 
                   className={`suggestion-item complex ${cursor === i ? 'active' : ''}`}
                   onClick={() => handleSelect(s.text, s.type)}
+                  role="option"
+                  aria-selected={cursor === i}
                 >
                   <div className="suggestion-icon">
                     {s.type === 'category' ? <Tag size={16}/> : <Package size={16}/>}
@@ -200,3 +234,4 @@ export const SearchBar = ({
     </div>
   );
 };
+
