@@ -55,12 +55,14 @@ const Settings = () => {
     phone: '', 
     welcomeMessage: '',
     hero_image_url: null,
+    email_logo_url: null,
     footer_description: '',
     facebook_url: '',
     instagram_url: '',
     store_address: '',
     store_email: ''
   });
+  const [uploadingEmailLogo, setUploadingEmailLogo] = useState(false);
   const [mainSections, setMainSections] = useState([]);
   const [newSectionName, setNewSectionName] = useState('');
   const [newSectionIcon, setNewSectionIcon] = useState('Heart');
@@ -145,11 +147,24 @@ const Settings = () => {
   const handleSaveStoreInfo = async (e) => {
     e.preventDefault();
     try {
+      // Validar que email_logo_url no sea base64 ni formato inseguro
+      let validEmailLogoUrl = null;
+      if (storeInfo.email_logo_url && typeof storeInfo.email_logo_url === 'string') {
+        const trimmed = storeInfo.email_logo_url.trim();
+        if (trimmed.startsWith('https://') || trimmed.startsWith('http://localhost')) {
+          validEmailLogoUrl = trimmed;
+        } else if (trimmed.startsWith('data:') || trimmed.startsWith('blob:')) {
+          showToast('El logo no puede ser un formato temporal o base64. Debe subirse al almacenamiento.', 'error');
+          return;
+        }
+      }
+
       const infoToSave = {
         name: storeInfo.name.trim(),
         phone: storeInfo.phone ? storeInfo.phone.trim() : null,
         welcomeMessage: storeInfo.welcomeMessage ? storeInfo.welcomeMessage.trim() : null,
         hero_image_url: storeInfo.hero_image_url ? storeInfo.hero_image_url.trim() : null,
+        email_logo_url: validEmailLogoUrl,
         footer_description: storeInfo.footer_description ? storeInfo.footer_description.trim() : null,
         facebook_url: storeInfo.facebook_url ? storeInfo.facebook_url.trim() : null,
         instagram_url: storeInfo.instagram_url ? storeInfo.instagram_url.trim() : null,
@@ -157,12 +172,65 @@ const Settings = () => {
         store_email: storeInfo.store_email ? storeInfo.store_email.trim() : null
       };
       await db.updateStoreInfo(infoToSave);
-      alert('✅ Configuración de la tienda actualizada con éxito.');
+      showToast('Configuración de la tienda actualizada con éxito.', 'success');
       await loadData();
     } catch (error) {
       console.error('Error al guardar info de tienda:', error);
-      alert('Error al guardar la información de la tienda.');
+      showToast('Error al guardar la información de la tienda: ' + (error.message || 'Error desconocido'), 'error');
     }
+  };
+
+  const handleEmailLogoFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 1. Validar tipo MIME y extensión (No SVG, solo PNG/JPEG/WebP)
+    const allowedMimes = ['image/png', 'image/jpeg', 'image/webp'];
+    const mimeType = (file.type || '').toLowerCase().trim();
+    const fileName = (file.name || '').toLowerCase().trim();
+    const isSvg = mimeType.includes('svg') || fileName.endsWith('.svg');
+
+    if (isSvg || !allowedMimes.includes(mimeType)) {
+      showToast('Formato no permitido. Solo se aceptan imágenes PNG, JPEG o WebP (no se permite SVG).', 'error');
+      e.target.value = '';
+      return;
+    }
+
+    // 2. Validar tamaño máximo (2 MB)
+    const maxBytes = 2 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      showToast('El archivo supera el tamaño máximo permitido de 2 MB.', 'error');
+      e.target.value = '';
+      return;
+    }
+
+    const validation = validateStorageFile(file);
+    if (!validation.valid) {
+      showToast(validation.error || 'Archivo no válido.', 'error');
+      e.target.value = '';
+      return;
+    }
+
+    setUploadingEmailLogo(true);
+    try {
+      const ext = fileName.split('.').pop() || 'png';
+      const storagePath = `branding/email_logo_${Date.now()}.${ext}`;
+      const publicUrl = await db.uploadFile('product-images', storagePath, file);
+      
+      setStoreInfo(prev => ({ ...prev, email_logo_url: publicUrl }));
+      showToast('Logo para correos cargado exitosamente. Guarda los cambios para aplicar.', 'success');
+    } catch (err) {
+      console.error('Error al subir logo para correos:', err);
+      showToast('Error al subir el logo para correos: ' + (err.message || 'Error desconocido'), 'error');
+    } finally {
+      setUploadingEmailLogo(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveEmailLogo = () => {
+    setStoreInfo(prev => ({ ...prev, email_logo_url: null }));
+    showToast('Logo para correos eliminado. Se usará el logo predeterminado al guardar.', 'info');
   };
 
   const resizeHeroImage = (dataUrl) => {
@@ -575,9 +643,9 @@ const Settings = () => {
           <form onSubmit={handleSaveStoreInfo} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <h3 style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>Visualización Principal (Hero)</h3>
+                <h3 style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>Visualización Principal y Branding</h3>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Imagen de Fondo</label>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Imagen de Fondo (Hero)</label>
                   <div style={{ 
                     position: 'relative', width: '100%', height: '180px', borderRadius: '12px', 
                     overflow: 'hidden', border: '1px solid var(--border-color)', background: 'var(--bg-tertiary)'
@@ -596,6 +664,62 @@ const Settings = () => {
                     </label>
                   </div>
                 </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Logo para Correos</label>
+                  <div style={{
+                    position: 'relative', width: '100%', minHeight: '80px', borderRadius: '12px',
+                    padding: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-tertiary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px',
+                    boxSizing: 'border-box'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', overflow: 'hidden' }}>
+                      {storeInfo.email_logo_url ? (
+                        <img 
+                          src={storeInfo.email_logo_url} 
+                          alt="Logo para correos" 
+                          style={{ maxHeight: '55px', maxWidth: '160px', objectFit: 'contain', borderRadius: '6px', background: '#fff', padding: '4px', border: '1px solid var(--border-color)' }} 
+                        />
+                      ) : (
+                        <div style={{ padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                          Usando predeterminado (/email-logo.png)
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      {storeInfo.email_logo_url && (
+                        <button
+                          type="button"
+                          onClick={handleRemoveEmailLogo}
+                          className="btn-icon"
+                          title="Restablecer a predeterminado"
+                          style={{ color: '#ef4444', padding: '6px' }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                      <label style={{
+                        padding: '8px 14px', background: 'var(--accent-primary, #0d9488)', borderRadius: '8px',
+                        color: 'white', cursor: uploadingEmailLogo ? 'not-allowed' : 'pointer', fontSize: '13px',
+                        display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 500
+                      }}>
+                        {uploadingEmailLogo ? <Loader2 size={14} className="spin" /> : <Upload size={14} />}
+                        {storeInfo.email_logo_url ? 'Cambiar Logo' : 'Subir Logo'}
+                        <input 
+                          type="file" 
+                          hidden 
+                          accept="image/png,image/jpeg,image/webp" 
+                          disabled={uploadingEmailLogo}
+                          onChange={handleEmailLogoFile} 
+                        />
+                      </label>
+                    </div>
+                  </div>
+                  <small style={{ display: 'block', marginTop: '6px', color: 'var(--text-secondary)', fontSize: '12px', lineHeight: 1.4 }}>
+                    Recomendado: PNG/JPEG, fondo transparente o blanco, proporción horizontal. Máx. 2 MB.
+                  </small>
+                </div>
+
                 <input type="text" placeholder="Nombre de la Tienda" value={storeInfo.name} onChange={e => setStoreInfo({ ...storeInfo, name: e.target.value })} style={inputStyle} />
                 <input type="text" placeholder="Mensaje de Bienvenida" value={storeInfo.welcomeMessage} onChange={e => setStoreInfo({ ...storeInfo, welcomeMessage: e.target.value })} style={inputStyle} />
               </div>

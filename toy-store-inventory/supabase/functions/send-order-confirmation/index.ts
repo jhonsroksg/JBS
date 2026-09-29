@@ -49,6 +49,63 @@ function maskEmail(email: string): string {
   return `${user.substring(0, 2)}***@${domain}`;
 }
 
+// Validación estricta y segura de URLs de imágenes para correos electrónicos (Fail-Closed / Prevención de SSRF)
+function getSafeImageUrl(rawUrl: unknown, fallbackUrl: string): string {
+  if (!rawUrl || typeof rawUrl !== 'string') {
+    return fallbackUrl;
+  }
+  const trimmed = rawUrl.trim();
+  if (!trimmed) {
+    return fallbackUrl;
+  }
+
+  const lower = trimmed.toLowerCase();
+  if (
+    lower.startsWith('data:') ||
+    lower.startsWith('blob:') ||
+    lower.startsWith('javascript:') ||
+    lower.startsWith('http:') ||
+    lower.startsWith('/') ||
+    lower.startsWith('./') ||
+    lower.startsWith('../')
+  ) {
+    return fallbackUrl;
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== 'https:') {
+      return fallbackUrl;
+    }
+
+    const host = parsed.hostname.toLowerCase();
+
+    let supabaseHost = '';
+    if (SUPABASE_URL) {
+      try {
+        supabaseHost = new URL(SUPABASE_URL).hostname.toLowerCase();
+      } catch {
+        // ignorar error de parseo de SUPABASE_URL
+      }
+    }
+
+    const isAllowed =
+      host === 'joababyshophn.com' ||
+      host === 'www.joababyshophn.com' ||
+      (supabaseHost && (host === supabaseHost || host.endsWith(`.${supabaseHost}`))) ||
+      host.endsWith('.supabase.co') ||
+      host.endsWith('.supabase.in');
+
+    if (!isAllowed) {
+      return fallbackUrl;
+    }
+
+    return trimmed;
+  } catch {
+    return fallbackUrl;
+  }
+}
+
 serve(async (req) => {
   const origin = req.headers.get('origin');
   const cors = getCorsHeaders(origin);
@@ -151,7 +208,35 @@ serve(async (req) => {
       });
     }
 
-    // 6. Preparar datos oficiales y plantilla HTML sanitizada
+    // 6. Consultar configuración de tienda OFICIAL server-side (nunca confiar en el cliente)
+    const { data: storeInfo } = await supabaseAdmin
+      .from('store_info')
+      .select('name, phone, store_email, store_address, email_logo_url')
+      .eq('id', 1)
+      .maybeSingle();
+
+    const storeName = String(storeInfo?.name || 'Joa Baby Shop').trim() || 'Joa Baby Shop';
+    const rawStoreEmail = String(storeInfo?.store_email || 'ventas@joababyshophn.com').trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const contactEmail = emailRegex.test(rawStoreEmail) ? rawStoreEmail : 'ventas@joababyshophn.com';
+
+    const rawStorePhone = String(storeInfo?.phone || '+504 9892-7803').trim();
+    const contactPhone = rawStorePhone || '+504 9892-7803';
+    const storeAddress = String(storeInfo?.store_address || 'San Pedro Sula, Honduras').trim() || 'San Pedro Sula, Honduras';
+
+    let whatsappDigits = contactPhone.replace(/\D/g, '');
+    if (whatsappDigits.length === 8) {
+      whatsappDigits = '504' + whatsappDigits;
+    }
+    const isWaValid = whatsappDigits.length >= 8 && whatsappDigits.length <= 15;
+    const whatsappUrl = isWaValid ? `https://wa.me/${whatsappDigits}` : 'https://wa.me/50498927803';
+
+    const logoUrl = getSafeImageUrl(
+      storeInfo?.email_logo_url,
+      'https://joababyshophn.com/email-logo.png'
+    );
+
+    // 7. Preparar datos oficiales del pedido y plantilla HTML sanitizada
     const customerName = escapeHtml(officialOrder.customerName || 'Cliente');
     const items = Array.isArray(officialOrder.items) ? officialOrder.items : [];
     const subtotal = Number(officialOrder.subtotal || 0);
@@ -175,7 +260,9 @@ serve(async (req) => {
       const prodName = escapeHtml(item.name || item.product?.name || 'Producto');
       const quantity = Math.floor(Number(item.quantity) || 1);
       const unitPrice = Number(item.price || item.product?.discountPrice || item.product?.sellingPrice || 0);
-      const prodImage = escapeHtml(item.image_url || item.imageUrl || item.product?.imageUrl || 'https://joababyshophn.com/placeholder-toy.png');
+      
+      const rawImage = item.image_url || item.imageUrl || item.product?.imageUrl || null;
+      const prodImage = getSafeImageUrl(rawImage, 'https://joababyshophn.com/email-product-placeholder.png');
 
       return `
         <tr>
@@ -183,7 +270,7 @@ serve(async (req) => {
             <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
               <tr>
                 <td width="70" style="vertical-align: middle;">
-                  <img src="${prodImage}" width="60" height="60" style="border-radius: 6px; object-fit: contain; border: 1px solid #f0f0f0; display: block;" alt="${prodName}" />
+                  <img src="${escapeHtml(prodImage)}" width="60" height="60" style="border-radius: 6px; object-fit: contain; border: 1px solid #f0f0f0; display: block;" alt="${prodName}" />
                 </td>
                 <td style="vertical-align: middle; padding-left: 10px;">
                   <div style="font-weight: bold; color: #0d9488; font-size: 15px;">${prodName}</div>
@@ -220,7 +307,7 @@ serve(async (req) => {
                           <h1 style="margin: 0; color: #18181b; font-size: 22px; font-weight: bold;">Confirmación de su pedido</h1>
                         </td>
                         <td align="right" style="vertical-align: middle;">
-                          <img src="https://joababyshophn.com/logo.png" alt="Joa Baby Shop" width="90" style="display: block; max-width: 90px;">
+                          <img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(storeName)}" width="90" style="display: block; max-width: 90px; height: auto;">
                         </td>
                       </tr>
                     </table>
@@ -283,10 +370,10 @@ serve(async (req) => {
                 <tr>
                   <td style="background-color: #fafafa; border-top: 1px solid #e4e4e7; padding: 30px 20px; text-align: center;">
                     <p style="color: #52525b; font-size: 13px; line-height: 1.5; margin: 0 0 10px 0;">
-                      ¿Tienes consultas sobre tu compra? Escríbenos a <a href="mailto:ventas@joababyshophn.com" style="color: #0d9488; text-decoration: none;">ventas@joababyshophn.com</a> o por WhatsApp al <a href="https://wa.me/50498927803" style="color: #0d9488; text-decoration: none;">+504 9892-7803</a>.
+                      Comuníquese con nosotros enviándonos un correo electrónico a <a href="mailto:${escapeHtml(contactEmail)}" style="color: #0d9488; text-decoration: none;">${escapeHtml(contactEmail)}</a> o llámenos/escríbanos al <a href="${escapeHtml(whatsappUrl)}" style="color: #0d9488; text-decoration: none;">${escapeHtml(contactPhone)}</a>.
                     </p>
                     <div style="color: #71717a; font-size: 11px;">
-                      © Joa Baby Shop • San Pedro Sula, Honduras
+                      © ${escapeHtml(storeName)} • ${escapeHtml(storeAddress)}
                     </div>
                   </td>
                 </tr>
@@ -298,24 +385,30 @@ serve(async (req) => {
       </html>
     `;
 
-    // 7. Envío seguro vía Resend
+    // 8. Envío seguro vía Resend
     let resendId: string | null = null;
     if (RESEND_API_KEY) {
       console.log(`[Send Order Email] Enviando correo a ${maskEmail(customerEmail)} para pedido ${escapeHtml(orderCustomNumber)}`);
       
+      const resendPayload: any = {
+        from: 'Joa Baby Shop <ventas@joababyshophn.com>',
+        to: [customerEmail],
+        bcc: ['joababyshop@gmail.com'],
+        subject: `Confirmación de su pedido #${orderCustomNumber} - ${storeName}`,
+        html: emailHtml,
+      };
+
+      if (contactEmail && contactEmail !== 'ventas@joababyshophn.com') {
+        resendPayload.reply_to = contactEmail;
+      }
+
       const mailRes = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${RESEND_API_KEY}`,
         },
-        body: JSON.stringify({
-          from: 'Joa Baby Shop <ventas@joababyshophn.com>',
-          to: [customerEmail],
-          bcc: ['joababyshop@gmail.com'],
-          subject: `Confirmación de su pedido #${orderCustomNumber} - Joa Baby Shop`,
-          html: emailHtml,
-        }),
+        body: JSON.stringify(resendPayload),
       });
 
       const mailData = await mailRes.json();
@@ -328,7 +421,7 @@ serve(async (req) => {
       console.warn('[Send Order Email] AVISO: RESEND_API_KEY no configurada en el entorno.');
     }
 
-    // 8. Registrar evento de idempotencia y marcar en DB
+    // 9. Registrar evento de idempotencia y marcar en DB
     await supabaseAdmin
       .from('email_events')
       .insert({

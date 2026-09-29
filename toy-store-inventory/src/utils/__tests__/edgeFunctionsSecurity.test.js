@@ -340,4 +340,141 @@ describe('Suite de Seguridad de Edge Functions de Correo y Autenticación', () =
     assert.strictEqual(maskEmail('invalido'), '***@***');
   });
 
+  // ==============================================================================
+  // NUEVAS PRUEBAS: PARAMETRIZACIÓN DE CONTACTO Y SEGURIDAD DE IMÁGENES EN CORREOS
+  // ==============================================================================
+
+  function getSafeImageUrl(rawUrl, fallbackUrl, supabaseUrl = 'https://abcdefghijklm.supabase.co') {
+    if (!rawUrl || typeof rawUrl !== 'string') return fallbackUrl;
+    const trimmed = rawUrl.trim();
+    if (!trimmed) return fallbackUrl;
+    const lower = trimmed.toLowerCase();
+    if (
+      lower.startsWith('data:') ||
+      lower.startsWith('blob:') ||
+      lower.startsWith('javascript:') ||
+      lower.startsWith('http:') ||
+      lower.startsWith('/') ||
+      lower.startsWith('./') ||
+      lower.startsWith('../')
+    ) {
+      return fallbackUrl;
+    }
+    try {
+      const parsed = new URL(trimmed);
+      if (parsed.protocol !== 'https:') return fallbackUrl;
+      const host = parsed.hostname.toLowerCase();
+      let supabaseHost = '';
+      if (supabaseUrl) {
+        try { supabaseHost = new URL(supabaseUrl).hostname.toLowerCase(); } catch (_e) { void _e; }
+      }
+      const isAllowed =
+        host === 'joababyshophn.com' ||
+        host === 'www.joababyshophn.com' ||
+        (supabaseHost && (host === supabaseHost || host.endsWith(`.${supabaseHost}`))) ||
+        host.endsWith('.supabase.co') ||
+        host.endsWith('.supabase.in');
+      return isAllowed ? trimmed : fallbackUrl;
+    } catch {
+      return fallbackUrl;
+    }
+  }
+
+  function formatContactInfo(storeInfo) {
+    const storeName = String(storeInfo?.name || 'Joa Baby Shop').trim() || 'Joa Baby Shop';
+    const rawEmail = String(storeInfo?.store_email || 'ventas@joababyshophn.com').trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const contactEmail = emailRegex.test(rawEmail) ? rawEmail : 'ventas@joababyshophn.com';
+
+    const rawPhone = String(storeInfo?.phone || '+504 9892-7803').trim();
+    const contactPhone = rawPhone || '+504 9892-7803';
+    const storeAddress = String(storeInfo?.store_address || 'San Pedro Sula, Honduras').trim() || 'San Pedro Sula, Honduras';
+
+    let whatsappDigits = contactPhone.replace(/\D/g, '');
+    if (whatsappDigits.length === 8) {
+      whatsappDigits = '504' + whatsappDigits;
+    }
+    const isWaValid = whatsappDigits.length >= 8 && whatsappDigits.length <= 15;
+    const whatsappUrl = isWaValid ? `https://wa.me/${whatsappDigits}` : 'https://wa.me/50498927803';
+
+    const logoUrl = getSafeImageUrl(storeInfo?.email_logo_url, 'https://joababyshophn.com/email-logo.png');
+
+    return { storeName, contactEmail, contactPhone, storeAddress, whatsappUrl, logoUrl };
+  }
+
+  it('13. getSafeImageUrl: permite URLs HTTPS de dominios autorizados y Supabase Storage', () => {
+    const fallback = 'https://joababyshophn.com/email-logo.png';
+    const valid1 = 'https://joababyshophn.com/images/logo.png';
+    const valid2 = 'https://www.joababyshophn.com/images/logo.png';
+    const valid3 = 'https://abcdefghijklm.supabase.co/storage/v1/object/public/product-images/logo.png';
+
+    assert.strictEqual(getSafeImageUrl(valid1, fallback), valid1);
+    assert.strictEqual(getSafeImageUrl(valid2, fallback), valid2);
+    assert.strictEqual(getSafeImageUrl(valid3, fallback), valid3);
+  });
+
+  it('14. getSafeImageUrl: rechaza http, javascript, blob, data, relativas y hosts no autorizados', () => {
+    const fallback = 'https://joababyshophn.com/email-product-placeholder.png';
+    
+    // Inseguros / no permitidos
+    assert.strictEqual(getSafeImageUrl('http://joababyshophn.com/img.png', fallback), fallback);
+    assert.strictEqual(getSafeImageUrl('javascript:alert(1)', fallback), fallback);
+    assert.strictEqual(getSafeImageUrl('data:image/png;base64,iVBORw0KGgo...', fallback), fallback);
+    assert.strictEqual(getSafeImageUrl('blob:https://joababyshophn.com/123-456', fallback), fallback);
+    assert.strictEqual(getSafeImageUrl('/images/local.png', fallback), fallback);
+    assert.strictEqual(getSafeImageUrl('../etc/passwd', fallback), fallback);
+    assert.strictEqual(getSafeImageUrl('https://malicious-site.com/evil.jpg', fallback), fallback);
+    assert.strictEqual(getSafeImageUrl('', fallback), fallback);
+    assert.strictEqual(getSafeImageUrl(null, fallback), fallback);
+  });
+
+  it('15. Parametrización de contacto: normaliza WhatsApp a dígitos con prefijo país', () => {
+    const info1 = formatContactInfo({ phone: '9892-7803' }); // 8 dígitos
+    assert.strictEqual(info1.whatsappUrl, 'https://wa.me/50498927803');
+
+    const info2 = formatContactInfo({ phone: '+504 9892-7803' }); // 11 dígitos
+    assert.strictEqual(info2.whatsappUrl, 'https://wa.me/50498927803');
+
+    const info3 = formatContactInfo({ phone: '+1 (800) 555-0199' }); // 11 dígitos internacional
+    assert.strictEqual(info3.whatsappUrl, 'https://wa.me/18005550199');
+
+    const infoInvalid = formatContactInfo({ phone: '123' }); // Inválido (< 8 dígitos)
+    assert.strictEqual(infoInvalid.whatsappUrl, 'https://wa.me/50498927803');
+  });
+
+  it('16. Parametrización de contacto: valida email y aplica fallback si es inválido o vacío', () => {
+    const infoValid = formatContactInfo({ store_email: 'soporte@joababyshophn.com' });
+    assert.strictEqual(infoValid.contactEmail, 'soporte@joababyshophn.com');
+
+    const infoInvalid = formatContactInfo({ store_email: 'correo_no_valido' });
+    assert.strictEqual(infoInvalid.contactEmail, 'ventas@joababyshophn.com');
+
+    const infoEmpty = formatContactInfo({});
+    assert.strictEqual(infoEmpty.contactEmail, 'ventas@joababyshophn.com');
+  });
+
+  it('17. Resolución de imagen de producto: respeta orden de fallback seguro', () => {
+    const placeholder = 'https://joababyshophn.com/email-product-placeholder.png';
+
+    // 1. item.image_url tiene prioridad
+    const item1 = { image_url: 'https://joababyshophn.com/p1.png', imageUrl: 'https://joababyshophn.com/p2.png' };
+    const raw1 = item1.image_url || item1.imageUrl || item1.product?.imageUrl || null;
+    assert.strictEqual(getSafeImageUrl(raw1, placeholder), 'https://joababyshophn.com/p1.png');
+
+    // 2. item.imageUrl secundario
+    const item2 = { imageUrl: 'https://joababyshophn.com/p2.png', product: { imageUrl: 'https://joababyshophn.com/p3.png' } };
+    const raw2 = item2.image_url || item2.imageUrl || item2.product?.imageUrl || null;
+    assert.strictEqual(getSafeImageUrl(raw2, placeholder), 'https://joababyshophn.com/p2.png');
+
+    // 3. item.product.imageUrl terciario
+    const item3 = { product: { imageUrl: 'https://joababyshophn.com/p3.png' } };
+    const raw3 = item3.image_url || item3.imageUrl || item3.product?.imageUrl || null;
+    assert.strictEqual(getSafeImageUrl(raw3, placeholder), 'https://joababyshophn.com/p3.png');
+
+    // 4. Fallback cuando todo es null o no autorizado
+    const item4 = { image_url: 'http://insecure.com/p.jpg' };
+    const raw4 = item4.image_url || item4.imageUrl || item4.product?.imageUrl || null;
+    assert.strictEqual(getSafeImageUrl(raw4, placeholder), placeholder);
+  });
+
 });

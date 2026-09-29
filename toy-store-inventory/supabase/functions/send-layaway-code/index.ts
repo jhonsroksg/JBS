@@ -48,6 +48,63 @@ function maskEmail(email: string): string {
   return `${user.substring(0, 2)}***@${domain}`;
 }
 
+// Validación estricta y segura de URLs de imágenes para correos electrónicos (Fail-Closed / Prevención de SSRF)
+function getSafeImageUrl(rawUrl: unknown, fallbackUrl: string): string {
+  if (!rawUrl || typeof rawUrl !== 'string') {
+    return fallbackUrl;
+  }
+  const trimmed = rawUrl.trim();
+  if (!trimmed) {
+    return fallbackUrl;
+  }
+
+  const lower = trimmed.toLowerCase();
+  if (
+    lower.startsWith('data:') ||
+    lower.startsWith('blob:') ||
+    lower.startsWith('javascript:') ||
+    lower.startsWith('http:') ||
+    lower.startsWith('/') ||
+    lower.startsWith('./') ||
+    lower.startsWith('../')
+  ) {
+    return fallbackUrl;
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== 'https:') {
+      return fallbackUrl;
+    }
+
+    const host = parsed.hostname.toLowerCase();
+
+    let supabaseHost = '';
+    if (SUPABASE_URL) {
+      try {
+        supabaseHost = new URL(SUPABASE_URL).hostname.toLowerCase();
+      } catch {
+        // ignorar error de parseo de SUPABASE_URL
+      }
+    }
+
+    const isAllowed =
+      host === 'joababyshophn.com' ||
+      host === 'www.joababyshophn.com' ||
+      (supabaseHost && (host === supabaseHost || host.endsWith(`.${supabaseHost}`))) ||
+      host.endsWith('.supabase.co') ||
+      host.endsWith('.supabase.in');
+
+    if (!isAllowed) {
+      return fallbackUrl;
+    }
+
+    return trimmed;
+  } catch {
+    return fallbackUrl;
+  }
+}
+
 serve(async (req) => {
   const origin = req.headers.get('origin');
   const cors = getCorsHeaders(origin);
@@ -152,10 +209,38 @@ serve(async (req) => {
       });
     }
 
-    // 6. Consultar ítems oficiales del apartado
+    // 6. Consultar configuración de tienda OFICIAL server-side
+    const { data: storeInfo } = await supabaseAdmin
+      .from('store_info')
+      .select('name, phone, store_email, store_address, email_logo_url')
+      .eq('id', 1)
+      .maybeSingle();
+
+    const storeName = String(storeInfo?.name || 'Joa Baby Shop').trim() || 'Joa Baby Shop';
+    const rawStoreEmail = String(storeInfo?.store_email || 'ventas@joababyshophn.com').trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const contactEmail = emailRegex.test(rawStoreEmail) ? rawStoreEmail : 'ventas@joababyshophn.com';
+
+    const rawStorePhone = String(storeInfo?.phone || '+504 9892-7803').trim();
+    const contactPhone = rawStorePhone || '+504 9892-7803';
+    const storeAddress = String(storeInfo?.store_address || 'San Pedro Sula, Cortés, Honduras').trim() || 'San Pedro Sula, Cortés, Honduras';
+
+    let whatsappDigits = contactPhone.replace(/\D/g, '');
+    if (whatsappDigits.length === 8) {
+      whatsappDigits = '504' + whatsappDigits;
+    }
+    const isWaValid = whatsappDigits.length >= 8 && whatsappDigits.length <= 15;
+    const whatsappUrl = isWaValid ? `https://wa.me/${whatsappDigits}` : 'https://wa.me/50498927803';
+
+    const logoUrl = getSafeImageUrl(
+      storeInfo?.email_logo_url,
+      'https://joababyshophn.com/email-logo.png'
+    );
+
+    // 7. Consultar ítems oficiales del apartado
     const { data: layawayItems, error: itemsErr } = await supabaseAdmin
       .from('layaway_items')
-      .select('quantity_reserved, products(name, "imageUrl", "sellingPrice", "discountPrice")')
+      .select('quantity_reserved, products(name, "imageUrl", image_url, "sellingPrice", "discountPrice")')
       .eq('layaway_id', officialLayaway.id);
 
     if (itemsErr) {
@@ -164,7 +249,7 @@ serve(async (req) => {
 
     const safeItems = Array.isArray(layawayItems) ? layawayItems : [];
 
-    // 7. Preparar HTML con escape de seguridad
+    // 8. Preparar HTML con escape de seguridad
     const customerName = escapeHtml(officialLayaway.customer_name || 'Cliente');
     const eventName = escapeHtml(officialLayaway.event_name || 'Tu Evento Especial');
     const code = escapeHtml(officialLayaway.code || 'AP-XXXXX');
@@ -180,7 +265,8 @@ serve(async (req) => {
     const itemsHtml = safeItems.map((item: any) => {
       const prodName = escapeHtml(item.products?.name || 'Producto');
       const qty = Math.floor(Number(item.quantity_reserved) || 1);
-      const prodImg = escapeHtml(item.products?.imageUrl || 'https://joababyshophn.com/placeholder-toy.png');
+      const rawImg = item.products?.image_url || item.products?.imageUrl || null;
+      const prodImg = getSafeImageUrl(rawImg, 'https://joababyshophn.com/email-product-placeholder.png');
 
       return `
         <tr>
@@ -188,7 +274,7 @@ serve(async (req) => {
             <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
               <tr>
                 <td width="50" style="vertical-align: top;">
-                  <img src="${prodImg}" width="45" height="45" style="border-radius: 8px; object-fit: cover; border: 1px solid #e2e8f0;" alt="${prodName}" />
+                  <img src="${escapeHtml(prodImg)}" width="45" height="45" style="border-radius: 8px; object-fit: cover; border: 1px solid #e2e8f0;" alt="${prodName}" />
                 </td>
                 <td style="padding-left: 15px;">
                   <div style="font-weight: 700; color: #1e293b; font-size: 14px;">${prodName}</div>
@@ -209,7 +295,7 @@ serve(async (req) => {
         <style>
           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #334155; margin: 0; padding: 0; background-color: #f8fafc; }
           .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-          .header { background: linear-gradient(135deg, #ec4899 0%, #db2777 100%); padding: 36px 20px; text-align: center; color: #ffffff; }
+          .header { background: linear-gradient(135deg, #ec4899 0%, #db2777 100%); padding: 30px 20px; text-align: center; color: #ffffff; }
           .header h1 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.025em; }
           .header p { margin: 8px 0 0; opacity: 0.9; font-size: 15px; }
           .content { padding: 32px; }
@@ -232,6 +318,9 @@ serve(async (req) => {
       <body>
         <div class="container">
           <div class="header">
+            <div style="margin-bottom: 12px;">
+              <img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(storeName)}" width="80" style="display: inline-block; max-width: 80px; height: auto; background: #fff; padding: 4px; border-radius: 6px;" />
+            </div>
             <h1>¡Tu lista de regalos ha sido creada!</h1>
             <p>Apartado para Celebraciones y Cumpleaños</p>
           </div>
@@ -279,18 +368,33 @@ serve(async (req) => {
             </div>
           </div>
           <div class="footer">
-            <p><strong>Joa Baby Shop</strong> • San Pedro Sula, Cortés, Honduras</p>
-            <p style="margin-top: 8px;">Este es un correo automático. Por favor no respondas directamente a este mensaje.</p>
+            <p style="margin: 0 0 10px 0; color: #64748b; font-size: 13px; line-height: 1.5;">
+              Comuníquese con nosotros enviándonos un correo electrónico a <a href="mailto:${escapeHtml(contactEmail)}" style="color: #ec4899; text-decoration: none;">${escapeHtml(contactEmail)}</a> o llámenos/escríbanos al <a href="${escapeHtml(whatsappUrl)}" style="color: #ec4899; text-decoration: none;">${escapeHtml(contactPhone)}</a>.
+            </p>
+            <p style="margin: 4px 0 0 0;"><strong>${escapeHtml(storeName)}</strong> • ${escapeHtml(storeAddress)}</p>
+            <p style="margin-top: 8px; font-size: 11px; color: #94a3b8;">Este es un correo automático. Por favor no respondas directamente a este mensaje.</p>
           </div>
         </div>
       </body>
       </html>
     `;
 
-    // 8. Envío vía Resend
+    // 9. Envío vía Resend
     let resendId: string | null = null;
     if (RESEND_API_KEY) {
       console.log(`[Send Layaway Email] Enviando correo a ${maskEmail(customerEmail)} para apartado ${code}`);
+
+      const resendPayload: any = {
+        from: 'Joa Baby Shop <ventas@joababyshophn.com>',
+        to: [customerEmail],
+        bcc: ['joababyshop@gmail.com'],
+        subject: `¡Tu Lista de Regalos está Lista! - Código ${code}`,
+        html: emailHtml,
+      };
+
+      if (contactEmail && contactEmail !== 'ventas@joababyshophn.com') {
+        resendPayload.reply_to = contactEmail;
+      }
 
       const mailRes = await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -298,13 +402,7 @@ serve(async (req) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${RESEND_API_KEY}`,
         },
-        body: JSON.stringify({
-          from: 'Joa Baby Shop <ventas@joababyshophn.com>',
-          to: [customerEmail],
-          bcc: ['joababyshop@gmail.com'],
-          subject: `¡Tu Lista de Regalos está Lista! - Código ${code}`,
-          html: emailHtml,
-        }),
+        body: JSON.stringify(resendPayload),
       });
 
       const mailData = await mailRes.json();
@@ -317,7 +415,7 @@ serve(async (req) => {
       console.warn('[Send Layaway Email] AVISO: RESEND_API_KEY no configurada en el entorno.');
     }
 
-    // 9. Registrar evento de idempotencia y actualizar DB
+    // 10. Registrar evento de idempotencia y actualizar DB
     await supabaseAdmin
       .from('email_events')
       .insert({

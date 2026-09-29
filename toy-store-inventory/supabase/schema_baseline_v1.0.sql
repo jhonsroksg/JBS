@@ -135,7 +135,10 @@ CREATE TABLE IF NOT EXISTS public.store_info (
     facebook_url TEXT,
     instagram_url TEXT,
     delivery_info TEXT,
-    pickup_locations JSONB DEFAULT '[]'::jsonb
+    pickup_locations JSONB DEFAULT '[]'::jsonb,
+    store_address TEXT,
+    store_email TEXT,
+    email_logo_url TEXT
 );
 
 -- G. Apartados (Mesas de Regalos)
