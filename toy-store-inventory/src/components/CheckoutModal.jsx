@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { db, layawayRepository, orderRepository, productRepository } from '../services/db';
 import { X, Trash2, CheckCircle, User, Mail, Phone, MapPin, Truck, CreditCard, Copy, AlertCircle, ChevronDown } from 'lucide-react';
 import { hondurasLocations } from '../data/hondurasLocations';
@@ -35,6 +35,8 @@ const CheckoutModal = ({ isOpen, onClose }) => {
     syncCartWithServer
   } = useCart();
 
+  const initializedForCurrentOpen = useRef(false);
+
   const [layawayInfo, setLayawayInfo] = useState({ eventName: '', eventDate: '' });
   const [copied, setCopied] = useState(false);
   const [wrapGift, setWrapGift] = useState(false);
@@ -63,51 +65,62 @@ const CheckoutModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const validateCartStock = React.useCallback(async () => {
-    if (!cart || cart.length === 0) return;
-    await syncCartWithServer({ notifyUser: true });
-  }, [cart, syncCartWithServer]);
-
+  // 1. Bloqueo y restauración del scroll del body
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      validateCartStock();
-      setOrderComplete(false);
-      setCompletedOrderNumber(null);
-      setCheckoutError(null);
-      setCustomerInfo({ name: '', email: '', phone: '', address: '', department: '', municipality: '' });
-      setLayawayInfo({ eventName: '', eventDate: '' });
-      setCopied(false);
-      setWrapGift(false);
-      setDeliveryOption('party');
-      setCouponInput('');
-      setAppliedCoupon(null);
-      _setCouponError('');
-      setDeliveryMethodId('');
-      setIsCartExpandedMobile(false);
+    if (!isOpen) return;
 
-      const initData = async () => {
-        try {
-          const [methods, dMethods] = await Promise.all([
-            db.getAll('payment_methods').catch(e => { console.error('Error fetching payment methods:', e); return []; }),
-            db.getAll('delivery_methods').catch(e => { console.error('Error fetching delivery methods:', e); return []; }),
-          ]);
-          setAvailableMethods(methods);
-          if (methods.length > 0) setPaymentMethod(methods[0].name);
-          setAvailableDeliveryMethods(dMethods);
-        } catch (error) {
-          console.error('Critical error in initData:', error);
-        }
-      };
-      initData();
-    } else {
-      document.body.style.overflow = 'unset';
-    }
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
 
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = previousOverflow;
     };
-  }, [isOpen, validateCartStock]);
+  }, [isOpen]);
+
+  // 2. Inicialización limpia ejecutada una sola vez por cada transición cerrado -> abierto
+  useEffect(() => {
+    if (!isOpen) {
+      initializedForCurrentOpen.current = false;
+      return;
+    }
+
+    if (initializedForCurrentOpen.current) return;
+    initializedForCurrentOpen.current = true;
+
+    setOrderComplete(false);
+    setCompletedOrderNumber(null);
+    setCheckoutError(null);
+    setCustomerInfo({ name: '', email: '', phone: '', address: '', department: '', municipality: '' });
+    setLayawayInfo({ eventName: '', eventDate: '' });
+    setCopied(false);
+    setWrapGift(false);
+    setDeliveryOption('party');
+    setCouponInput('');
+    setAppliedCoupon(null);
+    _setCouponError('');
+    setDeliveryMethodId('');
+    setIsCartExpandedMobile(false);
+
+    if (cart && cart.length > 0) {
+      syncCartWithServer({ notifyUser: true });
+    }
+
+    const initData = async () => {
+      try {
+        const [methods, dMethods] = await Promise.all([
+          db.getAll('payment_methods').catch(e => { console.error('Error fetching payment methods:', e); return []; }),
+          db.getAll('delivery_methods').catch(e => { console.error('Error fetching delivery methods:', e); return []; }),
+        ]);
+        setAvailableMethods(methods);
+        if (methods.length > 0) setPaymentMethod(methods[0].name);
+        setAvailableDeliveryMethods(dMethods);
+      } catch (error) {
+        console.error('Critical error in initData:', error);
+      }
+    };
+    initData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, syncCartWithServer]);
 
   const _handleApplyCoupon = async (e) => {
     e?.preventDefault();
@@ -149,6 +162,20 @@ const CheckoutModal = ({ isOpen, onClose }) => {
       .catch(err => {
         console.error('Error copying link:', err);
         showToast('No se pudo copiar el enlace. Cópialo manualmente.', 'warning');
+      });
+  };
+
+  const handleCopyOrderNumber = () => {
+    if (!completedOrderNumber) return;
+    navigator.clipboard.writeText(completedOrderNumber)
+      .then(() => {
+        setCopied(true);
+        showToast('¡Número de pedido copiado!', 'success');
+        setTimeout(() => setCopied(false), 3000);
+      })
+      .catch(err => {
+        console.error('Error copying order number:', err);
+        showToast('No se pudo copiar el número. Cópialo manualmente.', 'warning');
       });
   };
 
@@ -371,12 +398,44 @@ const CheckoutModal = ({ isOpen, onClose }) => {
         try {
           // Ya no pasamos order_id_custom ni order_number aquí manualmente, db.js lo inyecta
           const newOrder = await orderRepository.create(orderData, cart);
-          if (newOrder) {
-            const finalId = newOrder.order_id_custom || (newOrder.order_number ? `JBS-${String(newOrder.order_number).padStart(5, '0')}` : null);
-            setCompletedOrderNumber(finalId || 'PROCESANDO...');
-          } else {
-            setCompletedOrderNumber('PROCESANDO...');
+
+          const finalId =
+            newOrder?.order_id_custom ||
+            (newOrder?.order_number
+              ? `JBS-${String(newOrder.order_number).padStart(4, '0')}`
+              : newOrder?.id);
+
+          if (!finalId) {
+            throw new Error(
+              'El pedido fue procesado, pero no se recibió su número de confirmación.'
+            );
           }
+
+          // Enviar correo de confirmación en segundo plano de manera no bloqueante
+          const runOrderEmailEdgeFunction = async () => {
+            try {
+              const functionUrl = `${supabaseUrl}/functions/v1/send-order-confirmation`;
+              const payload = {
+                order_id: newOrder.id || finalId
+              };
+
+              await fetch(functionUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${supabaseKey}`
+                },
+                body: JSON.stringify(payload)
+              });
+            } catch (funcErr) {
+              console.warn('Llamada a Edge Function send-order-confirmation falló (no crítica):', funcErr.message);
+            }
+          };
+          runOrderEmailEdgeFunction();
+
+          setCompletedOrderNumber(finalId);
+          setOrderComplete(true);
+          clearCart(false);
         } catch (insertErr) {
           console.error('CRITICAL: Error al insertar el pedido en Supabase:', insertErr);
           
@@ -415,9 +474,6 @@ const CheckoutModal = ({ isOpen, onClose }) => {
           setIsSubmitting(false);
           return;
         }
-
-        clearCart(false);
-        setOrderComplete(true);
       }
     } catch (err) {
       console.error('Error detallado en checkout:', err);
@@ -468,26 +524,38 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                   {completedOrderNumber}
                 </strong>
               </p>
-              <p>
-                {isLayawayMode
-                  ? 'Hemos enviado un correo electrónico con los detalles y el enlace directo para tus invitados.'
-                  : 'Hemos recibido tu pedido y comenzaremos a procesarlo pronto.'
-                }
-              </p>
-              {isLayawayMode && (
-                <div style={{ marginTop: '20px', marginBottom: '20px' }}>
+
+              <div style={{ marginTop: '16px', marginBottom: '16px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
+                {isLayawayMode ? (
                   <button 
                     type="button"
                     onClick={handleCopyGuestLink} 
                     className="confirm-order-btn" 
-                    style={{ background: '#0d9488', width: 'auto', padding: '10px 20px', margin: '0 auto', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+                    style={{ background: '#0d9488', width: 'auto', padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}
                   >
                     <Copy size={16} />
                     {copied ? '¡Enlace Copiado! 👍' : 'Copiar Enlace de Invitados'}
                   </button>
-                </div>
-              )}
-              <button className="confirm-order-btn" style={{ maxWidth: '200px' }} onClick={onClose}>Cerrar</button>
+                ) : (
+                  <button 
+                    type="button"
+                    onClick={handleCopyOrderNumber} 
+                    className="confirm-order-btn" 
+                    style={{ background: '#0d9488', width: 'auto', padding: '10px 20px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <Copy size={16} />
+                    {copied ? '¡Número Copiado! 👍' : 'Copiar Número de Pedido'}
+                  </button>
+                )}
+              </div>
+
+              <p>
+                {isLayawayMode
+                  ? 'Hemos enviado un correo electrónico con los detalles y el enlace directo para tus invitados.'
+                  : 'Hemos enviado un correo electrónico con la confirmación y comenzaremos a procesar tu pedido pronto.'
+                }
+              </p>
+              <button type="button" className="confirm-order-btn" style={{ maxWidth: '200px', marginTop: '10px' }} onClick={onClose}>Cerrar</button>
             </div>
           ) : (
             <>
