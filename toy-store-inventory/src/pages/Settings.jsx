@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { validateStorageFile } from '../utils/storageValidation';
 import { useToast } from '../hooks/useToast';
+import { ImageUploadHelp } from '../components/ImageUploadHelp';
 import { 
   Plus, Trash2, Edit2, Check, X, Save, Image as ImageIcon, Upload, Shield, HelpCircle, Loader2,
   Heart, User, Baby, ShoppingBag, Tag, Gift, Star, Truck, Home, Settings as SettingsIcon,
@@ -63,6 +64,8 @@ const Settings = () => {
     store_email: ''
   });
   const [uploadingEmailLogo, setUploadingEmailLogo] = useState(false);
+  const [heroSelectedInfo, setHeroSelectedInfo] = useState(null);
+  const [emailLogoSelectedInfo, setEmailLogoSelectedInfo] = useState(null);
   const [mainSections, setMainSections] = useState([]);
   const [newSectionName, setNewSectionName] = useState('');
   const [newSectionIcon, setNewSectionIcon] = useState('Heart');
@@ -211,6 +214,22 @@ const Settings = () => {
       return;
     }
 
+    // 3. Inspeccionar dimensiones de la imagen antes de subirla
+    const objectUrl = URL.createObjectURL(file);
+    const tempImg = new Image();
+    tempImg.onload = () => {
+      setEmailLogoSelectedInfo({
+        width: tempImg.naturalWidth,
+        height: tempImg.naturalHeight,
+        size: file.size
+      });
+      URL.revokeObjectURL(objectUrl);
+    };
+    tempImg.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+    tempImg.src = objectUrl;
+
     setUploadingEmailLogo(true);
     try {
       const ext = fileName.split('.').pop() || 'png';
@@ -230,6 +249,7 @@ const Settings = () => {
 
   const handleRemoveEmailLogo = () => {
     setStoreInfo(prev => ({ ...prev, email_logo_url: null }));
+    setEmailLogoSelectedInfo(null);
     showToast('Logo para correos eliminado. Se usará el logo predeterminado al guardar.', 'info');
   };
 
@@ -261,8 +281,25 @@ const Settings = () => {
   };
 
   const handleHeroImageFile = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
+
+    // Inspeccionar dimensiones reales del archivo seleccionado
+    const objectUrl = URL.createObjectURL(file);
+    const tempImg = new Image();
+    tempImg.onload = () => {
+      setHeroSelectedInfo({
+        width: tempImg.naturalWidth,
+        height: tempImg.naturalHeight,
+        size: file.size
+      });
+      URL.revokeObjectURL(objectUrl);
+    };
+    tempImg.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+    tempImg.src = objectUrl;
+
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
@@ -645,7 +682,7 @@ const Settings = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <h3 style={{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>Visualización Principal y Branding</h3>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Imagen de Fondo (Hero)</label>
+                  <label htmlFor="hero-image-input" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Imagen de Fondo (Hero)</label>
                   <div style={{ 
                     position: 'relative', width: '100%', height: '180px', borderRadius: '12px', 
                     overflow: 'hidden', border: '1px solid var(--border-color)', background: 'var(--bg-tertiary)'
@@ -655,18 +692,38 @@ const Settings = () => {
                     ) : (
                       <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>Sin Imagen</div>
                     )}
-                    <label style={{ 
+                    <label htmlFor="hero-image-input" style={{ 
                       position: 'absolute', bottom: '12px', right: '12px', padding: '8px 12px', 
                       background: 'rgba(0,0,0,0.5)', borderRadius: '8px', color: 'white', cursor: 'pointer' 
                     }}>
                       <Upload size={14} /> Cambiar
-                      <input type="file" hidden accept="image/*" onChange={handleHeroImageFile} />
+                      <input 
+                        id="hero-image-input"
+                        type="file" 
+                        hidden 
+                        accept="image/png,image/jpeg,image/webp" 
+                        aria-describedby="hero-image-help"
+                        onChange={handleHeroImageFile} 
+                      />
                     </label>
                   </div>
+                  <ImageUploadHelp
+                    id="hero-image-help"
+                    recommendedWidth={1920}
+                    recommendedHeight={1080}
+                    ratio="16:9"
+                    formats="Formatos PNG, JPEG o WebP."
+                    customRecommendedText="Tamaño recomendado: 1920 × 1080 px · Proporción 16:9 · Formatos PNG, JPEG o WebP."
+                    selectedWidth={heroSelectedInfo?.width}
+                    selectedHeight={heroSelectedInfo?.height}
+                    selectedFileSize={heroSelectedInfo?.size}
+                    tolerance={0.05}
+                    warningMessage="Esta imagen no tiene proporción 16:9 y podría recortarse en algunas pantallas."
+                  />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Logo para Correos</label>
+                  <label htmlFor="email-logo-input" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Logo para Correos</label>
                   <div style={{
                     position: 'relative', width: '100%', minHeight: '80px', borderRadius: '12px',
                     padding: '12px', border: '1px solid var(--border-color)', background: 'var(--bg-tertiary)',
@@ -698,7 +755,7 @@ const Settings = () => {
                           <Trash2 size={16} />
                         </button>
                       )}
-                      <label style={{
+                      <label htmlFor="email-logo-input" style={{
                         padding: '8px 14px', background: 'var(--accent-primary, #0d9488)', borderRadius: '8px',
                         color: 'white', cursor: uploadingEmailLogo ? 'not-allowed' : 'pointer', fontSize: '13px',
                         display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 500
@@ -706,18 +763,31 @@ const Settings = () => {
                         {uploadingEmailLogo ? <Loader2 size={14} className="spin" /> : <Upload size={14} />}
                         {storeInfo.email_logo_url ? 'Cambiar Logo' : 'Subir Logo'}
                         <input 
+                          id="email-logo-input"
                           type="file" 
                           hidden 
                           accept="image/png,image/jpeg,image/webp" 
+                          aria-describedby="email-logo-help"
                           disabled={uploadingEmailLogo}
                           onChange={handleEmailLogoFile} 
                         />
                       </label>
                     </div>
                   </div>
-                  <small style={{ display: 'block', marginTop: '6px', color: 'var(--text-secondary)', fontSize: '12px', lineHeight: 1.4 }}>
-                    Recomendado: PNG/JPEG, fondo transparente o blanco, proporción horizontal. Máx. 2 MB.
-                  </small>
+                  <ImageUploadHelp
+                    id="email-logo-help"
+                    recommendedWidth={360}
+                    recommendedHeight={120}
+                    ratio="3:1"
+                    formats="PNG o JPEG · Fondo transparente o blanco"
+                    maxSize="Máx. 2 MB"
+                    customRecommendedText="Tamaño recomendado: 360 × 120 px · Proporción 3:1 · PNG o JPEG · Fondo transparente o blanco · Máx. 2 MB."
+                    selectedWidth={emailLogoSelectedInfo?.width}
+                    selectedHeight={emailLogoSelectedInfo?.height}
+                    selectedFileSize={emailLogoSelectedInfo?.size}
+                    tolerance={0.10}
+                    warningMessage="Este logo no tiene proporción horizontal 3:1 y podría verse pequeño o deformado en algunos correos."
+                  />
                 </div>
 
                 <input type="text" placeholder="Nombre de la Tienda" value={storeInfo.name} onChange={e => setStoreInfo({ ...storeInfo, name: e.target.value })} style={inputStyle} />
