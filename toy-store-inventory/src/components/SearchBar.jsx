@@ -134,7 +134,8 @@ export const SearchBar = ({
   return (
     <div className="global-search-wrapper" ref={searchRef}>
       <div className={`search-input-box ${showSuggestions ? 'focused' : ''}`}>
-        <Search className="search-icon" size={18} />
+        <Search className="search-icon" size={18} aria-hidden="true" />
+        <label htmlFor="global-search-input" className="sr-only">Buscar productos por nombre, SKU, marca o categoría</label>
         <input 
           id="global-search-input"
           type="text" 
@@ -147,20 +148,20 @@ export const SearchBar = ({
           }}
           onFocus={() => setShowSuggestions(true)}
           onKeyDown={handleKeyDown}
-          aria-label="Barra de búsqueda global"
+          aria-label="Buscar productos por nombre, SKU, marca o categoría"
           role="combobox"
           aria-expanded={showSuggestions}
           aria-controls="search-suggestions-dropdown"
           aria-autocomplete="list"
         />
         {onFilterClick && (
-          <button className="btn-filter-trigger-inline" onClick={onFilterClick} aria-label="Abrir filtros">
-            <SlidersHorizontal size={18} />
+          <button className="btn-filter-trigger-inline" onClick={onFilterClick} aria-label="Abrir filtros de búsqueda">
+            <SlidersHorizontal size={18} aria-hidden="true" />
           </button>
         )}
         {inputValue && (
           <button className="btn-clear-search" onClick={() => handleSelect('')} aria-label="Limpiar búsqueda">
-            <X size={16} />
+            <X size={16} aria-hidden="true" />
           </button>
         )}
       </div>
@@ -177,7 +178,7 @@ export const SearchBar = ({
             <div className="dropdown-section">
               {history.length > 0 && (
                 <>
-                  <h5 className="dropdown-title"><History size={14} /> Recientes</h5>
+                  <span className="dropdown-title"><History size={14} aria-hidden="true" /> Recientes</span>
                   {history.map((h, i) => (
                     <button 
                       key={i} 
@@ -191,7 +192,7 @@ export const SearchBar = ({
                   ))}
                 </>
               )}
-              <h5 className="dropdown-title"><TrendingUp size={14} /> Tendencias</h5>
+              <span className="dropdown-title"><TrendingUp size={14} aria-hidden="true" /> Tendencias</span>
               <div className="popular-tags">
                 {popularSearches.map((s, i) => (
                   <button key={i} className="popular-tag" onClick={() => handleSelect(s)}>{s}</button>
@@ -203,7 +204,7 @@ export const SearchBar = ({
           {/* Resultados Autocomplete */}
           {inputValue && suggestions.length > 0 && (
             <div className="dropdown-section">
-              <h5 className="dropdown-title">Sugerencias</h5>
+              <span className="dropdown-title">Sugerencias</span>
               {suggestions.map((s, i) => (
                 <button 
                   key={i} 
@@ -213,7 +214,7 @@ export const SearchBar = ({
                   aria-selected={cursor === i}
                 >
                   <div className="suggestion-icon">
-                    {s.type === 'category' ? <Tag size={16}/> : <Package size={16}/>}
+                    {s.type === 'category' ? <Tag size={16} aria-hidden="true" /> : <Package size={16} aria-hidden="true" />}
                   </div>
                   <div className="suggestion-info">
                     <span className="suggestion-text">{s.text}</span>

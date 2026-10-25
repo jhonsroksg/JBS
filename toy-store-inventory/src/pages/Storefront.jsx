@@ -390,8 +390,13 @@ const Storefront = () => {
     });
   };
 
-  const heroImageUrl = activeSectionData?.hero_image_url
-    || storeInfo.hero_image_url || '/hero.webp';
+  const customHeroImage = activeSectionData?.hero_image_url || storeInfo.hero_image_url;
+  const webpHeroUrl = customHeroImage 
+    ? getOptimizedSupabaseUrl(customHeroImage, 1200, 82, 'webp') 
+    : '/hero.webp';
+  const fallbackHeroUrl = customHeroImage 
+    ? getOptimizedSupabaseUrl(customHeroImage, 1200, 82, 'origin') 
+    : '/hero.png';
   const heroTitle = activeSectionData?.hero_title || storeInfo.name
     || 'Joa Baby Shop';
   const heroSubtitle = activeSectionData?.hero_subtitle
@@ -408,14 +413,19 @@ const Storefront = () => {
       />
       
       <div className="hero-section glass-panel">
-        <img 
-          src={getOptimizedSupabaseUrl(heroImageUrl, 1200, 85, 'webp')} 
-          alt={heroTitle}
-          className="hero-background-img"
-          fetchpriority="high"
-          loading="eager"
-          decoding="async"
-        />
+        <picture className="hero-picture">
+          <source srcSet={webpHeroUrl} type="image/webp" />
+          <img 
+            src={fallbackHeroUrl} 
+            alt={heroTitle}
+            className="hero-background-img"
+            fetchPriority="high"
+            loading="eager"
+            decoding="sync"
+            width="1200"
+            height="400"
+          />
+        </picture>
         <div className="hero-overlay"></div>
         <div className="hero-content">
           <h1>{heroTitle}</h1>
@@ -437,8 +447,8 @@ const Storefront = () => {
         <div className="filter-bar">
           <div className="filter-bar-inner">
             <div className="filter-item">
-              <span className="filter-label">Categoría</span>
-              <select value={activeCategory} onChange={(e) => setActiveCategory(e.target.value)}>
+              <label htmlFor="storefront-category-select" className="filter-label">Categoría</label>
+              <select id="storefront-category-select" aria-label="Filtrar por categoría" value={activeCategory} onChange={(e) => setActiveCategory(e.target.value)}>
                 <option value="all">Todas</option>
                 {categories.map(cat => (
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -447,8 +457,8 @@ const Storefront = () => {
             </div>
 
             <div className="filter-item">
-              <span className="filter-label">Edad</span>
-              <select value={activeAgeRange} onChange={(e) => setActiveAgeRange(e.target.value)}>
+              <label htmlFor="storefront-age-select" className="filter-label">Edad</label>
+              <select id="storefront-age-select" aria-label="Filtrar por edad" value={activeAgeRange} onChange={(e) => setActiveAgeRange(e.target.value)}>
                 <option value="all">Cualquier edad</option>
                 {ageRanges.map(age => (
                   <option key={age} value={age}>{age}</option>
@@ -457,9 +467,11 @@ const Storefront = () => {
             </div>
 
             <div className="filter-item" style={{ minWidth: '180px' }}>
-              <span className="filter-label">Precio Máximo</span>
+              <label htmlFor="storefront-price-slider" className="filter-label">Precio Máximo</label>
               <div className="price-slider-container">
                 <input 
+                  id="storefront-price-slider"
+                  aria-label="Filtrar por precio máximo"
                   type="range" min="0" max={maxPriceAvailable} step="50" 
                   value={currentPriceRange} onChange={(e) => setPriceRange(Number(e.target.value))}
                 />
@@ -474,41 +486,41 @@ const Storefront = () => {
               aria-label={isFavoritesOnly ? "Ver todos los productos" : "Filtrar por productos favoritos"}
               title="Filtrar por favoritos"
             >
-              <Heart size={16} fill={isFavoritesOnly ? '#f43f5e' : 'none'} color={isFavoritesOnly ? '#f43f5e' : 'currentColor'} />
+              <Heart size={16} fill={isFavoritesOnly ? '#f43f5e' : 'none'} color={isFavoritesOnly ? '#f43f5e' : 'currentColor'} aria-hidden="true" />
               <span>Favoritos</span>
               {favoritesCount > 0 && <span className="favorites-badge">{favoritesCount}</span>}
             </button>
 
-            <button className="btn-clear-inline" onClick={() => { setActiveAgeRange('all'); setPriceRange(null); updateParams({ cat: null, section: null, q: null, fav: null }); }}>
-              <RotateCcw size={14} style={{ marginRight: '6px' }} /> Limpiar
+            <button className="btn-clear-inline" onClick={() => { setActiveAgeRange('all'); setPriceRange(null); updateParams({ cat: null, section: null, q: null, fav: null }); }} aria-label="Limpiar todos los filtros">
+              <RotateCcw size={14} style={{ marginRight: '6px' }} aria-hidden="true" /> Limpiar
             </button>
           </div>
         </div>
       </div>
 
-      <main>
+      <section className="storefront-products-section" aria-label="Catálogo de productos">
         <div className="storefront-content">
-          <aside className={`sidebar-filters ${isMobileFiltersOpen ? 'open' : ''}`}>
+          <aside className={`sidebar-filters ${isMobileFiltersOpen ? 'open' : ''}`} aria-label="Filtros de productos">
             <div className="sidebar-header">
-              <h3>Filtros</h3>
-              <button className="btn-close-sidebar" onClick={() => setIsMobileFiltersOpen(false)}><X size={20}/></button>
+              <h2>Filtros</h2>
+              <button className="btn-close-sidebar" onClick={() => setIsMobileFiltersOpen(false)} aria-label="Cerrar filtros"><X size={20} aria-hidden="true" /></button>
             </div>
 
             <div className="sidebar-section">
-              <h4 className="sidebar-title"><Heart size={14}/> Favoritos</h4>
+              <h3 className="sidebar-title"><Heart size={14} aria-hidden="true" /> Favoritos</h3>
               <button 
                 type="button"
                 className={`category-item-btn favorite-sidebar-btn ${isFavoritesOnly ? 'active' : ''}`}
                 onClick={() => { toggleFavoritesFilter(); setIsMobileFiltersOpen(false); }}
                 aria-label="Ver solo productos favoritos"
               >
-                <Heart size={16} fill={isFavoritesOnly ? '#f43f5e' : 'none'} color={isFavoritesOnly ? '#f43f5e' : 'currentColor'} style={{ marginRight: '8px' }} />
+                <Heart size={16} fill={isFavoritesOnly ? '#f43f5e' : 'none'} color={isFavoritesOnly ? '#f43f5e' : 'currentColor'} style={{ marginRight: '8px' }} aria-hidden="true" />
                 <span>Mis Favoritos {favoritesCount > 0 ? `(${favoritesCount})` : ''}</span>
               </button>
             </div>
 
             <div className="sidebar-section">
-              <h4 className="sidebar-title"><Filter size={14}/> Categorías</h4>
+              <h3 className="sidebar-title"><Filter size={14} aria-hidden="true" /> Categorías</h3>
               <div className="category-list">
                 <button 
                   className={`category-item-btn ${activeCategory === 'all' && !isFavoritesOnly ? 'active' : ''}`}
@@ -529,13 +541,15 @@ const Storefront = () => {
             </div>
 
             <div className="sidebar-section">
-              <h4 className="sidebar-title"><Filter size={14}/> Precio Máximo</h4>
+              <h3 className="sidebar-title"><Filter size={14} aria-hidden="true" /> Precio Máximo</h3>
               <div className="price-filter-wrapper">
                 <div className="price-labels">
                   <span>L. 0</span>
                   <span>L. {currentPriceRange.toLocaleString()}</span>
                 </div>
                 <input 
+                  id="sidebar-price-slider"
+                  aria-label="Filtrar por precio máximo en panel móvil"
                   type="range" min="0" max={maxPriceAvailable} step="50" 
                   value={currentPriceRange} onChange={(e) => setPriceRange(Number(e.target.value))}
                   className="price-slider"
@@ -544,8 +558,10 @@ const Storefront = () => {
             </div>
             
             <div className="sidebar-section">
-              <h4 className="sidebar-title"><Filter size={14}/> Edad</h4>
+              <h3 className="sidebar-title"><Filter size={14} aria-hidden="true" /> Edad</h3>
               <select 
+                id="sidebar-age-select"
+                aria-label="Filtrar por edad en panel móvil"
                 value={activeAgeRange} 
                 onChange={(e) => { setActiveAgeRange(e.target.value); setIsMobileFiltersOpen(false); }}
                 className="sidebar-select"
@@ -568,6 +584,7 @@ const Storefront = () => {
           </aside>
 
           <div className="products-container" style={{ flex: 1 }}>
+            <h2 className="sr-only">Catálogo de productos</h2>
             {isLoading ? (
               <SkeletonGrid count={8} />
             ) : (
@@ -594,14 +611,14 @@ const Storefront = () => {
         </div>
 
         {totalPages > 1 && (
-          <div className="pagination-container">
+          <div className="pagination-container" role="navigation" aria-label="Paginación de productos">
             <button
               className="pagination-btn arrow-btn"
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
               aria-label="Página anterior"
             >
-              <ChevronLeft size={18}/>
+              <ChevronLeft size={18} aria-hidden="true" />
               <span className="pagination-btn-text">Anterior</span>
             </button>
 
@@ -612,10 +629,12 @@ const Storefront = () => {
                   const prevNum = array[index - 1];
                   return (
                     <React.Fragment key={pageNum}>
-                      {prevNum && pageNum - prevNum > 1 && <span className="pagination-ellipsis">...</span>}
+                      {prevNum && pageNum - prevNum > 1 && <span className="pagination-ellipsis" aria-hidden="true">...</span>}
                       <button
                         className={`pagination-number-btn ${currentPage === pageNum ? 'active' : ''}`}
                         onClick={() => handlePageChange(pageNum)}
+                        aria-label={`Página ${pageNum}`}
+                        aria-current={currentPage === pageNum ? 'page' : undefined}
                       >
                         {pageNum}
                       </button>
@@ -631,7 +650,7 @@ const Storefront = () => {
               aria-label="Página siguiente"
             >
               <span className="pagination-btn-text">Siguiente</span>
-              <ChevronRight size={18}/>
+              <ChevronRight size={18} aria-hidden="true" />
             </button>
           </div>
         )}
@@ -728,7 +747,7 @@ const Storefront = () => {
           <section className="recent-products-section glass-panel" aria-label="Productos vistos recientemente">
             <div className="section-header-modern">
               <div className="section-title-wrap">
-                <Clock size={22} className="section-icon" />
+                <Clock size={22} className="section-icon" aria-hidden="true" />
                 <h2 className="section-title">Vistos recientemente</h2>
               </div>
               <span className="recent-count-tag">
@@ -751,10 +770,10 @@ const Storefront = () => {
             </div>
           </section>
         )}
-      </main>
+      </section>
 
-      <div className="floating-whatsapp-btn" onClick={() => handleWhatsAppContact({ id: 'Consulta General' })} role="button" aria-label="WhatsApp">
-        <MessageCircle size={32} fill="currentColor" />
+      <div className="floating-whatsapp-btn" onClick={() => handleWhatsAppContact({ id: 'Consulta General' })} role="button" aria-label="Contactar por WhatsApp">
+        <MessageCircle size={32} fill="currentColor" aria-hidden="true" />
         <span className="tooltip">¿Necesitas ayuda?</span>
       </div>
 

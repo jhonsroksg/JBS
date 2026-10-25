@@ -57,7 +57,7 @@ function App() {
           <CartProvider>
             <FavoritesProvider>
               <BrowserRouter>
-                <React.Suspense fallback={<div style={{textAlign: 'center', marginTop: '20%'}}>Cargando tienda...</div>}>
+                <React.Suspense fallback={<LoadingSpinner />}>
                   <Routes>
                     {/* Rutas Públicas */}
                     <Route path="/" element={<PublicLayout />}>

@@ -24,7 +24,7 @@ export default defineConfig({
               return 'pdf-export';
             }
             if (id.includes('node_modules/@supabase')) {
-              return 'supabase';
+              return 'vendor-supabase';
             }
             if (
               id.includes('node_modules/react/') ||
@@ -33,7 +33,7 @@ export default defineConfig({
               id.includes('node_modules/react-router/') ||
               id.includes('node_modules/react-helmet-async/')
             ) {
-              return 'react-core';
+              return 'vendor-react';
             }
           }
         }

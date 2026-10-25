@@ -48,7 +48,7 @@ export const SectionCarousel = ({
   };
 
   return (
-    <div className="section-carousel-container">
+    <div className="section-carousel-container" role="region" aria-label="Carrusel de secciones de la tienda">
       <div className="section-carousel-scroll">
         {sections.map((section) => {
           // Resolve icon: if it's a string, find it in SECTION_ICON_MAP; otherwise use it directly
@@ -70,7 +70,7 @@ export const SectionCarousel = ({
               title={label}
             >
               <div className="section-icon-wrapper">
-                <Icon size={28} strokeWidth={2.5} />
+                <Icon size={28} strokeWidth={2.5} aria-hidden="true" />
               </div>
               <span className="section-label">{label}</span>
             </button>

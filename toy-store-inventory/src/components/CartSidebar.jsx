@@ -39,36 +39,36 @@ const CartSidebar = ({ isOpen, onClose, onCheckout }) => {
     <div className={`cart-sidebar-overlay ${isOpen ? 'open' : ''}`} onClick={onClose}>
       <div className="cart-sidebar" onClick={e => e.stopPropagation()}>
         <div className="cart-sidebar-header">
-          <h2><ShoppingBag size={20} /> {isGuestMode ? 'Tus Regalos' : (isLayawayMode ? 'Tu Lista de Apartado' : 'Tu Carrito')}</h2>
-          <button className="btn-close-sidebar" onClick={onClose}>
-            <X size={20} />
+          <h2><ShoppingBag size={20} aria-hidden="true" /> {isGuestMode ? 'Tus Regalos' : (isLayawayMode ? 'Tu Lista de Apartado' : 'Tu Carrito')}</h2>
+          <button className="btn-close-sidebar" onClick={onClose} aria-label="Cerrar carrito de compras">
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
 
         <div className="cart-sidebar-items">
           {cart.length === 0 ? (
             <div className="sidebar-empty">
-              <div className="sidebar-empty-icon">🛍️</div>
+              <div className="sidebar-empty-icon" aria-hidden="true">🛍️</div>
               <p>{isGuestMode ? 'Tu lista de regalos está vacía.' : (isLayawayMode ? 'Tu lista de apartado está vacía.' : 'Tu carrito está vacío.')}</p>
-              <button className="btn-continue-shopping" onClick={onClose}>Continuar Comprando</button>
+              <button className="btn-continue-shopping" onClick={onClose} aria-label="Continuar comprando en la tienda">Continuar Comprando</button>
             </div>
           ) : (
             cart.map((item, index) => (
               <div key={item.product.id} className="cart-sidebar-item">
                 <img src={getOptimizedSupabaseUrl(item.product.imageUrl, 150, 70, 'webp')} alt={item.product.name} className="sidebar-item-img" loading="lazy" decoding="async" />
                 <div className="sidebar-item-info">
-                  <h4 className="sidebar-item-name">{item.product.name}</h4>
+                  <h3 className="sidebar-item-name">{item.product.name}</h3>
                   <div className="sidebar-item-price">
                     L. {Number(item.product.discountPrice || item.product.sellingPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                   <div className="sidebar-item-actions">
                     <div className="sidebar-qty-controls">
-                      <button onClick={() => updateQuantity(index, -1)} disabled={item.quantity <= 1}><Minus size={14}/></button>
+                      <button onClick={() => updateQuantity(index, -1)} disabled={item.quantity <= 1} aria-label={`Disminuir cantidad de ${item.product.name}`}><Minus size={14} aria-hidden="true" /></button>
                       <span>{item.quantity}</span>
-                      <button onClick={() => updateQuantity(index, 1)}><Plus size={14}/></button>
+                      <button onClick={() => updateQuantity(index, 1)} aria-label={`Aumentar cantidad de ${item.product.name}`}><Plus size={14} aria-hidden="true" /></button>
                     </div>
-                    <button className="btn-remove-sidebar" onClick={() => removeItem(index)}>
-                      <Trash2 size={16} />
+                    <button className="btn-remove-sidebar" onClick={() => removeItem(index)} aria-label={`Eliminar ${item.product.name} del carrito`}>
+                      <Trash2 size={16} aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -94,6 +94,7 @@ const CartSidebar = ({ isOpen, onClose, onCheckout }) => {
                       checked={isLayawayMode} 
                       onChange={toggleLayawayMode} 
                       className="layaway-switch-input"
+                      aria-label="Crear pedido como apartado o lista de fiesta"
                     />
                     <span className="layaway-switch-slider"></span>
                   </div>
@@ -101,8 +102,8 @@ const CartSidebar = ({ isOpen, onClose, onCheckout }) => {
               </div>
             )}
 
-            <button className="btn-checkout-sidebar" onClick={() => { onCheckout(); onClose(); }}>
-              {isGuestMode ? 'Finalizar Compra de Regalo' : (isLayawayMode ? 'Crear Lista de Apartado' : 'Finalizar Compra')} <ArrowRight size={20} />
+            <button className="btn-checkout-sidebar" onClick={() => { onCheckout(); onClose(); }} aria-label={isGuestMode ? 'Finalizar compra de regalo' : (isLayawayMode ? 'Crear lista de apartado' : 'Finalizar compra')}>
+              {isGuestMode ? 'Finalizar Compra de Regalo' : (isLayawayMode ? 'Crear Lista de Apartado' : 'Finalizar Compra')} <ArrowRight size={20} aria-hidden="true" />
             </button>
             <button className="btn-continue-shopping" onClick={onClose}>
               Seguir Comprando

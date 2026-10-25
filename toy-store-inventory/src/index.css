@@ -23,7 +23,7 @@
   --bg-secondary: #FFFFFF;
   --bg-tertiary: #F4F9FD;
   --text-primary: #2D3748;
-  --text-secondary: #718096;
+  --text-secondary: #4A5568;
   --accent-primary: #1FB7B9;
   --accent-hover: #139B9D;
   --accent-gradient: linear-gradient(135deg, #1FB7B9 0%, #139B9D 100%);
@@ -32,7 +32,7 @@
   --warning: #FDE170;
   --border-color: #E2E8F0;
   --glass-bg: #FFFFFF;
-  --glass-border: #E2E8F0;;
+  --glass-border: #E2E8F0;
 
   /* Shadows */
   --shadow-sm: 0 4px 6px -1px rgba(34, 193, 195, 0.1);
@@ -64,6 +64,24 @@
 /* Evitar zoom automático en iOS al enfocar campos de texto */
 input, select, textarea {
   font-size: 16px !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #64748b !important;
+  opacity: 1;
+}
+
+/* Screen Reader Only Utility */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border-width: 0 !important;
 }
 
 /* Accesibilidad: mantener siempre visible el foco de teclado */

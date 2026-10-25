@@ -93,16 +93,16 @@ const PublicLayout = () => {
       
       <header className="store-header glass-panel">
         <div className="store-brand">
-          <Link to="/">
-            <h2>{storeInfo.name}</h2>
+          <Link to="/" aria-label={`Ir al inicio de ${storeInfo.name}`}>
+            <span className="store-brand-title">{storeInfo.name}</span>
           </Link>
         </div>
-        <nav className="store-nav">
+        <nav className="store-nav" aria-label="Navegación principal">
           <Link to="/" className="store-link">Tienda</Link>
         </nav>
         <div className="store-actions">
-          <button className="cart-btn" id="open-cart-btn" onClick={() => setIsSidebarOpen(true)}>
-            <ShoppingCart className="cart-icon" />
+          <button className="cart-btn" id="open-cart-btn" onClick={() => setIsSidebarOpen(true)} aria-label="Abrir carrito de compras">
+            <ShoppingCart className="cart-icon" aria-hidden="true" />
             {itemCount > 0 && <span className="cart-badge" id="cart-badge-count">{itemCount}</span>}
           </button>
         </div>
@@ -126,15 +126,15 @@ const PublicLayout = () => {
         <div className="layaway-modal-overlay" onClick={() => setIsLayawayModalOpen(false)}>
           <div className="layaway-modal-content" onClick={e => e.stopPropagation()}>
             <div className="layaway-modal-header">
-              <h3>Apartados para Fiestas</h3>
-              <button className="btn-close-modal" onClick={() => setIsLayawayModalOpen(false)}>
-                <X size={20} />
+              <h2>Apartados para Fiestas</h2>
+              <button className="btn-close-modal" onClick={() => setIsLayawayModalOpen(false)} aria-label="Cerrar ventana de apartados">
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
             
             <div className="layaway-modal-body">
               <div className="layaway-option-card">
-                <h4>Crear mi lista de Apartados / Cumpleaños</h4>
+                <h3>Crear mi lista de Apartados / Cumpleaños</h3>
                 <p>Reserva los juguetes para tu fiesta y comparte el código con tus invitados.</p>
                 <button className="btn-action-primary" onClick={enableLayawayMode}>
                   Crear Nueva Lista
@@ -146,15 +146,18 @@ const PublicLayout = () => {
               </div>
 
               <div className="layaway-option-card">
-                <h4>Buscar lista con código de invitado</h4>
+                <h3>Buscar lista con código de invitado</h3>
                 <p>¿Fuiste invitado a un cumpleaños? Ingresa el código para ver los juguetes elegidos.</p>
                 <form onSubmit={handleSearchCode} className="layaway-search-form">
+                  <label htmlFor="layaway-search-input" className="sr-only">Código de apartado</label>
                   <input 
+                    id="layaway-search-input"
                     type="text" 
                     placeholder="Ej. AP-1001" 
                     value={searchCode}
                     onChange={e => setSearchCode(e.target.value)}
                     className="layaway-input"
+                    aria-label="Código de apartado"
                   />
                   <button type="submit" className="btn-action-secondary" disabled={isSearching}>
                     {isSearching ? 'Buscando...' : 'Buscar Lista'}

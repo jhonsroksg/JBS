@@ -165,8 +165,8 @@ const ProductPage = () => {
       <ProductJsonLd product={product} />
 
       <div style={{ marginBottom: '20px' }}>
-        <button onClick={() => navigate(-1)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px' }}>
-          <ArrowLeft size={18} /> Volver a la tienda
+        <button onClick={() => navigate(-1)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px' }} aria-label="Volver a la tienda">
+          <ArrowLeft size={18} aria-hidden="true" /> Volver a la tienda
         </button>
       </div>
 
@@ -181,12 +181,13 @@ const ProductPage = () => {
             />
             
             {product.images && product.images.length > 1 && (
-              <div className="carousel-dots">
+              <div className="carousel-dots" role="tablist" aria-label="Selector de imágenes del producto">
                 {product.images.map((_, idx) => (
                   <button 
                     key={idx} 
                     className={`dot ${mainImageIndex === idx ? 'active' : ''}`}
                     onClick={() => setMainImageIndex(idx)}
+                    aria-label={`Ver imagen ${idx + 1}`}
                   />
                 ))}
               </div>
@@ -211,19 +212,19 @@ const ProductPage = () => {
           
           <div className="product-meta-grid">
             <div className="meta-item">
-              <Package size={18} className="meta-icon" /> 
+              <Package size={18} className="meta-icon" aria-hidden="true" /> 
               <span>REF: <strong>{product.sku}</strong></span>
             </div>
             <div className="meta-item">
-              <Package size={18} className="meta-icon" /> 
+              <Package size={18} className="meta-icon" aria-hidden="true" /> 
               <span>Marca: <strong>{product.brand || 'N/A'}</strong></span>
             </div>
             <div className="meta-item">
-              <Users size={18} className="meta-icon" /> 
+              <Users size={18} className="meta-icon" aria-hidden="true" /> 
               <span>Edad: <strong>{product.ageRange || 'Todas'}</strong></span>
             </div>
             <div className="meta-item">
-              <CheckCircle size={18} className="meta-icon" style={{ color: product.stock > 0 ? '#10B981' : '#EF4444' }} /> 
+              <CheckCircle size={18} className="meta-icon" style={{ color: product.stock > 0 ? '#10B981' : '#EF4444' }} aria-hidden="true" /> 
               <span>Stock: <strong style={{ color: product.stock > 0 ? '#10B981' : '#EF4444' }}>{product.stock > 0 ? `${product.stock} disponibles` : 'Agotado'}</strong></span>
             </div>
           </div>
@@ -246,11 +247,11 @@ const ProductPage = () => {
           </div>
 
           <div style={{ marginTop: 'auto', paddingTop: '30px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <button className="btn-whatsapp" style={{ padding: '18px', justifyContent: 'center', fontSize: '1.1rem' }} onClick={() => handleWhatsAppContact(product)}>
-              <MessageCircle size={24} strokeWidth={2.5} /> Consultar por WhatsApp
+            <button className="btn-whatsapp" style={{ padding: '18px', justifyContent: 'center', fontSize: '1.1rem' }} onClick={() => handleWhatsAppContact(product)} aria-label={`Consultar por WhatsApp sobre ${product.name}`}>
+              <MessageCircle size={24} strokeWidth={2.5} aria-hidden="true" /> Consultar por WhatsApp
             </button>
-            <button className="btn-add-cart" disabled={product.stock === 0} style={{ padding: '18px', justifyContent: 'center', fontSize: '1.1rem', opacity: product.stock === 0 ? 0.5 : 1 }} onClick={() => handleAddToCart(product)}>
-              <ShoppingCart size={24} strokeWidth={2.5} /> Agregar al Carrito
+            <button className="btn-add-cart" disabled={product.stock === 0} style={{ padding: '18px', justifyContent: 'center', fontSize: '1.1rem', opacity: product.stock === 0 ? 0.5 : 1 }} onClick={() => handleAddToCart(product)} aria-label={`Agregar ${product.name} al carrito`}>
+              <ShoppingCart size={24} strokeWidth={2.5} aria-hidden="true" /> Agregar al Carrito
             </button>
             <button
               type="button"
@@ -269,11 +270,11 @@ const ProductPage = () => {
               onClick={() => toggleFavorite(product.id, product.name)}
               aria-label={isFavorite(product.id) ? "Quitar de favoritos" : "Agregar a favoritos"}
             >
-              <Heart size={20} fill={isFavorite(product.id) ? '#f43f5e' : 'none'} color={isFavorite(product.id) ? '#f43f5e' : 'currentColor'} />
+              <Heart size={20} fill={isFavorite(product.id) ? '#f43f5e' : 'none'} color={isFavorite(product.id) ? '#f43f5e' : 'currentColor'} aria-hidden="true" />
               {isFavorite(product.id) ? 'En Favoritos' : 'Agregar a Favoritos'}
             </button>
             <p className="micro-copy" style={{ textAlign: 'center', marginTop: '10px' }}>
-              <Truck size={16} /> Envío rápido a toda Honduras 🇭🇳
+              <Truck size={16} aria-hidden="true" /> Envío rápido a toda Honduras 🇭🇳
             </p>
           </div>
         </div>

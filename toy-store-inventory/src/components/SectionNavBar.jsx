@@ -52,11 +52,12 @@ const SectionNavBar = ({ onOpenLayawayModal }) => {
   };
 
   return (
-    <nav className="section-navbar">
+    <nav className="section-navbar" aria-label="Navegación de secciones de la tienda">
       <div className="section-navbar-inner">
         <Link 
           to="/"
           className="section-nav-link section-nav-home"
+          aria-label="Ir al inicio de Joa Baby Shop"
           onClick={() => {
             const newParams = new URLSearchParams(searchParams);
             newParams.delete('section');
@@ -72,6 +73,7 @@ const SectionNavBar = ({ onOpenLayawayModal }) => {
             activeSection.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase() === 'PAPA' ? 'active' : ''
           }`}
           onClick={() => handleSectionClick(hasDbSection('PAPÁ') ? (sections.find(s => s.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase() === 'PAPA')?.name || 'PAPÁ') : 'PAPÁ')}
+          aria-label="Ver sección PAPÁ"
         >
           PAPÁ
         </button>
@@ -82,6 +84,7 @@ const SectionNavBar = ({ onOpenLayawayModal }) => {
             activeSection.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase() === 'MAMA' ? 'active' : ''
           }`}
           onClick={() => handleSectionClick(hasDbSection('MAMÁ') ? (sections.find(s => s.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase() === 'MAMA')?.name || 'MAMÁ') : 'MAMÁ')}
+          aria-label="Ver sección MAMÁ"
         >
           MAMÁ
         </button>
@@ -90,6 +93,7 @@ const SectionNavBar = ({ onOpenLayawayModal }) => {
         <button 
           className="section-nav-link"
           onClick={onOpenLayawayModal}
+          aria-label="Abrir gestión de apartados para fiestas"
         >
           APARTADOS
         </button>
@@ -105,6 +109,7 @@ const SectionNavBar = ({ onOpenLayawayModal }) => {
               key={section.id} 
               className={`section-nav-link ${activeSection === section.name ? 'active' : ''}`}
               onClick={() => handleSectionClick(section.name)}
+              aria-label={`Ver sección ${section.name}`}
             >
               {section.name}
             </button>

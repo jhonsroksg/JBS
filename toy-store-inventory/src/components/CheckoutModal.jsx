@@ -501,11 +501,11 @@ const CheckoutModal = ({ isOpen, onClose }) => {
   const isPickUp = !!selectedDelivery && (selectedDelivery.name.toLowerCase().includes('pick up') || selectedDelivery.name.toLowerCase().includes('pickup'));
 
   return (
-    <div className="modal-overlay checkout-modal-overlay" onClick={onClose}>
+    <div className="modal-overlay checkout-modal-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="checkout-modal-title">
       <div className="modal-content glass-panel checkout-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{isLayawayMode ? 'Crear Lista de Apartado' : 'Carrito de Compras'}</h2>
-          <button type="button" className="btn-close-modal" aria-label="Cerrar modal de checkout" onClick={onClose}><X size={20} /></button>
+          <h2 id="checkout-modal-title">{isLayawayMode ? 'Crear Lista de Apartado' : 'Carrito de Compras'}</h2>
+          <button type="button" className="btn-close-modal" aria-label="Cerrar modal de compra" onClick={onClose}><X size={20} aria-hidden="true" /></button>
         </div>
 
         <div className="checkout-body">
@@ -621,15 +621,15 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                               </div>
                               <div className="item-card-footer">
                                 <div className="item-qty-selector">
-                                  <button type="button" aria-label="Disminuir cantidad" onClick={() => updateQuantity(index, -1)} disabled={item.quantity <= 1}>-</button>
+                                  <button type="button" aria-label={`Disminuir cantidad de ${item.product.name}`} onClick={() => updateQuantity(index, -1)} disabled={item.quantity <= 1}>-</button>
                                   <span>{item.quantity}</span>
-                                  <button type="button" aria-label="Aumentar cantidad" onClick={() => updateQuantity(index, 1)}>+</button>
+                                  <button type="button" aria-label={`Aumentar cantidad de ${item.product.name}`} onClick={() => updateQuantity(index, 1)}>+</button>
                                 </div>
                                 <div className="item-card-subtotal">
                                   L. {((item.product.discountPrice || item.product.sellingPrice) * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </div>
                                 <button type="button" className="item-remove-btn" aria-label={`Eliminar ${item.product.name}`} onClick={() => removeItem(index)}>
-                                  <Trash2 size={16} />
+                                  <Trash2 size={16} aria-hidden="true" />
                                 </button>
                               </div>
                             </div>
@@ -651,7 +651,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                   >
                     {checkoutError && (
                       <div className="checkout-error-card">
-                        <AlertCircle size={20} />
+                        <AlertCircle size={20} aria-hidden="true" />
                         <div className="checkout-error-card-content">
                           <div className="checkout-error-card-title">Aviso de Validación</div>
                           <div>{checkoutError}</div>
@@ -663,7 +663,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                           onClick={() => setCheckoutError(null)}
                           title="Descartar aviso"
                         >
-                          <X size={16} />
+                          <X size={16} aria-hidden="true" />
                         </button>
                       </div>
                     )}
@@ -675,37 +675,43 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                     )}
                     <div className="form-section">
                       <div className="section-header-simple">
-                        <User size={14} />
-                        <h4>TU CONTACTO</h4>
+                        <User size={14} aria-hidden="true" />
+                        <h3>TU CONTACTO</h3>
                       </div>
                       <div className="form-input-group">
-                        <User className="input-icon" size={18} />
+                        <User className="input-icon" size={18} aria-hidden="true" />
+                        <label htmlFor="checkout-name-input" className="sr-only">Nombre completo</label>
                         <input 
                           id="checkout-name-input"
                           type="text" 
                           placeholder="Nombre completo" 
+                          aria-label="Nombre completo"
                           required 
                           value={customerInfo.name} 
                           onChange={e => setCustomerInfo({ ...customerInfo, name: e.target.value })} 
                         />
                       </div>
                       <div className="form-input-group">
-                        <Mail className="input-icon" size={18} />
+                        <Mail className="input-icon" size={18} aria-hidden="true" />
+                        <label htmlFor="checkout-email-input" className="sr-only">Correo electrónico</label>
                         <input 
                           id="checkout-email-input"
                           type="email" 
                           placeholder="Correo electrónico" 
+                          aria-label="Correo electrónico"
                           required 
                           value={customerInfo.email} 
                           onChange={e => setCustomerInfo({ ...customerInfo, email: e.target.value })} 
                         />
                       </div>
                       <div className="form-input-group">
-                        <Phone className="input-icon" size={18} />
+                        <Phone className="input-icon" size={18} aria-hidden="true" />
+                        <label htmlFor="checkout-phone-input" className="sr-only">Teléfono móvil</label>
                         <input 
                           id="checkout-phone-input"
                           type="tel" 
                           placeholder="Teléfono móvil" 
+                          aria-label="Teléfono móvil"
                           required 
                           value={customerInfo.phone} 
                           onChange={e => setCustomerInfo({ ...customerInfo, phone: e.target.value })} 
@@ -758,25 +764,28 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                     {isLayawayMode ? (
                       <div className="form-section">
                         <div className="section-header-simple">
-                          <CheckCircle size={14} />
-                          <h4>DETALLES DEL APARTADO</h4>
+                          <CheckCircle size={14} aria-hidden="true" />
+                          <h3>DETALLES DEL APARTADO</h3>
                         </div>
                         <div className="form-input-group">
-                          <User className="input-icon" size={18} style={{ top: '13px' }} />
+                          <User className="input-icon" size={18} style={{ top: '13px' }} aria-hidden="true" />
+                          <label htmlFor="checkout-event-name-input" className="sr-only">Nombre del Cumpleañero u Ocasión</label>
                           <input 
                             id="checkout-event-name-input"
                             type="text" 
                             placeholder="Nombre del Cumpleañero u Ocasión" 
+                            aria-label="Nombre del Cumpleañero u Ocasión"
                             required 
                             value={layawayInfo.eventName} 
                             onChange={e => setLayawayInfo({ ...layawayInfo, eventName: e.target.value })} 
                           />
                         </div>
                         <div className="form-input-group" style={{ display: 'block' }}>
-                          <span className="input-helper-text" style={{ marginBottom: '8px', marginLeft: '0', display: 'block', fontWeight: 600, fontSize: '0.85rem', color: '#64748b' }}>Fecha de la Fiesta / Evento</span>
+                          <label htmlFor="checkout-event-date-input" className="input-helper-text" style={{ marginBottom: '8px', marginLeft: '0', display: 'block', fontWeight: 600, fontSize: '0.85rem', color: '#4A5568' }}>Fecha de la Fiesta / Evento</label>
                           <input 
                             id="checkout-event-date-input"
                             type="date" 
+                            aria-label="Fecha de la Fiesta o Evento"
                             required 
                             value={layawayInfo.eventDate} 
                             onChange={e => setLayawayInfo({ ...layawayInfo, eventDate: e.target.value })} 
@@ -789,15 +798,17 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                         {(!hasLayawayGifts || deliveryOption === 'standard') && (
                           <div className="form-section">
                             <div className="section-header-simple">
-                              <MapPin size={14} />
-                              <h4>DETALLES DE ENVÍO</h4>
+                              <MapPin size={14} aria-hidden="true" />
+                              <h3>DETALLES DE ENVÍO</h3>
                             </div>
                             <div className="form-row-nested location-row">
                               <div className="form-input-group">
-                                <MapPin className="input-icon" size={18} />
+                                <MapPin className="input-icon" size={18} aria-hidden="true" />
+                                <label htmlFor="checkout-department-select" className="sr-only">Departamento de entrega</label>
                                 <select 
                                   id="checkout-department-select"
                                   className="ellipsis-select" 
+                                  aria-label="Departamento de entrega"
                                   required 
                                   value={customerInfo.department} 
                                   onChange={e => setCustomerInfo({ ...customerInfo, department: e.target.value, municipality: '' })}
@@ -807,10 +818,12 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                                 </select>
                               </div>
                               <div className="form-input-group">
-                                <MapPin className="input-icon" size={18} />
+                                <MapPin className="input-icon" size={18} aria-hidden="true" />
+                                <label htmlFor="checkout-municipality-select" className="sr-only">Municipio de entrega</label>
                                 <select 
                                   id="checkout-municipality-select"
                                   className="ellipsis-select" 
+                                  aria-label="Municipio de entrega"
                                   required 
                                   onChange={e => {
                                     const newMuni = e.target.value;
@@ -827,11 +840,12 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                             
                             {!isPickUp && (
                               <div className="form-input-group">
-                                <span className="input-helper-text" style={{ marginBottom: '8px', marginLeft: '0' }}>Dirección Completa</span>
-                                <MapPin className="input-icon" size={18} style={{ top: '45px', transform: 'none' }} />
+                                <label htmlFor="checkout-address-input" className="input-helper-text" style={{ marginBottom: '8px', marginLeft: '0', display: 'block' }}>Dirección Completa</label>
+                                <MapPin className="input-icon" size={18} style={{ top: '45px', transform: 'none' }} aria-hidden="true" />
                                 <textarea 
                                   id="checkout-address-input"
                                   placeholder="Punto de referencia o dirección exacta..." 
+                                  aria-label="Dirección completa o punto de referencia"
                                   required 
                                   rows="2" 
                                   value={customerInfo.address} 
@@ -842,9 +856,11 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                             )}
 
                             <div className="form-input-group">
-                              <Truck className="input-icon" size={18} />
+                              <Truck className="input-icon" size={18} aria-hidden="true" />
+                              <label htmlFor="checkout-delivery-select" className="sr-only">Método de entrega</label>
                               <select 
                                 id="checkout-delivery-select"
+                                aria-label="Método de entrega"
                                 required 
                                 value={deliveryMethodId} 
                                 onChange={e => setDeliveryMethodId(e.target.value)}
@@ -866,13 +882,15 @@ const CheckoutModal = ({ isOpen, onClose }) => {
 
                         <div className="form-section">
                           <div className="section-header-simple">
-                            <CreditCard size={14} />
-                            <h4>MÉTODO DE PAGO</h4>
+                            <CreditCard size={14} aria-hidden="true" />
+                            <h3>MÉTODO DE PAGO</h3>
                           </div>
                           <div className="form-input-group">
-                            <CreditCard className="input-icon" size={18} />
+                            <CreditCard className="input-icon" size={18} aria-hidden="true" />
+                            <label htmlFor="checkout-payment-select" className="sr-only">Método de pago</label>
                             <select 
                               id="checkout-payment-select"
+                              aria-label="Método de pago"
                               required 
                               value={paymentMethod} 
                               onChange={e => setPaymentMethod(e.target.value)}

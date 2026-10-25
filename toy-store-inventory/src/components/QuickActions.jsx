@@ -35,32 +35,30 @@ const QuickActions = () => {
   };
 
   return (
-    <section className="quick-actions-section">
+    <section className="quick-actions-section" aria-label="Acciones rápidas">
       <div className="quick-actions-container">
         {/* Chat en Vivo */}
-        <button className="quick-action-item" onClick={() => handleAction('chat')}>
+        <button className="quick-action-item" onClick={() => handleAction('chat')} aria-label="Abrir chat de soporte en vivo">
           <div className="icon-circle">
-            <MessageCircle size={28} strokeWidth={2} />
+            <MessageCircle size={28} strokeWidth={2} aria-hidden="true" />
             {chatCount > 0 && <span className="action-badge">{chatCount}</span>}
           </div>
           <span className="action-label">Chat en vivo</span>
         </button>
 
-
-
         {/* Mi Carrito */}
-        <button className="quick-action-item" onClick={() => handleAction('cart')}>
+        <button className="quick-action-item" onClick={() => handleAction('cart')} aria-label="Abrir mi carrito de compras">
           <div className="icon-circle">
-            <ShoppingCart size={28} strokeWidth={2} />
+            <ShoppingCart size={28} strokeWidth={2} aria-hidden="true" />
             {itemCount > 0 && <span className="action-badge">{itemCount}</span>}
           </div>
           <span className="action-label">Mi carrito</span>
         </button>
 
         {/* Compartir */}
-        <button className="quick-action-item" onClick={() => handleAction('share')}>
+        <button className="quick-action-item" onClick={() => handleAction('share')} aria-label="Compartir tienda Joa Baby Shop">
           <div className="icon-circle">
-            <Share2 size={28} strokeWidth={2} />
+            <Share2 size={28} strokeWidth={2} aria-hidden="true" />
           </div>
           <span className="action-label">Compartir</span>
         </button>

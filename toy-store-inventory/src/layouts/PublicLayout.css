@@ -35,7 +35,8 @@
 }
 
 
-.store-brand h2 {
+.store-brand h2,
+.store-brand .store-brand-title {
   font-size: 1.5rem;
   background: var(--accent-gradient);
   -webkit-background-clip: text;
@@ -43,6 +44,7 @@
   -webkit-text-fill-color: transparent;
   font-weight: 800;
   margin: 0;
+  display: inline-block;
 }
 
 .store-nav {
@@ -116,7 +118,8 @@
     border-radius: 0;
   }
 
-  .store-brand h2 {
+  .store-brand h2,
+  .store-brand .store-brand-title {
     font-size: clamp(1.1rem, 5vw, 1.3rem);
   }
 

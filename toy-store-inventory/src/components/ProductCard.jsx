@@ -20,7 +20,7 @@ export const ProductCard = ({
       <div 
         className="product-image-container" 
         onClick={() => onSelect?.(product)} 
-        style={{ cursor: 'pointer' }}
+        style={{ cursor: 'pointer', aspectRatio: '1 / 1' }}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
@@ -54,6 +54,7 @@ export const ProductCard = ({
             size={18} 
             fill={favorited ? '#f43f5e' : 'rgba(0, 0, 0, 0.25)'} 
             color={favorited ? '#f43f5e' : '#ffffff'} 
+            aria-hidden="true"
           />
         </button>
         <div className="product-badges">
@@ -94,6 +95,7 @@ export const ProductCard = ({
               size={20} 
               fill={favorited ? '#f43f5e' : 'none'} 
               color={favorited ? '#f43f5e' : 'currentColor'} 
+              aria-hidden="true"
             />
           </button>
           <button 
@@ -103,7 +105,7 @@ export const ProductCard = ({
             title="WhatsApp" 
             aria-label={`Consultar por WhatsApp sobre ${product.name}`}
           >
-            <MessageCircle size={22} />
+            <MessageCircle size={22} aria-hidden="true" />
           </button>
           <button 
             type="button"
@@ -112,7 +114,7 @@ export const ProductCard = ({
             title="Carrito" 
             aria-label={`Agregar ${product.name} al carrito`}
           >
-            <ShoppingCart size={22} />
+            <ShoppingCart size={22} aria-hidden="true" />
           </button>
           <button 
             type="button"
@@ -121,7 +123,7 @@ export const ProductCard = ({
             title="Compartir" 
             aria-label={`Compartir enlace de ${product.name}`}
           >
-            <Share2 size={20} />
+            <Share2 size={20} aria-hidden="true" />
           </button>
         </div>
       </div>

@@ -45,7 +45,7 @@ export const ProductModal = ({
   const images = product.images || [product.imageUrl || 'https://via.placeholder.com/400'];
 
   return (
-    <div className="modal-overlay product-modal-overlay" style={{ zIndex: 1000 }}>
+    <div className="modal-overlay product-modal-overlay" style={{ zIndex: 1000 }} role="dialog" aria-modal="true" aria-labelledby="modal-product-title">
       <div className="product-modal-content glass-panel" onClick={e => e.stopPropagation()}>
         <div className="modal-gallery-side">
           <div className="modal-main-image-wrapper">
@@ -58,33 +58,36 @@ export const ProductModal = ({
             
             {images.length > 1 && (
               <>
-                <button className="gallery-nav-btn prev" onClick={() => setMainImageIndex(prev => (prev - 1 + images.length) % images.length)}>
-                  <ChevronLeft size={24} />
+                <button className="gallery-nav-btn prev" onClick={() => setMainImageIndex(prev => (prev - 1 + images.length) % images.length)} aria-label="Ver imagen anterior">
+                  <ChevronLeft size={24} aria-hidden="true" />
                 </button>
-                <button className="gallery-nav-btn next" onClick={() => setMainImageIndex(prev => (prev + 1) % images.length)}>
-                  <ChevronRight size={24} />
+                <button className="gallery-nav-btn next" onClick={() => setMainImageIndex(prev => (prev + 1) % images.length)} aria-label="Ver imagen siguiente">
+                  <ChevronRight size={24} aria-hidden="true" />
                 </button>
-                <div className="gallery-counter">
+                <div className="gallery-counter" aria-live="polite">
                   {mainImageIndex + 1} / {images.length}
                 </div>
               </>
             )}
             
-            <button className="btn-fullscreen-toggle" onClick={() => window.open(images[mainImageIndex], '_blank')}>
-              <Maximize2 size={18} />
+            <button className="btn-fullscreen-toggle" onClick={() => window.open(images[mainImageIndex], '_blank')} aria-label="Ver imagen en tamaño completo">
+              <Maximize2 size={18} aria-hidden="true" />
             </button>
           </div>
 
           {images.length > 1 && (
-            <div className="modal-thumbnails-container">
+            <div className="modal-thumbnails-container" role="group" aria-label="Galería de miniaturas">
               {images.map((img, idx) => (
-                <div 
+                <button 
                   key={idx} 
+                  type="button"
                   className={`modal-thumbnail-wrapper ${mainImageIndex === idx ? 'active' : ''}`}
                   onClick={() => setMainImageIndex(idx)}
+                  aria-label={`Ver imagen ${idx + 1} de ${product.name}`}
+                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
                 >
-                  <OptimizedImage src={img} alt={`${product.name} ${idx + 1}`} width="80" height="80" />
-                </div>
+                  <OptimizedImage src={img} alt="" width="80" height="80" />
+                </button>
               ))}
             </div>
           )}
@@ -99,29 +102,29 @@ export const ProductModal = ({
             title={isFavorite(product.id) ? "Quitar de favoritos" : "Agregar a favoritos"}
             style={{ position: 'absolute', top: '16px', right: '60px', color: isFavorite(product.id) ? '#f43f5e' : 'inherit' }}
           >
-            <Heart size={20} fill={isFavorite(product.id) ? '#f43f5e' : 'none'} color={isFavorite(product.id) ? '#f43f5e' : 'currentColor'} />
+            <Heart size={20} fill={isFavorite(product.id) ? '#f43f5e' : 'none'} color={isFavorite(product.id) ? '#f43f5e' : 'currentColor'} aria-hidden="true" />
           </button>
-          <button className="btn-icon product-close-modal" onClick={onClose} aria-label="Cerrar modal"><X /></button>
+          <button className="btn-icon product-close-modal" onClick={onClose} aria-label="Cerrar ventana de detalles"><X aria-hidden="true" /></button>
           
-          <h2 className="modal-product-title">{product.name}</h2>
+          <h2 className="modal-product-title" id="modal-product-title">{product.name}</h2>
           <p className="modal-product-category">{categories.find(c => c.id === product.categoryId)?.name || 'Sin Categoría'}</p>
           
           <div className="product-meta-grid">
             <div className="meta-item">
-              <div className="meta-icon"><Package size={18}/></div>
+              <div className="meta-icon"><Package size={18} aria-hidden="true" /></div>
               <div className="meta-content"><span className="meta-label">Referencia</span><span className="meta-value">{product.sku}</span></div>
             </div>
             <div className="meta-item">
-              <div className="meta-icon"><Tag size={18}/></div>
+              <div className="meta-icon"><Tag size={18} aria-hidden="true" /></div>
               <div className="meta-content"><span className="meta-label">Marca</span><span className="meta-value">{product.brand || 'Joa Baby Shop'}</span></div>
             </div>
             <div className="meta-item">
-              <div className="meta-icon"><Calendar size={18}/></div>
+              <div className="meta-icon"><Calendar size={18} aria-hidden="true" /></div>
               <div className="meta-content"><span className="meta-label">Edad Recom.</span><span className="meta-value">{product.ageRange || 'Todas'}</span></div>
             </div>
             <div className="meta-item">
               <div className="meta-icon" style={{ background: product.stock > 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)' }}>
-                <CheckCircle size={18} style={{ color: product.stock > 0 ? '#10B981' : '#EF4444' }} />
+                <CheckCircle size={18} style={{ color: product.stock > 0 ? '#10B981' : '#EF4444' }} aria-hidden="true" />
               </div>
               <div className="meta-content">
                 <span className="meta-label">Disponibilidad</span>
@@ -146,7 +149,7 @@ export const ProductModal = ({
               disabled={product.stock <= 0}
               style={product.stock <= 0 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
             >
-              <Zap size={20} fill="currentColor" /> Comprar ahora
+              <Zap size={20} fill="currentColor" aria-hidden="true" /> Comprar ahora
             </button>
             <div className="secondary-actions">
               <button 
@@ -155,10 +158,10 @@ export const ProductModal = ({
                 disabled={product.stock <= 0}
                 style={product.stock <= 0 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
               >
-                <ShoppingCart size={20} /> Carrito
+                <ShoppingCart size={20} aria-hidden="true" /> Carrito
               </button>
               <button className="product-btn-secondary whatsapp" onClick={() => onWhatsApp(product)}>
-                <MessageCircle size={20} /> WhatsApp
+                <MessageCircle size={20} aria-hidden="true" /> WhatsApp
               </button>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -169,11 +172,11 @@ export const ProductModal = ({
                 aria-label={isFavorite(product.id) ? "Quitar de favoritos" : "Agregar a favoritos"}
                 style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', color: isFavorite(product.id) ? '#f43f5e' : 'inherit', borderColor: isFavorite(product.id) ? '#f43f5e' : 'var(--border-color)' }}
               >
-                <Heart size={18} fill={isFavorite(product.id) ? '#f43f5e' : 'none'} color={isFavorite(product.id) ? '#f43f5e' : 'currentColor'} />
+                <Heart size={18} fill={isFavorite(product.id) ? '#f43f5e' : 'none'} color={isFavorite(product.id) ? '#f43f5e' : 'currentColor'} aria-hidden="true" />
                 {isFavorite(product.id) ? 'En Favoritos' : 'Favorito'}
               </button>
               <button className="btn-share" style={{ flex: 1 }} onClick={(e) => onShare(e, product)}>
-                <Share2 size={18} /> Compartir
+                <Share2 size={18} aria-hidden="true" /> Compartir
               </button>
             </div>
           </div>

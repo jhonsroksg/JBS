@@ -25,20 +25,20 @@ const Footer = ({ storeInfo }) => {
           </p>
           <div style={{ display: 'flex', gap: '15px' }}>
             {facebook_url && facebook_url !== '#' && (
-              <a href={facebook_url} target="_blank" rel="noopener noreferrer" className="btn-icon" style={{ borderRadius: '50%' }}><Facebook size={20} /></a>
+              <a href={facebook_url} target="_blank" rel="noopener noreferrer" className="btn-icon" style={{ borderRadius: '50%' }} aria-label="Visitar página de Facebook de Joa Baby Shop"><Facebook size={20} aria-hidden="true" /></a>
             )}
             {instagram_url && instagram_url !== '#' && (
-              <a href={instagram_url} target="_blank" rel="noopener noreferrer" className="btn-icon" style={{ borderRadius: '50%' }}><Instagram size={20} /></a>
+              <a href={instagram_url} target="_blank" rel="noopener noreferrer" className="btn-icon" style={{ borderRadius: '50%' }} aria-label="Visitar perfil de Instagram de Joa Baby Shop"><Instagram size={20} aria-hidden="true" /></a>
             )}
             {hasPhone && (
-              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="btn-icon" style={{ borderRadius: '50%', color: '#25D366', borderColor: '#25D366' }}><MessageCircle size={20} /></a>
+              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="btn-icon" style={{ borderRadius: '50%', color: '#25D366', borderColor: '#25D366' }} aria-label="Contactar por WhatsApp a Joa Baby Shop"><MessageCircle size={20} aria-hidden="true" /></a>
             )}
           </div>
         </div>
 
         {/* Columna 2: Enlaces Rápidos */}
         <div>
-          <h4 style={{ fontSize: '1.1rem', marginBottom: '20px', fontWeight: 'bold' }}>Explorar</h4>
+          <h3 style={{ fontSize: '1.1rem', marginBottom: '20px', fontWeight: 'bold' }}>Explorar</h3>
           <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <li><Link to="/" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Nuestra Tienda</Link></li>
             <li><Link to="/" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Novedades</Link></li>
@@ -48,7 +48,7 @@ const Footer = ({ storeInfo }) => {
 
         {/* Columna 3: Políticas */}
         <div>
-          <h4 style={{ fontSize: '1.1rem', marginBottom: '20px', fontWeight: 'bold' }}>Información</h4>
+          <h3 style={{ fontSize: '1.1rem', marginBottom: '20px', fontWeight: 'bold' }}>Información</h3>
           <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <li><a href="#" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Políticas de Envío</a></li>
             <li><a href="#" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Términos y Condiciones</a></li>
@@ -59,18 +59,18 @@ const Footer = ({ storeInfo }) => {
 
         {/* Columna 4: Contacto */}
         <div>
-          <h4 style={{ fontSize: '1.1rem', marginBottom: '20px', fontWeight: 'bold' }}>Contacto</h4>
+          <h3 style={{ fontSize: '1.1rem', marginBottom: '20px', fontWeight: 'bold' }}>Contacto</h3>
           <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '15px' }}>
             <li style={{ display: 'flex', gap: '10px', color: 'var(--text-secondary)' }}>
-              <MapPin size={20} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
+              <MapPin size={20} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} aria-hidden="true" />
               <span>{store_address || 'Honduras'}</span>
             </li>
             <li style={{ display: 'flex', gap: '10px', color: 'var(--text-secondary)' }}>
-              <Phone size={20} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
+              <Phone size={20} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} aria-hidden="true" />
               <span>{phone || (fallbackPhone ? `+${fallbackPhone}` : 'Configurar teléfono')}</span>
             </li>
             <li style={{ display: 'flex', gap: '10px', color: 'var(--text-secondary)' }}>
-              <Mail size={20} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
+              <Mail size={20} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} aria-hidden="true" />
               <span style={{ wordBreak: 'break-all' }}>{store_email || 'info@joababyshop.com'}</span>
             </li>
           </ul>

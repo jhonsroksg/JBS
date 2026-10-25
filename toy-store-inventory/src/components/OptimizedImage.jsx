@@ -50,6 +50,7 @@ export const OptimizedImage = ({
   lazy = true,
   placeholderType = 'svg', // Opciones: 'svg' (estático) o 'blur' (LQIP)
   sizes = "(max-width: 640px) 300px, (max-width: 1024px) 600px, 1200px",
+  style,
   ...props 
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -92,14 +93,15 @@ export const OptimizedImage = ({
   
   // Determinar placeholders según la configuración
   const lqipSrc = placeholderType === 'blur' ? getOptimizedSupabaseUrl(src, 50, 20, 'webp') : null;
-  const svgPlaceholder = placeholderType === 'svg' ? getPlaceholderSvg(width || 400, height || 300) : null;
+  const svgPlaceholder = placeholderType === 'svg' ? getPlaceholderSvg(width || 400, height || 400) : null;
 
   return (
     <div 
       ref={imgRef}
       className={`optimized-image-container ${isLoaded ? 'loaded' : 'loading'} ${className}`}
       style={{ 
-        aspectRatio: width && height ? `${width}/${height}` : '4/3'
+        aspectRatio: width && height ? `${width} / ${height}` : '1 / 1',
+        ...style
       }}
     >
       {/* Placeholder Dinámico (SVG o Blur) */}
@@ -124,7 +126,9 @@ export const OptimizedImage = ({
             onError={() => setError(true)}
             loading={priority ? 'eager' : 'lazy'}
             decoding="async"
-            {...(priority ? { fetchpriority: 'high' } : {})}
+            width={width || 400}
+            height={height || 400}
+            {...(priority ? { fetchPriority: 'high' } : {})}
             {...props}
           />
         </picture>
