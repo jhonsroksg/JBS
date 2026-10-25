@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -27,10 +28,16 @@ export default defineConfig({
               return 'vendor-supabase';
             }
             if (
+              id.includes('node_modules/react-router') ||
+              id.includes('node_modules/react-router-dom') ||
+              id.includes('node_modules/@remix-run/router')
+            ) {
+              return 'vendor-router';
+            }
+            if (
               id.includes('node_modules/react/') ||
               id.includes('node_modules/react-dom/') ||
-              id.includes('node_modules/react-router-dom/') ||
-              id.includes('node_modules/react-router/') ||
+              id.includes('node_modules/scheduler/') ||
               id.includes('node_modules/react-helmet-async/')
             ) {
               return 'vendor-react';
@@ -39,6 +46,6 @@ export default defineConfig({
         }
       }
     },
-    chunkSizeWarningLimit: 500
+    chunkSizeWarningLimit: 1000
   }
 })

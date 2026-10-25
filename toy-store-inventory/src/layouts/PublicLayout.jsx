@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, X } from 'lucide-react';
-import CheckoutModal from '../components/CheckoutModal';
 import { db, layawayRepository } from '../services/db';
 import { useCart } from '../contexts/CartContext';
 import './PublicLayout.css';
 import Footer from '../components/Footer';
 import CartSidebar from '../components/CartSidebar';
 import SectionNavBar from '../components/SectionNavBar';
+
+const CheckoutModal = React.lazy(() => import('../components/CheckoutModal'));
 
 const PublicLayout = () => {
   const { itemCount, isLayawayMode, setIsLayawayMode } = useCart();
@@ -119,7 +120,11 @@ const PublicLayout = () => {
         onClose={() => setIsSidebarOpen(false)} 
         onCheckout={() => setIsCartOpen(true)} 
       />
-      <CheckoutModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      {isCartOpen && (
+        <React.Suspense fallback={null}>
+          <CheckoutModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+        </React.Suspense>
+      )}
 
       {/* Modal de Apartados */}
       {isLayawayModalOpen && (

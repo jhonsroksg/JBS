@@ -1,6 +1,5 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import MainLayout from './layouts/MainLayout';
 import PublicLayout from './layouts/PublicLayout';
 import Storefront from './pages/Storefront';
 import LoadingSpinner from './components/LoadingSpinner';
@@ -8,8 +7,9 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { CartProvider } from './contexts/CartContext';
 import { FavoritesProvider } from './contexts/FavoritesContext';
-import ProtectedRoute from './components/ProtectedRoute';
 
+const MainLayout = React.lazy(() => import('./layouts/MainLayout'));
+const ProtectedRoute = React.lazy(() => import('./components/ProtectedRoute'));
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Products = React.lazy(() => import('./pages/Products'));
 const Categories = React.lazy(() => import('./pages/Categories'));
@@ -73,9 +73,11 @@ function App() {
 
                     {/* Rutas de Administración Protegidas (Admin y Personal Autorizado) */}
                     <Route path="/admin" element={
-                      <ProtectedRoute allowedRoles={['admin', 'empleado', 'vendedor', 'inventario', 'personalizado']}>
-                        <MainLayout />
-                      </ProtectedRoute>
+                      <React.Suspense fallback={<LoadingSpinner />}>
+                        <ProtectedRoute allowedRoles={['admin', 'empleado', 'vendedor', 'inventario', 'personalizado']}>
+                          <MainLayout />
+                        </ProtectedRoute>
+                      </React.Suspense>
                     }>
                       <Route index element={<Dashboard />} />
                       <Route path="products" element={
