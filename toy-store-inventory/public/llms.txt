@@ -1,0 +1,32 @@
+# Joa Baby Shop
+
+> Joa Baby Shop es la tienda online líder en juguetes educativos, estimulación temprana, accesorios de alimentación y artículos infantiles en Honduras.
+
+## Resumen de la Tienda
+- **Nombre:** Joa Baby Shop
+- **Ubicación:** San Pedro Sula, Cortés, Honduras (Envíos a nivel nacional)
+- **Moneda oficial:** Lempiras (LPS / HNL)
+- **Especialidad:** Juguetes para recién nacidos y primera infancia, estimulación sensorial, motricidad fina, accesorios de silicona alimentaria, sets de regalo y sistema de apartados.
+- **Servicio destacado:** Sistema de Apartados (Layaway) para reservar artículos y pagar en abonos flexibles.
+
+## Recursos para Agentes de IA
+- [Catálogo estructurado para IA](https://joababyshophn.com/ai-catalog.json): Especificación completa en formato JSON con esquema de catálogo, productos de muestra, categorías y precios oficiales en LPS.
+- [Mapa del Sitio (Sitemap XML)](https://joababyshophn.com/sitemap.xml): Listado indexado de todas las URLs de productos y secciones públicas disponibles.
+
+## Enlaces Principales
+- [Inicio y Tienda Online](https://joababyshophn.com/): Catálogo interactivo con filtros por categoría, edad y rango de precio.
+- [Consulta de Apartados (Layaway)](https://joababyshophn.com/): Módulo de consulta de saldo, abonos registrados y estado de apartados ingresando el número telefónico del cliente.
+- [Carrito y Checkout](https://joababyshophn.com/): Proceso de compra con confirmación y atención personalizada vía WhatsApp o pedido web.
+
+## Categorías Principales
+- **Estimulación Temprana:** Sonajeros, gimnasios de actividades, tapetes sensoriales y mordedores de silicona libres de BPA.
+- **Juguetes Educativos y Montessori:** Bloques didácticos, torres de encaje, laberintos y desarrollo motriz.
+- **Alimentación y Accesorios:** Platos con ventosa antideslizante, baberos ergonómicos de silicón, cucharas de transición y vasitos.
+- **Dormitorio y Confort:** Luces nocturnas con proyector estelar, móviles para cuna y peluches reconfortantes.
+- **Regalos y Cumpleaños:** Sets de regalo para baby shower, juguetes de colección y sorpresas infantiles.
+
+## Información de Pedidos y Envíos
+- **Moneda:** Todos los precios en catálogo están expresados en Lempiras hondureños (LPS).
+- **Cobertura de Envíos:** Entregas locales en San Pedro Sula y envíos seguros a todo el territorio hondureño.
+- **Métodos de Pago:** Transferencia bancaria, depósito, efectivo contra entrega (zonas seleccionadas) y tarjeta de crédito/débito.
+- **Atención al Cliente:** Soporte directo y pedidos asistidos a través del canal oficial de WhatsApp.
