@@ -1,7 +1,7 @@
 import React from 'react';
 import { Edit2, Copy, Trash2, X } from 'lucide-react';
 import LoadingSpinner from './LoadingSpinner';
-import { getOptimizedSupabaseUrl } from './OptimizedImage';
+import { getOptimizedSupabaseUrl, resolveStorageUrl } from './OptimizedImage';
 
 export const ProductsTable = ({
   loading,
@@ -44,22 +44,35 @@ export const ProductsTable = ({
             </tr>
           ) : (
             paginatedProducts.map(product => {
-              // Solicitar versión optimizada WebP/AVIF desde Supabase Storage
-              const optimizedThumb = product.imageUrl
-                ? getOptimizedSupabaseUrl(product.imageUrl, 80, 80, 'webp')
-                : 'https://via.placeholder.com/40';
+              // Resolver ruta de la imagen proveniente de la base de datos
+              const rawImage = product.imageUrl || (Array.isArray(product.images) && product.images[0]?.url) || (Array.isArray(product.images) && product.images[0]) || null;
+              
+              // Si la base de datos devuelve solo la ruta o el nombre del archivo, envuélvela con getPublicUrl de Supabase
+              const resolvedUrl = rawImage ? resolveStorageUrl(rawImage) : '/email-product-placeholder.png';
+              
+              // Solicitar versión optimizada WebP para miniaturas de la tabla (80x80)
+              const optimizedThumb = rawImage
+                ? getOptimizedSupabaseUrl(resolvedUrl, 80, 80, 'webp')
+                : '/email-product-placeholder.png';
 
               return (
                 <tr key={product.id}>
                   <td data-label="Producto" className="product-cell">
                     <img 
                       src={optimizedThumb} 
-                      alt={product.name} 
+                      alt={product.name || 'Producto'} 
                       className="product-thumb" 
                       loading="lazy" 
                       decoding="async" 
                       width="40" 
                       height="40" 
+                      onError={(e) => {
+                        // Fallback visual: si la imagen dispara el evento onError, renderiza /email-product-placeholder.png
+                        if (!e.currentTarget.src.endsWith('/email-product-placeholder.png')) {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = '/email-product-placeholder.png';
+                        }
+                      }}
                     />
                     <span>{product.name}</span>
                   </td>

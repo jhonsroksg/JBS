@@ -1,6 +1,42 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { useState, useEffect, useRef } from 'react';
+import { supabase } from '../lib/supabaseClient';
 import './OptimizedImage.css';
+
+/**
+ * Resuelve la URL pública de una imagen alojada en Supabase Storage ('product-images').
+ * Si la base de datos devuelve solo la ruta relativa o el nombre de archivo (ej: 'prod_123.jpg' o 'product-images/prod_123.jpg'),
+ * la envuelve con: supabase.storage.from('product-images').getPublicUrl(imagePath).data.publicUrl.
+ * Si es nula, vacía o inválida, retorna el fallback por defecto '/email-product-placeholder.png'.
+ */
+export const resolveStorageUrl = (imagePath, bucket = 'product-images') => {
+  if (!imagePath || typeof imagePath !== 'string') {
+    return '/email-product-placeholder.png';
+  }
+
+  const trimmed = imagePath.trim();
+  if (!trimmed) {
+    return '/email-product-placeholder.png';
+  }
+
+  // Si ya es una URL absoluta (http/https) o un Data URI en base64
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
+    return trimmed;
+  }
+
+  // Limpiar posibles barras iniciales o prefijo de bucket redundante
+  const cleanPath = trimmed
+    .replace(/^\/?(product-images\/)+/, '')
+    .replace(/^\/+/, '');
+
+  try {
+    const { data } = supabase.storage.from(bucket).getPublicUrl(cleanPath);
+    return data?.publicUrl || '/email-product-placeholder.png';
+  } catch (err) {
+    console.warn('[resolveStorageUrl] Error resolviendo URL pública de Supabase Storage:', err);
+    return '/email-product-placeholder.png';
+  }
+};
 
 /**
  * Genera un SVG minimalista (base64) para usar como placeholder estático.
@@ -15,14 +51,21 @@ const getPlaceholderSvg = (width = 100, height = 100) => {
 /**
  * Generador de URLs optimizadas para Supabase con soporte para formato y calidad.
  * Solicita versiones modernas WebP/AVIF a través del endpoint oficial de transformación.
+ * Si recibe una ruta relativa o nombre de archivo, primero la resuelve con getPublicUrl.
  */
 export const getOptimizedSupabaseUrl = (url, w, q = 80, format = 'webp') => {
-  if (!url || typeof url !== 'string' || url.startsWith('data:')) return url;
+  if (!url || typeof url !== 'string') return '/email-product-placeholder.png';
+  if (url.startsWith('data:')) return url;
   
-  if (url.includes('supabase.co/storage/v1/object/public/') || url.includes('supabase.co/storage/v1/render/image/public/')) {
+  // Resolver ruta relativa si no es una URL absoluta
+  const resolvedUrl = (url.startsWith('http://') || url.startsWith('https://'))
+    ? url
+    : resolveStorageUrl(url);
+
+  if (resolvedUrl.includes('supabase.co/storage/v1/object/public/') || resolvedUrl.includes('supabase.co/storage/v1/render/image/public/')) {
     try {
       // Reemplaza /object/public/ por /render/image/public/ para activar la transformación de Supabase
-      const renderBase = url.replace(
+      const renderBase = resolvedUrl.replace(
         '/storage/v1/object/public/',
         '/storage/v1/render/image/public/'
       );
@@ -37,7 +80,7 @@ export const getOptimizedSupabaseUrl = (url, w, q = 80, format = 'webp') => {
       }
       return urlObj.toString();
     } catch {
-      const renderBase = url.replace(
+      const renderBase = resolvedUrl.replace(
         '/storage/v1/object/public/',
         '/storage/v1/render/image/public/'
       );
@@ -50,7 +93,7 @@ export const getOptimizedSupabaseUrl = (url, w, q = 80, format = 'webp') => {
       return `${base}?${params.toString()}`;
     }
   }
-  return url;
+  return resolvedUrl;
 };
 
 /**
@@ -69,13 +112,24 @@ export const OptimizedImage = ({
   placeholderType = 'svg', // Opciones: 'svg' (estático) o 'blur' (LQIP)
   sizes = "(max-width: 640px) 300px, (max-width: 1024px) 600px, 1200px",
   style,
+  fallback = '/email-product-placeholder.png',
   ...props 
 }) => {
+  const resolvedSrc = src ? resolveStorageUrl(src) : fallback;
+  const isDirectFallback = resolvedSrc === fallback;
+
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(priority);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState(isDirectFallback);
   const [useFallbackDirect, setUseFallbackDirect] = useState(false);
   const imgRef = useRef();
+
+  useEffect(() => {
+    const newResolved = src ? resolveStorageUrl(src) : fallback;
+    setError(newResolved === fallback && !src);
+    setUseFallbackDirect(false);
+    setIsLoaded(false);
+  }, [src, fallback]);
 
   // Intersection Observer para Lazy Loading manual
   useEffect(() => {
@@ -100,23 +154,23 @@ export const OptimizedImage = ({
    * Resoluciones: 300px, 600px, 1200px.
    */
   const generateSrcSet = (url, format = 'avif') => {
-    if (!url || !url.includes('supabase.co') || useFallbackDirect) return null;
+    if (!url || !url.includes('supabase.co') || useFallbackDirect || error) return null;
     return [300, 600, 1200]
       .map(w => `${getOptimizedSupabaseUrl(url, w, quality, format)} ${w}w`)
       .join(', ');
   };
 
   // Preparar fuentes para <picture> (AVIF con fallback a WebP)
-  const srcSetAvif = generateSrcSet(src, 'avif');
-  const srcSetWebp = generateSrcSet(src, 'webp');
+  const srcSetAvif = generateSrcSet(resolvedSrc, 'avif');
+  const srcSetWebp = generateSrcSet(resolvedSrc, 'webp');
   
   // Determinar placeholders según la configuración
-  const lqipSrc = placeholderType === 'blur' ? getOptimizedSupabaseUrl(src, 50, 20, 'webp') : null;
+  const lqipSrc = placeholderType === 'blur' && !error ? getOptimizedSupabaseUrl(resolvedSrc, 50, 20, 'webp') : null;
   const svgPlaceholder = placeholderType === 'svg' ? getPlaceholderSvg(width || 400, height || 400) : null;
 
   const handleImageError = () => {
     // Si la versión transformada de Supabase falla, reintentamos con la URL original directa antes de marcar error
-    if (!useFallbackDirect && src && src.includes('supabase.co')) {
+    if (!useFallbackDirect && resolvedSrc && resolvedSrc.includes('supabase.co') && resolvedSrc.includes('/storage/v1/render/image/public/')) {
       setUseFallbackDirect(true);
     } else {
       setError(true);
@@ -124,10 +178,10 @@ export const OptimizedImage = ({
   };
 
   const currentImgSrc = error
-    ? 'https://via.placeholder.com/300?text=Error'
+    ? fallback
     : useFallbackDirect
-      ? src
-      : getOptimizedSupabaseUrl(src, width, quality, 'webp');
+      ? resolvedSrc.replace('/storage/v1/render/image/public/', '/storage/v1/object/public/')
+      : getOptimizedSupabaseUrl(resolvedSrc, width, quality, 'webp');
 
   return (
     <div 
@@ -139,7 +193,7 @@ export const OptimizedImage = ({
       }}
     >
       {/* Placeholder Dinámico (SVG o Blur) */}
-      {!isLoaded && !error && src && (
+      {!isLoaded && !error && resolvedSrc && (
         <div 
           className={`optimized-image-placeholder ${placeholderType}`}
           style={{ 
