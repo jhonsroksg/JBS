@@ -260,21 +260,25 @@ serve(async (req) => {
       const prodName = escapeHtml(item.name || item.product?.name || 'Producto');
       const quantity = Math.floor(Number(item.quantity) || 1);
       const unitPrice = Number(item.price || item.product?.discountPrice || item.product?.sellingPrice || 0);
+      const lineTotal = quantity * unitPrice;
       
       const rawImage = item.image_url || item.imageUrl || item.product?.imageUrl || null;
       const prodImage = getSafeImageUrl(rawImage, 'https://joababyshophn.com/email-product-placeholder.png');
 
       return `
         <tr>
-          <td style="padding: 12px 0; border-bottom: 1px solid #e4e4e7;">
-            <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+          <td style="padding: 14px 0; border-bottom: 1px solid #E2E8F0;">
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse: collapse;">
               <tr>
-                <td width="70" style="vertical-align: middle;">
-                  <img src="${escapeHtml(prodImage)}" width="60" height="60" style="border-radius: 6px; object-fit: contain; border: 1px solid #f0f0f0; display: block;" alt="${prodName}" />
+                <td width="64" style="vertical-align: middle; padding-right: 14px;">
+                  <img src="${escapeHtml(prodImage)}" width="60" height="60" style="border-radius: 8px; object-fit: contain; border: 1px solid #E2E8F0; display: block; background-color: #FFFFFF;" alt="${prodName}" />
                 </td>
-                <td style="vertical-align: middle; padding-left: 10px;">
-                  <div style="font-weight: bold; color: #0d9488; font-size: 15px;">${prodName}</div>
-                  <div style="font-size: 13px; color: #71717a; margin-top: 4px;">${quantity} × L ${unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                <td style="vertical-align: middle;">
+                  <div style="font-weight: 700; color: #1D1D2C; font-size: 14px; line-height: 1.4;">${prodName}</div>
+                  <div style="font-size: 13px; color: #64748B; margin-top: 4px;">Cant: <strong>${quantity}</strong> × L ${unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                </td>
+                <td width="95" align="right" style="vertical-align: middle;">
+                  <div style="font-weight: 700; color: #1D1D2C; font-size: 14px;">L ${lineTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
                 </td>
               </tr>
             </table>
@@ -285,98 +289,205 @@ serve(async (req) => {
 
     const emailHtml = `
       <!DOCTYPE html>
-      <html>
+      <html lang="es">
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Confirmación de Pedido</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="color-scheme" content="light">
+        <title>Confirmación de Pedido #${escapeHtml(orderCustomNumber)}</title>
+        <style type="text/css">
+          body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+          table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+          img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+          @media only screen and (max-width: 600px) {
+            .email-container { width: 100% !important; max-width: 100% !important; }
+            .mobile-padding { padding-left: 18px !important; padding-right: 18px !important; }
+            .stack-column { display: block !important; width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; padding-left: 0 !important; padding-right: 0 !important; }
+            .mobile-center { text-align: center !important; }
+            .mobile-hide { display: none !important; }
+          }
+        </style>
       </head>
-      <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; padding: 20px 0;">
+      <body style="margin: 0; padding: 0; background-color: #F8FAFC; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #F8FAFC; padding: 30px 10px;">
           <tr>
             <td align="center">
-              <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); border: 1px solid #e4e4e7;">
+              <!-- Contenedor Principal (Max 600px) -->
+              <table class="email-container" width="600" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 600px; width: 100%; background-color: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); border: 1px solid #E2E8F0;">
+                
+                <!-- Franja superior en Turquesa de marca (#00C4CC) -->
                 <tr>
-                  <td style="padding: 20px 30px;">
-                    <div style="text-align: center; color: #71717a; font-size: 12px; margin-bottom: 20px;">
-                      Pedido #${escapeHtml(orderCustomNumber)} el ${formattedDate}
-                    </div>
-                    <table width="100%" cellpadding="0" cellspacing="0">
+                  <td style="height: 6px; background-color: #00C4CC; font-size: 0; line-height: 0;">&nbsp;</td>
+                </tr>
+
+                <!-- Cabecera con Logo de Marca y Número de Pedido -->
+                <tr>
+                  <td class="mobile-padding" style="padding: 28px 32px 20px 32px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
                       <tr>
                         <td align="left" style="vertical-align: middle;">
-                          <h1 style="margin: 0; color: #18181b; font-size: 22px; font-weight: bold;">Confirmación de su pedido</h1>
+                          <a href="https://joababyshophn.com" target="_blank" style="text-decoration: none; display: inline-block;">
+                            <img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(storeName)}" width="130" style="display: block; max-width: 130px; width: 130px; height: auto;" />
+                          </a>
                         </td>
                         <td align="right" style="vertical-align: middle;">
-                          <img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(storeName)}" width="90" style="display: block; max-width: 90px; height: auto;">
+                          <div style="display: inline-block; background-color: #E6FFFA; border: 1px solid #00C4CC; border-radius: 20px; padding: 5px 12px; font-size: 12px; font-weight: 700; color: #008B94;">
+                            PEDIDO #${escapeHtml(orderCustomNumber)}
+                          </div>
+                          <div style="font-size: 12px; color: #64748B; margin-top: 6px;">
+                            ${formattedDate}
+                          </div>
                         </td>
                       </tr>
                     </table>
                   </td>
                 </tr>
+
+                <!-- Divisor sutil -->
                 <tr>
-                  <td style="padding: 0 30px 20px;">
-                    <p style="color: #18181b; font-size: 15px; margin-bottom: 10px;">Estimado(a) <strong>${customerName}</strong>,</p>
-                    <p style="color: #3f3f46; font-size: 15px; margin-top: 0; margin-bottom: 20px;">Hemos recibido su pedido <strong>#${escapeHtml(orderCustomNumber)}</strong> correctamente.</p>
-                    <div style="background-color: #f4f4f5; border-radius: 8px; padding: 14px; text-align: center;">
-                      <div style="color: #71717a; font-size: 12px; margin-bottom: 4px;">Estado actual</div>
-                      <div style="color: #18181b; font-size: 18px; font-weight: bold;">${status}</div>
-                    </div>
+                  <td style="padding: 0 32px;">
+                    <div style="border-top: 1px solid #F1F5F9;"></div>
                   </td>
                 </tr>
+
+                <!-- Hero Greeting y Estado del Pedido -->
                 <tr>
-                  <td style="padding: 0 30px;">
-                    <div style="border: 1px solid #e4e4e7; border-radius: 8px; padding: 16px; margin-top: 10px;">
-                      <h2 style="color: #18181b; font-size: 16px; font-weight: bold; margin-top: 0; margin-bottom: 12px;">Detalle del Pedido</h2>
-                      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                  <td class="mobile-padding" style="padding: 24px 32px 16px 32px;">
+                    <h1 style="margin: 0 0 10px 0; color: #1D1D2C; font-size: 22px; font-weight: 800; line-height: 1.3;">
+                      ¡Confirmación de tu compra!
+                    </h1>
+                    <p style="margin: 0 0 16px 0; color: #475569; font-size: 15px; line-height: 1.5;">
+                      Estimado(a) <strong>${customerName}</strong>, hemos recibido tu pedido <strong>#${escapeHtml(orderCustomNumber)}</strong> correctamente. A continuación encuentras el resumen detallado de tu orden:
+                    </p>
+
+                    <!-- Tarjeta de Estado del Pedido -->
+                    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #F8FAFC; border-radius: 12px; border: 1px solid #E2E8F0; margin-bottom: 8px;">
+                      <tr>
+                        <td style="padding: 14px 18px;">
+                          <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                            <tr>
+                              <td align="left" style="vertical-align: middle;">
+                                <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #64748B;">
+                                  Estado Actual
+                                </div>
+                                <div style="font-size: 16px; font-weight: 800; color: #1D1D2C; margin-top: 2px;">
+                                  ${status}
+                                </div>
+                              </td>
+                              <td align="right" style="vertical-align: middle;">
+                                <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: #00C4CC;"></span>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Detalle de Productos -->
+                <tr>
+                  <td class="mobile-padding" style="padding: 10px 32px 20px 32px;">
+                    <div style="border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; background-color: #FFFFFF;">
+                      <h2 style="margin: 0 0 14px 0; color: #1D1D2C; font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">
+                        Artículos del Pedido
+                      </h2>
+                      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-collapse: collapse;">
                         ${itemsHtml}
                       </table>
-                      <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 14px;">
+
+                      <!-- Resumen Financiero -->
+                      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top: 16px; border-top: 2px solid #F1F5F9; padding-top: 12px;">
                         <tr>
-                          <td align="right" style="padding: 4px 0; color: #3f3f46; font-size: 14px;">Subtotal: L ${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                          <td align="left" style="padding: 5px 0; color: #64748B; font-size: 14px;">Subtotal:</td>
+                          <td align="right" style="padding: 5px 0; color: #1D1D2C; font-size: 14px; font-weight: 600;">L ${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                         </tr>
-                        ${discountAmount > 0 ? `<tr><td align="right" style="padding: 4px 0; color: #ef4444; font-size: 14px;">Descuento: - L ${discountAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td></tr>` : ''}
+                        ${discountAmount > 0 ? `
                         <tr>
-                          <td align="right" style="padding: 4px 0; color: #3f3f46; font-size: 14px;">Envío (${deliveryMethodName}): ${deliveryCost === 0 ? 'Gratis' : `L ${deliveryCost.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}</td>
+                          <td align="left" style="padding: 5px 0; color: #FF1493; font-size: 14px;">Descuento Cupón:</td>
+                          <td align="right" style="padding: 5px 0; color: #FF1493; font-size: 14px; font-weight: 700;">- L ${discountAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                        </tr>` : ''}
+                        <tr>
+                          <td align="left" style="padding: 5px 0; color: #64748B; font-size: 14px;">Envío (${deliveryMethodName}):</td>
+                          <td align="right" style="padding: 5px 0; color: #1D1D2C; font-size: 14px; font-weight: 600;">${deliveryCost === 0 ? '<strong style="color: #00C4CC;">Gratis</strong>' : `L ${deliveryCost.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}</td>
                         </tr>
                         <tr>
-                          <td align="right" style="padding-top: 10px; color: #18181b; font-size: 18px; font-weight: bold;">Total: L ${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                          <td align="left" style="padding-top: 12px; border-top: 1px dashed #E2E8F0; color: #1D1D2C; font-size: 16px; font-weight: 800;">Total a Pagar:</td>
+                          <td align="right" style="padding-top: 12px; border-top: 1px dashed #E2E8F0; color: #1D1D2C; font-size: 20px; font-weight: 800;">
+                            <span style="color: #00C4CC;">L</span> ${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                          </td>
                         </tr>
                       </table>
                     </div>
                   </td>
                 </tr>
+
+                <!-- Datos de Entrega y Pago (2 Columnas Responsivas) -->
                 <tr>
-                  <td style="padding: 24px 30px;">
-                    <table width="100%" cellpadding="0" cellspacing="0">
+                  <td class="mobile-padding" style="padding: 0 32px 24px 32px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
                       <tr>
-                        <td width="50%" valign="top" style="padding-right: 12px;">
-                          <h3 style="color: #18181b; font-size: 14px; font-weight: bold; margin-top: 0; margin-bottom: 6px;">Dirección de entrega</h3>
-                          <div style="color: #3f3f46; font-size: 13px; line-height: 1.5;">
-                            ${customerName}<br>
-                            ${fullAddress}<br>
-                            ${phone ? `Tel: ${phone}` : ''}
+                        <td class="stack-column" width="50%" valign="top" style="padding-right: 10px; padding-bottom: 12px;">
+                          <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; min-height: 120px; box-sizing: border-box;">
+                            <h3 style="margin: 0 0 8px 0; color: #1D1D2C; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">
+                              📍 Dirección de Entrega
+                            </h3>
+                            <div style="color: #475569; font-size: 13px; line-height: 1.5;">
+                              <strong style="color: #1D1D2C;">${customerName}</strong><br>
+                              ${fullAddress}<br>
+                              ${phone ? `<span style="color: #64748B;">Tel:</span> ${phone}` : ''}
+                            </div>
                           </div>
                         </td>
-                        <td width="50%" valign="top" style="padding-left: 12px;">
-                          <h3 style="color: #18181b; font-size: 14px; font-weight: bold; margin-top: 0; margin-bottom: 6px;">Método de Pago</h3>
-                          <div style="color: #3f3f46; font-size: 13px; line-height: 1.5;">
-                            ${paymentMethod}
+                        <td class="stack-column" width="50%" valign="top" style="padding-left: 10px; padding-bottom: 12px;">
+                          <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; min-height: 120px; box-sizing: border-box;">
+                            <h3 style="margin: 0 0 8px 0; color: #1D1D2C; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">
+                              💳 Método de Pago
+                            </h3>
+                            <div style="color: #475569; font-size: 13px; line-height: 1.5;">
+                              <strong style="color: #1D1D2C;">${paymentMethod}</strong>
+                              <p style="margin: 6px 0 0 0; font-size: 12px; color: #64748B;">
+                                Si seleccionaste transferencia o depósito, puedes compartir tu comprobante vía WhatsApp.
+                              </p>
+                            </div>
                           </div>
                         </td>
                       </tr>
                     </table>
                   </td>
                 </tr>
+
+                <!-- Botón CTA a WhatsApp -->
                 <tr>
-                  <td style="background-color: #fafafa; border-top: 1px solid #e4e4e7; padding: 30px 20px; text-align: center;">
-                    <p style="color: #52525b; font-size: 13px; line-height: 1.5; margin: 0 0 10px 0;">
-                      Comuníquese con nosotros enviándonos un correo electrónico a <a href="mailto:${escapeHtml(contactEmail)}" style="color: #0d9488; text-decoration: none;">${escapeHtml(contactEmail)}</a> o llámenos/escríbanos al <a href="${escapeHtml(whatsappUrl)}" style="color: #0d9488; text-decoration: none;">${escapeHtml(contactPhone)}</a>.
-                    </p>
-                    <div style="color: #71717a; font-size: 11px;">
-                      © ${escapeHtml(storeName)} • ${escapeHtml(storeAddress)}
-                    </div>
+                  <td class="mobile-padding" style="padding: 0 32px 32px 32px;" align="center">
+                    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                      <tr>
+                        <td align="center">
+                          <a href="${escapeHtml(whatsappUrl)}" target="_blank" style="display: inline-block; background-color: #00C4CC; color: #FFFFFF; font-size: 14px; font-weight: 700; text-decoration: none; padding: 14px 28px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 196, 204, 0.25);">
+                            💬 ¿Preguntas o comprobante? Escríbenos por WhatsApp
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
+
+                <!-- Pie de Página en Carbón Oscuro (#1D1D2C) -->
+                <tr>
+                  <td style="background-color: #1D1D2C; padding: 28px 24px; text-align: center;">
+                    <p style="margin: 0 0 8px 0; color: #FFFFFF; font-size: 13px; font-weight: 700;">
+                      ${escapeHtml(storeName)}
+                    </p>
+                    <p style="margin: 0 0 12px 0; color: #94A3B8; font-size: 12px; line-height: 1.5;">
+                      ${escapeHtml(storeAddress)} • Tel: <a href="tel:${escapeHtml(contactPhone)}" style="color: #00C4CC; text-decoration: none;">${escapeHtml(contactPhone)}</a>
+                    </p>
+                    <p style="margin: 0; color: #64748B; font-size: 11px;">
+                      Visítanos en <a href="https://joababyshophn.com" target="_blank" style="color: #00C4CC; text-decoration: none;">joababyshophn.com</a> • Todos los derechos reservados.
+                    </p>
+                  </td>
+                </tr>
+
               </table>
             </td>
           </tr>
@@ -385,72 +496,172 @@ serve(async (req) => {
       </html>
     `;
 
-    // 8. Envío seguro vía Resend
+    // 8. Envío seguro vía Resend con tolerancia a fallos (Fail-Safe / Silent 200)
     let resendId: string | null = null;
+    let emailSendSuccess = false;
+    let emailErrorMessage: string | null = null;
+
     if (RESEND_API_KEY) {
-      console.log(`[Send Order Email] Enviando correo a ${maskEmail(customerEmail)} para pedido ${escapeHtml(orderCustomNumber)}`);
-      
-      const resendPayload: any = {
-        from: 'Joa Baby Shop <ventas@joababyshophn.com>',
-        to: [customerEmail],
-        bcc: ['joababyshop@gmail.com'],
-        subject: `Confirmación de su pedido #${orderCustomNumber} - ${storeName}`,
-        html: emailHtml,
-      };
+      try {
+        console.log(`[Send Order Email] Enviando correo a ${maskEmail(customerEmail)} para pedido ${escapeHtml(orderCustomNumber)}`);
+        
+        const resendPayload: any = {
+          from: 'Joa Baby Shop <ventas@joababyshophn.com>',
+          to: [customerEmail],
+          bcc: ['joababyshop@gmail.com'],
+          subject: `Confirmación de su pedido #${orderCustomNumber} - ${storeName}`,
+          html: emailHtml,
+        };
 
-      if (contactEmail && contactEmail !== 'ventas@joababyshophn.com') {
-        resendPayload.reply_to = contactEmail;
+        if (contactEmail && contactEmail !== 'ventas@joababyshophn.com') {
+          resendPayload.reply_to = contactEmail;
+        }
+
+        const mailRes = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${RESEND_API_KEY}`,
+          },
+          body: JSON.stringify(resendPayload),
+        });
+
+        const mailData = await mailRes.json().catch(() => ({}));
+        if (!mailRes.ok) {
+          console.error(`[Send Order Email] Falló el proveedor de correo (${mailRes.status}):`, mailData);
+          emailErrorMessage = mailData?.message || `Error del proveedor de correo (HTTP ${mailRes.status})`;
+        } else {
+          resendId = mailData?.id || null;
+          emailSendSuccess = true;
+          console.log(`[Send Order Email] Correo enviado exitosamente vía Resend (ID: ${resendId})`);
+        }
+      } catch (mailErr: any) {
+        console.error('[Send Order Email] Excepción no bloqueante al invocar el proveedor de correo:', mailErr?.message || mailErr);
+        emailErrorMessage = mailErr?.message || 'Error de conexión con el proveedor de correo';
       }
-
-      const mailRes = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${RESEND_API_KEY}`,
-        },
-        body: JSON.stringify(resendPayload),
-      });
-
-      const mailData = await mailRes.json();
-      if (!mailRes.ok) {
-        console.error(`[Send Order Email] Falló el envío vía Resend (${mailRes.status})`);
-        throw new Error('No se pudo enviar el correo de confirmación a través del servicio de correo.');
-      }
-      resendId = mailData.id || null;
     } else {
       console.warn('[Send Order Email] AVISO: RESEND_API_KEY no configurada en el entorno.');
+      emailErrorMessage = 'RESEND_API_KEY no configurada';
     }
 
-    // 9. Registrar evento de idempotencia y marcar en DB
-    await supabaseAdmin
-      .from('email_events')
-      .insert({
-        event_type: 'order_confirmation',
-        reference_id: String(officialOrderId),
-        recipient_email_hash: maskEmail(customerEmail),
-        resend_id: resendId,
-        status: 'sent',
-        metadata: { order_number: orderCustomNumber }
-      });
+    // 9. Meta Conversions API (CAPI) Server-Side Purchase Event (No bloqueante)
+    try {
+      const META_PIXEL_ID = Deno.env.get('META_PIXEL_ID') || Deno.env.get('FB_PIXEL_ID');
+      const META_ACCESS_TOKEN = Deno.env.get('META_ACCESS_TOKEN') || Deno.env.get('FB_ACCESS_TOKEN');
 
-    await supabaseAdmin
-      .from('orders')
-      .update({ confirmation_email_sent_at: new Date().toISOString() })
-      .eq('id', officialOrderId);
+      if (META_PIXEL_ID && META_ACCESS_TOKEN) {
+        const hashSha256 = async (str: string): Promise<string> => {
+          const buffer = new TextEncoder().encode(str.trim().toLowerCase());
+          const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+          return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        };
 
+        const hashedEmail = customerEmail ? await hashSha256(customerEmail) : undefined;
+        const cleanPhoneDigits = (officialOrder.customerPhone || '').replace(/\D/g, '');
+        const hashedPhone = cleanPhoneDigits ? await hashSha256(cleanPhoneDigits.length === 8 ? '504' + cleanPhoneDigits : cleanPhoneDigits) : undefined;
+        const hashedName = officialOrder.customerName ? await hashSha256(officialOrder.customerName.split(' ')[0]) : undefined;
+
+        const capiMeta = body?.meta_capi || {};
+        const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('cf-connecting-ip') || undefined;
+        const userAgent = req.headers.get('user-agent') || undefined;
+
+        const capiPayload = {
+          data: [
+            {
+              event_name: 'Purchase',
+              event_time: Math.floor(Date.now() / 1000),
+              event_id: String(capiMeta.event_id || officialOrderId),
+              event_source_url: 'https://joababyshophn.com/checkout',
+              action_source: 'website',
+              user_data: {
+                em: hashedEmail ? [hashedEmail] : [],
+                ph: hashedPhone ? [hashedPhone] : [],
+                fn: hashedName ? [hashedName] : [],
+                client_ip_address: clientIp,
+                client_user_agent: userAgent,
+                fbp: capiMeta.fbp || undefined,
+                fbc: capiMeta.fbc || undefined
+              },
+              custom_data: {
+                currency: 'HNL',
+                value: total,
+                order_id: orderCustomNumber,
+                content_type: 'product',
+                num_items: items.reduce((acc: number, it: any) => acc + (Math.floor(Number(it.quantity)) || 1), 0),
+                contents: items.map((it: any) => ({
+                  id: String(it.product_id || it.id || ''),
+                  quantity: Math.floor(Number(it.quantity)) || 1,
+                  item_price: Number(it.price || it.product?.discountPrice || item.product?.sellingPrice || 0)
+                }))
+              }
+            }
+          ]
+        };
+
+        const capiRes = await fetch(`https://graph.facebook.com/v19.0/${META_PIXEL_ID}/events?access_token=${META_ACCESS_TOKEN}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(capiPayload)
+        });
+
+        if (!capiRes.ok) {
+          console.warn('[Meta CAPI] Error enviando evento Purchase:', capiRes.status, await capiRes.text());
+        } else {
+          console.log(`[Meta CAPI] Evento Purchase enviado exitosamente para pedido ${orderCustomNumber}`);
+        }
+      }
+    } catch (capiErr: any) {
+      console.warn('[Meta CAPI] Excepción no crítica en Conversions API:', capiErr?.message || capiErr);
+    }
+
+    // 10. Registrar evento de idempotencia y auditoría de forma segura
+    try {
+      await supabaseAdmin
+        .from('email_events')
+        .insert({
+          event_type: 'order_confirmation',
+          reference_id: String(officialOrderId),
+          recipient_email_hash: maskEmail(customerEmail),
+          resend_id: resendId,
+          status: emailSendSuccess ? 'sent' : 'failed',
+          metadata: { 
+            order_number: orderCustomNumber,
+            error: emailErrorMessage || undefined
+          }
+        });
+
+      if (emailSendSuccess) {
+        await supabaseAdmin
+          .from('orders')
+          .update({ confirmation_email_sent_at: new Date().toISOString() })
+          .eq('id', officialOrderId);
+      }
+    } catch (auditErr: any) {
+      console.warn('[Send Order Email] Registro de auditoría omitido (no crítico):', auditErr?.message || auditErr);
+    }
+
+    // Retorno 200 silencioso exitoso para proteger la creación atómica de la orden
     return new Response(JSON.stringify({ 
       success: true, 
-      message: 'Correo de confirmación enviado exitosamente.',
-      orderId: orderCustomNumber
+      email_sent: emailSendSuccess,
+      orderId: orderCustomNumber,
+      message: emailSendSuccess 
+        ? 'Correo de confirmación enviado exitosamente.'
+        : `El pedido fue procesado exitosamente en base de datos. El proveedor de correo reportó una incidencia (${emailErrorMessage}).`
     }), {
       status: 200,
       headers: { ...cors, 'Content-Type': 'application/json' }
     });
 
   } catch (error: any) {
-    console.error('[Send Order Email] ERROR:', error.message);
-    return new Response(JSON.stringify({ error: error.message || 'Error interno al procesar el correo de confirmación.' }), {
-      status: 400,
+    console.error('[Send Order Email] ERROR no controlado:', error?.message || error);
+    // Retornar 200 silencioso para evitar que el fallo del email revierta la creación atómica de la orden en DB
+    return new Response(JSON.stringify({ 
+      success: true,
+      email_sent: false,
+      warning: error?.message || 'Error al procesar el correo de confirmación (operación silenciosa no bloqueante).' 
+    }), {
+      status: 200,
       headers: { ...cors, 'Content-Type': 'application/json' }
     });
   }

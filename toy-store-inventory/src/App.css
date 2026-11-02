@@ -1,4 +1,17 @@
+:root {
+  --accent: #FF1493;            /* Rosa Coral para acentos */
+  --accent-bg: #FFF0E5;         /* Crema para fondos de sección */
+  --accent-border: #FF1493;     /* Rosa Coral */
+  --border: #F0DCD0;            /* Borde sutil armonizado con Crema */
+  --text-h: #1D1D2C;            /* Carbón Oscuro para encabezados */
+  --text-body: #1D1D2C;         /* Carbón Oscuro para cuerpo */
+  --social-bg: #FFFFFF;         /* Blanco para tarjetas */
+  --btn-primary: #00C4CC;       /* Turquesa para botones principales */
+  --shadow: 0 4px 12px rgba(29, 29, 44, 0.08);
+}
+
 .counter {
+  font-family: 'Quicksand', sans-serif;
   font-size: 16px;
   padding: 5px 10px;
   border-radius: 5px;
@@ -74,6 +87,8 @@
   display: flex;
   border-top: 1px solid var(--border);
   text-align: left;
+  background-color: var(--accent-bg);
+  color: var(--text-body);
 
   & > div {
     flex: 1 1 0;
@@ -87,6 +102,7 @@
     margin-bottom: 16px;
     width: 22px;
     height: 22px;
+    color: var(--accent);
   }
 
   @media (max-width: 1024px) {
@@ -117,6 +133,7 @@
 
   a {
     color: var(--text-h);
+    font-family: 'Quicksand', sans-serif;
     font-size: 16px;
     border-radius: 6px;
     background: var(--social-bg);
@@ -125,10 +142,13 @@
     align-items: center;
     gap: 8px;
     text-decoration: none;
-    transition: box-shadow 0.3s;
+    border: 1px solid var(--border);
+    transition: box-shadow 0.3s, color 0.3s, border-color 0.3s;
 
     &:hover {
       box-shadow: var(--shadow);
+      color: var(--accent);
+      border-color: var(--accent);
     }
     .button-icon {
       height: 18px;

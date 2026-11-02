@@ -6,9 +6,9 @@ import { ShoppingCart, X, Search, Filter, MessageCircle, Package, Users, CheckCi
 import { productRepository, db, dataCache } from '../services/db';
 import { OptimizedImage, getOptimizedSupabaseUrl } from '../components/OptimizedImage';
 import { SkeletonGrid } from '../components/SkeletonLoader';
-import { ProductCard } from '../components/ProductCard';
 import { SearchBar } from '../components/SearchBar';
 import { useRecentProducts } from '../hooks/useRecentProducts';
+const ProductGrid = lazy(() => import('../components/ProductGrid'));
 const ProductModal = lazy(() => import('../components/ProductModal').then(module => ({ default: module.ProductModal })));
 import './Storefront.css';
 
@@ -588,24 +588,17 @@ const Storefront = () => {
             {isLoading ? (
               <SkeletonGrid count={8} />
             ) : (
-              <div
-                className={`products-grid ${
-                  currentProducts.length === 1 ? 'products-grid--single' : ''
-                }`}
-              >
-                {currentProducts.map((product, index) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    categoryName={categories.find(c => c.id === product.categoryId)?.name || 'Sin Categoría'}
-                    priority={index < 3}
-                    onSelect={setSelectedProduct}
-                    onWhatsApp={handleWhatsAppContact}
-                    onAddToCart={handleAddToCart}
-                    onShare={handleShareProduct}
-                  />
-                ))}
-              </div>
+              <Suspense fallback={<SkeletonGrid count={8} />}>
+                <ProductGrid
+                  products={currentProducts}
+                  categories={categories}
+                  isSingle={currentProducts.length === 1}
+                  onSelect={setSelectedProduct}
+                  onWhatsApp={handleWhatsAppContact}
+                  onAddToCart={handleAddToCart}
+                  onShare={handleShareProduct}
+                />
+              </Suspense>
             )}
           </div>
         </div>
@@ -755,19 +748,17 @@ const Storefront = () => {
               </span>
             </div>
 
-            <div className="recent-products-grid">
-              {recentProducts.map((product) => (
-                <ProductCard
-                  key={`recent-${product.id}`}
-                  product={product}
-                  categoryName={categories.find(c => c.id === product.categoryId)?.name || 'Sin Categoría'}
-                  onSelect={setSelectedProduct}
-                  onWhatsApp={handleWhatsAppContact}
-                  onAddToCart={handleAddToCart}
-                  onShare={handleShareProduct}
-                />
-              ))}
-            </div>
+            <Suspense fallback={<SkeletonGrid count={Math.min(recentProducts.length || 4, 4)} />}>
+              <ProductGrid
+                products={recentProducts}
+                categories={categories}
+                onSelect={setSelectedProduct}
+                onWhatsApp={handleWhatsAppContact}
+                onAddToCart={handleAddToCart}
+                onShare={handleShareProduct}
+                gridClassName="recent-products-grid"
+              />
+            </Suspense>
           </section>
         )}
       </section>

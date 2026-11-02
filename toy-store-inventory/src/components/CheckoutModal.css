@@ -496,6 +496,62 @@
   margin-bottom: 24px;
 }
 
+/* CRO WhatsApp Deep Link Button in CheckoutModal */
+.cro-whatsapp-success-box {
+  width: 100%;
+  max-width: 480px;
+  margin: 18px 0 16px;
+  padding: 20px;
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.12);
+}
+
+.cro-whatsapp-notice {
+  font-size: 0.95rem;
+  color: #166534;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.cro-whatsapp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 24px;
+  background-color: #25D366;
+  color: #ffffff !important;
+  font-size: 1.05rem;
+  font-weight: 800;
+  text-decoration: none;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+.cro-whatsapp-btn:hover {
+  background-color: #1ea952;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(37, 211, 102, 0.45);
+  color: #ffffff !important;
+}
+
+.cro-whatsapp-subtext {
+  font-size: 0.85rem;
+  color: #4b5563;
+  margin: 0;
+}
+
 /* Mobile Layout & Adjustments (<= 900px) */
 @media (max-width: 900px) {
   .checkout-modal-overlay {

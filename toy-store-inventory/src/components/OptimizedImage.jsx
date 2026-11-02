@@ -14,22 +14,40 @@ const getPlaceholderSvg = (width = 100, height = 100) => {
 
 /**
  * Generador de URLs optimizadas para Supabase con soporte para formato y calidad.
+ * Solicita versiones modernas WebP/AVIF a través del endpoint oficial de transformación.
  */
 export const getOptimizedSupabaseUrl = (url, w, q = 80, format = 'webp') => {
   if (!url || typeof url !== 'string' || url.startsWith('data:')) return url;
   
-  if (url.includes('supabase.co/storage/v1/object/public/')) {
+  if (url.includes('supabase.co/storage/v1/object/public/') || url.includes('supabase.co/storage/v1/render/image/public/')) {
     try {
-      const urlObj = new URL(url);
+      // Reemplaza /object/public/ por /render/image/public/ para activar la transformación de Supabase
+      const renderBase = url.replace(
+        '/storage/v1/object/public/',
+        '/storage/v1/render/image/public/'
+      );
+      const urlObj = new URL(renderBase);
       const finalWidth = w || 800;
       urlObj.searchParams.set('width', finalWidth.toString());
       urlObj.searchParams.set('quality', q.toString());
-      urlObj.searchParams.set('format', format);
+      if (format && format !== 'origin') {
+        urlObj.searchParams.set('format', format);
+      } else if (format === 'origin') {
+        urlObj.searchParams.set('format', 'origin');
+      }
       return urlObj.toString();
     } catch {
-      const base = url.split('?')[0];
+      const renderBase = url.replace(
+        '/storage/v1/object/public/',
+        '/storage/v1/render/image/public/'
+      );
+      const base = renderBase.split('?')[0];
       const finalWidth = w || 800;
-      return `${base}?width=${finalWidth}&quality=${q}&format=${format}`;
+      const params = new URLSearchParams();
+      params.set('width', finalWidth.toString());
+      params.set('quality', q.toString());
+      if (format) params.set('format', format);
+      return `${base}?${params.toString()}`;
     }
   }
   return url;
@@ -56,6 +74,7 @@ export const OptimizedImage = ({
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(priority);
   const [error, setError] = useState(false);
+  const [useFallbackDirect, setUseFallbackDirect] = useState(false);
   const imgRef = useRef();
 
   // Intersection Observer para Lazy Loading manual
@@ -81,7 +100,7 @@ export const OptimizedImage = ({
    * Resoluciones: 300px, 600px, 1200px.
    */
   const generateSrcSet = (url, format = 'avif') => {
-    if (!url || !url.includes('supabase.co')) return null;
+    if (!url || !url.includes('supabase.co') || useFallbackDirect) return null;
     return [300, 600, 1200]
       .map(w => `${getOptimizedSupabaseUrl(url, w, quality, format)} ${w}w`)
       .join(', ');
@@ -94,6 +113,21 @@ export const OptimizedImage = ({
   // Determinar placeholders según la configuración
   const lqipSrc = placeholderType === 'blur' ? getOptimizedSupabaseUrl(src, 50, 20, 'webp') : null;
   const svgPlaceholder = placeholderType === 'svg' ? getPlaceholderSvg(width || 400, height || 400) : null;
+
+  const handleImageError = () => {
+    // Si la versión transformada de Supabase falla, reintentamos con la URL original directa antes de marcar error
+    if (!useFallbackDirect && src && src.includes('supabase.co')) {
+      setUseFallbackDirect(true);
+    } else {
+      setError(true);
+    }
+  };
+
+  const currentImgSrc = error
+    ? 'https://via.placeholder.com/300?text=Error'
+    : useFallbackDirect
+      ? src
+      : getOptimizedSupabaseUrl(src, width, quality, 'webp');
 
   return (
     <div 
@@ -116,14 +150,14 @@ export const OptimizedImage = ({
 
       {(isInView || priority) && (
         <picture>
-          {!error && srcSetAvif && <source srcSet={srcSetAvif} type="image/avif" sizes={sizes} />}
-          {!error && srcSetWebp && <source srcSet={srcSetWebp} type="image/webp" sizes={sizes} />}
+          {!error && !useFallbackDirect && srcSetAvif && <source srcSet={srcSetAvif} type="image/avif" sizes={sizes} />}
+          {!error && !useFallbackDirect && srcSetWebp && <source srcSet={srcSetWebp} type="image/webp" sizes={sizes} />}
           <img
-            src={error ? 'https://via.placeholder.com/300?text=Error' : getOptimizedSupabaseUrl(src, width, quality, 'webp')}
+            src={currentImgSrc}
             alt={alt}
             className={`optimized-image-element ${isLoaded ? 'visible' : 'hidden'}`}
             onLoad={() => setIsLoaded(true)}
-            onError={() => setError(true)}
+            onError={handleImageError}
             loading={priority ? 'eager' : 'lazy'}
             decoding="async"
             width={width || 400}

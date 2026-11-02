@@ -1,85 +1,143 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Facebook, Instagram, Twitter, MessageCircle, Mail, MapPin, Phone } from 'lucide-react';
+import { Globe, MessageCircle, Instagram } from 'lucide-react';
 
-const Footer = ({ storeInfo }) => {
-  const { name, footer_description, facebook_url, instagram_url, store_address, store_email, phone } = storeInfo;
-  
-  // Limpiamos el teléfono para el link de WhatsApp
-  const fallbackPhone = (import.meta.env.VITE_WHATSAPP_NUMBER || '').replace(/\D/g, '');
-  const cleanPhone = phone ? phone.replace(/\D/g, '') : fallbackPhone;
-  const hasPhone = cleanPhone.length > 0;
-  const whatsappUrl = `https://wa.me/${cleanPhone.length === 8 ? '504' + cleanPhone : cleanPhone}`;
-
+/**
+ * Footer minimalista de 3 líneas exactas.
+ * Aplica estrictamente la paleta corporativa:
+ * - Dominio joababyshophn.com con acento Rosa Coral (#FF1493)
+ * - WhatsApp 9966-1107 con Turquesa (#00C4CC)
+ * - Redes sociales @joababyshop / @joababyshop.hn en Carbón Oscuro (#1D1D2C)
+ * - Fondo Blanco (#FFFFFF) con bordes armónicos
+ */
+const Footer = () => {
   return (
-    <footer className="store-footer glass-panel" style={{ marginTop: '60px', padding: '60px 20px 30px', borderRadius: '40px 40px 0 0', borderTop: '1px solid var(--border-color)' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '40px' }}>
-        
-        {/* Columna 1: Marca */}
-        <div>
-          <h3 style={{ fontSize: '1.5rem', marginBottom: '20px', background: 'var(--accent-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: 'bold' }}>
-            {name || 'Joa Baby Shop'}
-          </h3>
-          <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '20px' }}>
-            {footer_description || 'Acompañando el crecimiento de tus pequeños con los juguetes más seguros, educativos y divertidos de Honduras.'}
-          </p>
-          <div style={{ display: 'flex', gap: '15px' }}>
-            {facebook_url && facebook_url !== '#' && (
-              <a href={facebook_url} target="_blank" rel="noopener noreferrer" className="btn-icon" style={{ borderRadius: '50%' }} aria-label="Visitar página de Facebook de Joa Baby Shop"><Facebook size={20} aria-hidden="true" /></a>
-            )}
-            {instagram_url && instagram_url !== '#' && (
-              <a href={instagram_url} target="_blank" rel="noopener noreferrer" className="btn-icon" style={{ borderRadius: '50%' }} aria-label="Visitar perfil de Instagram de Joa Baby Shop"><Instagram size={20} aria-hidden="true" /></a>
-            )}
-            {hasPhone && (
-              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="btn-icon" style={{ borderRadius: '50%', color: '#25D366', borderColor: '#25D366' }} aria-label="Contactar por WhatsApp a Joa Baby Shop"><MessageCircle size={20} aria-hidden="true" /></a>
-            )}
-          </div>
-        </div>
-
-        {/* Columna 2: Enlaces Rápidos */}
-        <div>
-          <h3 style={{ fontSize: '1.1rem', marginBottom: '20px', fontWeight: 'bold' }}>Explorar</h3>
-          <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <li><Link to="/" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Nuestra Tienda</Link></li>
-            <li><Link to="/" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Novedades</Link></li>
-            <li><Link to="/" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Ofertas Especiales</Link></li>
-          </ul>
-        </div>
-
-        {/* Columna 3: Políticas */}
-        <div>
-          <h3 style={{ fontSize: '1.1rem', marginBottom: '20px', fontWeight: 'bold' }}>Información</h3>
-          <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <li><a href="#" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Políticas de Envío</a></li>
-            <li><a href="#" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Términos y Condiciones</a></li>
-            <li><a href="#" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Privacidad</a></li>
-            <li><a href="#" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Preguntas Frecuentes</a></li>
-          </ul>
-        </div>
-
-        {/* Columna 4: Contacto */}
-        <div>
-          <h3 style={{ fontSize: '1.1rem', marginBottom: '20px', fontWeight: 'bold' }}>Contacto</h3>
-          <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <li style={{ display: 'flex', gap: '10px', color: 'var(--text-secondary)' }}>
-              <MapPin size={20} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} aria-hidden="true" />
-              <span>{store_address || 'Honduras'}</span>
-            </li>
-            <li style={{ display: 'flex', gap: '10px', color: 'var(--text-secondary)' }}>
-              <Phone size={20} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} aria-hidden="true" />
-              <span>{phone || (fallbackPhone ? `+${fallbackPhone}` : 'Configurar teléfono')}</span>
-            </li>
-            <li style={{ display: 'flex', gap: '10px', color: 'var(--text-secondary)' }}>
-              <Mail size={20} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} aria-hidden="true" />
-              <span style={{ wordBreak: 'break-all' }}>{store_email || 'info@joababyshop.com'}</span>
-            </li>
-          </ul>
-        </div>
-
+    <footer 
+      className="store-footer glass-panel" 
+      style={{ 
+        marginTop: '60px', 
+        padding: '36px 20px', 
+        borderRadius: '32px 32px 0 0', 
+        borderTop: '1px solid var(--border-color, #F0DCD0)',
+        backgroundColor: '#FFFFFF',
+        color: '#1D1D2C',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '14px',
+        textAlign: 'center'
+      }}
+    >
+      {/* Línea 1: Dominio */}
+      <div 
+        className="footer-row footer-domain" 
+        style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          gap: '8px',
+          fontFamily: "'Quicksand', sans-serif",
+          fontSize: '1.05rem', 
+          fontWeight: 700 
+        }}
+      >
+        <Globe size={18} style={{ color: '#FF1493' }} aria-hidden="true" />
+        <a 
+          href="https://joababyshophn.com" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          style={{ 
+            color: '#1D1D2C', 
+            textDecoration: 'none',
+            letterSpacing: '0.3px',
+            transition: 'color var(--transition-fast, 0.15s ease-in-out)'
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = '#00C4CC')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = '#1D1D2C')}
+        >
+          joababyshophn.com
+        </a>
       </div>
 
-      <div style={{ maxWidth: '1200px', margin: '40px auto 0', paddingTop: '20px', borderTop: '1px solid var(--border-color)', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-        <p>&copy; {new Date().getFullYear()} {name || 'Joa Baby Shop'}. Todos los derechos reservados.</p>
+      {/* Línea 2: WhatsApp */}
+      <div 
+        className="footer-row footer-whatsapp" 
+        style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          gap: '8px',
+          fontFamily: "'Quicksand', sans-serif",
+          fontSize: '0.95rem', 
+          fontWeight: 600,
+          color: '#1D1D2C'
+        }}
+      >
+        <MessageCircle size={18} style={{ color: '#00C4CC' }} aria-hidden="true" />
+        <span>WhatsApp:</span>
+        <a 
+          href="https://wa.me/50499661107" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          style={{ 
+            color: '#00C4CC', 
+            fontWeight: 700, 
+            textDecoration: 'none',
+            transition: 'opacity var(--transition-fast, 0.15s ease-in-out)'
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.85')}
+          onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+        >
+          9966-1107
+        </a>
+      </div>
+
+      {/* Línea 3: Redes Sociales */}
+      <div 
+        className="footer-row footer-socials" 
+        style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          gap: '8px',
+          fontFamily: "'Quicksand', sans-serif",
+          fontSize: '0.9rem', 
+          fontWeight: 500,
+          color: '#1D1D2C'
+        }}
+      >
+        <Instagram size={18} style={{ color: '#FF1493' }} aria-hidden="true" />
+        <a 
+          href="https://instagram.com/joababyshop" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          style={{ 
+            color: '#1D1D2C', 
+            fontWeight: 600, 
+            textDecoration: 'none',
+            transition: 'color var(--transition-fast, 0.15s ease-in-out)'
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = '#FF1493')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = '#1D1D2C')}
+        >
+          @joababyshop
+        </a>
+        <span style={{ color: '#FF1493', fontWeight: 700 }}>/</span>
+        <a 
+          href="https://instagram.com/joababyshop.hn" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          style={{ 
+            color: '#1D1D2C', 
+            fontWeight: 600, 
+            textDecoration: 'none',
+            transition: 'color var(--transition-fast, 0.15s ease-in-out)'
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = '#FF1493')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = '#1D1D2C')}
+        >
+          @joababyshop.hn
+        </a>
       </div>
     </footer>
   );

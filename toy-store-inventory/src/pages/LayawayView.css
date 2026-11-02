@@ -335,3 +335,150 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* CRO Abono / Transferencia WhatsApp Banner */
+.layaway-cro-banner {
+  background: #ffffff;
+  border: 2px solid #00C4CC;
+  border-radius: 20px;
+  padding: 24px 28px;
+  margin-bottom: 32px;
+  box-shadow: 0 10px 25px -5px rgba(0, 196, 204, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.layaway-cro-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.layaway-cro-title-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.layaway-cro-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: #e6fffa;
+  color: #00C4CC;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.layaway-cro-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #1D1D2C;
+}
+
+.layaway-cro-subtitle {
+  margin: 3px 0 0;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.layaway-cro-stats {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  background: #f8fafc;
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: 1px solid #f1f5f9;
+}
+
+.layaway-cro-stat-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.layaway-cro-stat-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.layaway-cro-stat-value {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #1D1D2C;
+}
+
+.layaway-cro-stat-value.highlight {
+  color: #db2777;
+}
+
+.layaway-cro-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  border-top: 1px dashed #e2e8f0;
+  padding-top: 16px;
+}
+
+.layaway-cro-info-text {
+  font-size: 0.88rem;
+  color: #475569;
+  max-width: 580px;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.btn-layaway-whatsapp-cro {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #25D366;
+  color: #ffffff !important;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-layaway-whatsapp-cro:hover {
+  background: #1ea952;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(37, 211, 102, 0.45);
+  color: #ffffff !important;
+}
+
+@media (max-width: 768px) {
+  .layaway-cro-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .layaway-cro-stats {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .layaway-cro-action {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .btn-layaway-whatsapp-cro {
+    width: 100%;
+    text-align: center;
+  }
+}

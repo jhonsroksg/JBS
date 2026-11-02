@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { layawayRepository } from '../services/db';
 import { useToast } from '../hooks/useToast';
 import { useCart } from '../contexts/CartContext';
-import { Gift, Calendar, AlertCircle, ArrowLeft, Clock } from 'lucide-react';
+import { Gift, Calendar, AlertCircle, ArrowLeft, Clock, MessageCircle, CreditCard } from 'lucide-react';
 import { getOptimizedSupabaseUrl } from '../components/OptimizedImage';
 import './LayawayView.css';
 
@@ -100,6 +100,30 @@ const LayawayView = () => {
 
   const daysLeft = getRemainingDays(layaway.expires_at);
 
+  const totalReservedAmount = layaway.items ? layaway.items.reduce((acc, item) => {
+    const price = Number(item.product?.discountPrice || item.product?.sellingPrice || 0);
+    return acc + ((item.quantity_reserved || 0) * price);
+  }, 0) : 0;
+
+  const totalBoughtAmount = layaway.items ? layaway.items.reduce((acc, item) => {
+    const price = Number(item.product?.discountPrice || item.product?.sellingPrice || 0);
+    return acc + ((item.quantity_bought || 0) * price);
+  }, 0) : 0;
+
+  const pendingAmount = Math.max(0, totalReservedAmount - totalBoughtAmount);
+
+  const getWhatsAppLayawayAbonoLink = () => {
+    const formattedPending = pendingAmount.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+    const eventText = layaway.event_name ? ` ("${layaway.event_name}")` : '';
+    const msg = pendingAmount > 0
+      ? `¡Hola Joa Baby Shop! 🧸 Deseo realizar un abono/pago por transferencia para la lista de apartado *${layaway.code}*${eventText}. El monto de abono pendiente es de *L. ${formattedPending}*. ¿Me podrían compartir los números de cuenta bancaria para realizar la transferencia?`
+      : `¡Hola Joa Baby Shop! 🧸 Consulto sobre la lista de apartado *${layaway.code}*${eventText}. ¿Tienen productos adicionales disponibles para agregar?`;
+    return `https://wa.me/50499661107?text=${encodeURIComponent(msg)}`;
+  };
+
   return (
     <div className="layaway-guest-container">
       <header className="layaway-guest-header">
@@ -122,6 +146,57 @@ const LayawayView = () => {
       </header>
 
       <div className="layaway-guest-body">
+        {/* CRO Banner: Pago Manual / Transferencia / Abono */}
+        <div className="layaway-cro-banner">
+          <div className="layaway-cro-header">
+            <div className="layaway-cro-title-group">
+              <div className="layaway-cro-icon">
+                <CreditCard size={22} />
+              </div>
+              <div>
+                <h3 className="layaway-cro-title">¿Deseas realizar un abono o pagar por transferencia?</h3>
+                <p className="layaway-cro-subtitle">Puedes abonar directamente al saldo de este apartado sin complicaciones</p>
+              </div>
+            </div>
+
+            <div className="layaway-cro-stats">
+              <div className="layaway-cro-stat-item">
+                <span className="layaway-cro-stat-label">Total Lista</span>
+                <span className="layaway-cro-stat-value">
+                  L. {totalReservedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="layaway-cro-stat-item">
+                <span className="layaway-cro-stat-label">Comprado / Abonado</span>
+                <span className="layaway-cro-stat-value">
+                  L. {totalBoughtAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="layaway-cro-stat-item">
+                <span className="layaway-cro-stat-label">Saldo Pendiente</span>
+                <span className="layaway-cro-stat-value highlight">
+                  L. {pendingAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="layaway-cro-action">
+            <p className="layaway-cro-info-text">
+              Si prefieres pagar mediante transferencia bancaria o registrar un abono directo, te atendemos de inmediato por WhatsApp con el código de apartado y monto pre-cargados.
+            </p>
+            <a
+              href={getWhatsAppLayawayAbonoLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-layaway-whatsapp-cro"
+            >
+              <MessageCircle size={18} />
+              <span>{pendingAmount > 0 ? 'Pagar Abono por WhatsApp' : 'Consultar Apartado por WhatsApp'}</span>
+            </a>
+          </div>
+        </div>
+
         <h3 className="section-title">Elige un regalo de la lista</h3>
         <p className="section-desc">Selecciona los juguetes que deseas regalar al festejado. Al finalizar tu compra, se registrarán automáticamente a su nombre y se descontarán del apartado.</p>
 

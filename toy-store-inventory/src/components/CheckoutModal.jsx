@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db, layawayRepository, orderRepository, productRepository } from '../services/db';
-import { X, Trash2, CheckCircle, User, Mail, Phone, MapPin, Truck, CreditCard, Copy, AlertCircle, ChevronDown } from 'lucide-react';
+import { X, Trash2, CheckCircle, User, Mail, Phone, MapPin, Truck, CreditCard, Copy, AlertCircle, ChevronDown, MessageCircle } from 'lucide-react';
 import { hondurasLocations } from '../data/hondurasLocations';
 import { useToast } from '../hooks/useToast';
 import { useCart } from '../contexts/CartContext';
@@ -19,6 +19,11 @@ import {
   aggregateCartByProductId,
   formatSanitizedCartItems
 } from '../utils/cartCalculations';
+import {
+  trackInitiateCheckout,
+  trackPurchase,
+  getMetaCookies
+} from '../utils/metaPixel';
 import './CheckoutModal.css';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -56,6 +61,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
   const [_activeCouponsCount, _setActiveCouponsCount] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedOrderNumber, setCompletedOrderNumber] = useState(null);
+  const [completedOrderDetails, setCompletedOrderDetails] = useState(null);
 
   const focusAndScrollToField = (selector) => {
     const el = document.querySelector(selector);
@@ -89,6 +95,7 @@ const CheckoutModal = ({ isOpen, onClose }) => {
 
     setOrderComplete(false);
     setCompletedOrderNumber(null);
+    setCompletedOrderDetails(null);
     setCheckoutError(null);
     setCustomerInfo({ name: '', email: '', phone: '', address: '', department: '', municipality: '' });
     setLayawayInfo({ eventName: '', eventDate: '' });
@@ -103,6 +110,12 @@ const CheckoutModal = ({ isOpen, onClose }) => {
 
     if (cart && cart.length > 0) {
       syncCartWithServer({ notifyUser: true });
+      try {
+        const currentSub = calculateCartSubtotal(cart);
+        trackInitiateCheckout(cart, currentSub);
+      } catch (analyticsErr) {
+        console.warn('[Analytics] Error tracking InitiateCheckout (no crítico):', analyticsErr?.message || analyticsErr);
+      }
     }
 
     const initData = async () => {
@@ -348,9 +361,29 @@ const CheckoutModal = ({ isOpen, onClose }) => {
         };
         runEdgeFunction();
 
+        const layawaySubtotal = calculateCartSubtotal(cart);
         setCompletedOrderNumber(newLayaway.code);
+        setCompletedOrderDetails({
+          orderId: newLayaway.code,
+          amount: layawaySubtotal,
+          paymentMethod: 'Apartado / Abono',
+          isLayaway: true,
+          eventName: sanitizedEventName
+        });
         clearCart(true);
         setOrderComplete(true);
+
+        // Tracking Purchase en Meta Pixel para Apartado (Fail-Safe)
+        try {
+          trackPurchase({
+            orderId: newLayaway.code,
+            value: layawaySubtotal,
+            items: cart,
+            currency: 'HNL'
+          });
+        } catch (analyticsErr) {
+          console.warn('[Analytics] Error tracking Layaway Purchase (no crítico):', analyticsErr?.message || analyticsErr);
+        }
       } else {
         const firstLayawayItem = cart.find(item => item.isLayawayItem && item.layawayId);
         const hasLayawayGifts = cart.some(item => item.isLayawayItem);
@@ -411,12 +444,23 @@ const CheckoutModal = ({ isOpen, onClose }) => {
             );
           }
 
-          // Enviar correo de confirmación en segundo plano de manera no bloqueante
+          // Enviar correo de confirmación y CAPI en segundo plano de manera no bloqueante
           const runOrderEmailEdgeFunction = async () => {
             try {
+              let metaCapiData = null;
+              try {
+                metaCapiData = {
+                  event_id: finalId,
+                  ...getMetaCookies()
+                };
+              } catch {
+                // Seguro
+              }
+
               const functionUrl = `${supabaseUrl}/functions/v1/send-order-confirmation`;
               const payload = {
-                order_id: newOrder.id || finalId
+                order_id: newOrder.id || finalId,
+                meta_capi: metaCapiData
               };
 
               await fetch(functionUrl, {
@@ -433,7 +477,27 @@ const CheckoutModal = ({ isOpen, onClose }) => {
           };
           runOrderEmailEdgeFunction();
 
+          // Tracking estándar Purchase en Meta Pixel (Client-Side con deduplicación por finalId)
+          try {
+            trackPurchase({
+              orderId: finalId,
+              value: finalTotal,
+              items: cart,
+              currency: 'HNL'
+            });
+          } catch (analyticsErr) {
+            console.warn('[Analytics] Error tracking Purchase (no crítico):', analyticsErr?.message || analyticsErr);
+          }
+
           setCompletedOrderNumber(finalId);
+          setCompletedOrderDetails({
+            orderId: finalId,
+            amount: finalTotal,
+            paymentMethod: paymentMethod,
+            isLayaway: false,
+            isLayawayGift: !!firstLayawayItem,
+            layawayCode: firstLayawayItem ? (firstLayawayItem.layawayCode || firstLayawayItem.layawayId) : null
+          });
           setOrderComplete(true);
           clearCart(false);
         } catch (insertErr) {
@@ -485,6 +549,44 @@ const CheckoutModal = ({ isOpen, onClose }) => {
     }
   };
 
+  const isManualTransferOrAbono = () => {
+    if (completedOrderDetails?.isLayaway || isLayawayMode) return true;
+    const method = (completedOrderDetails?.paymentMethod || paymentMethod || '').toLowerCase();
+    return (
+      method.includes('transferencia') ||
+      method.includes('manual') ||
+      method.includes('abono') ||
+      method.includes('depósito') ||
+      method.includes('deposito') ||
+      method.includes('efectivo') ||
+      !method
+    );
+  };
+
+  const getWhatsAppPaymentLink = () => {
+    const orderId = completedOrderDetails?.orderId || completedOrderNumber;
+    if (!orderId) return 'https://wa.me/50499661107';
+
+    const rawAmount = completedOrderDetails?.amount !== undefined ? completedOrderDetails.amount : 0;
+    const formattedAmount = Number(rawAmount).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+
+    let message = '';
+    if (completedOrderDetails?.isLayaway || isLayawayMode) {
+      const eventPart = completedOrderDetails?.eventName ? ` para el evento "${completedOrderDetails.eventName}"` : '';
+      message = `¡Hola Joa Baby Shop! 🧸 Acabo de crear mi lista de apartado *${orderId}*${eventPart}. El monto de abono pendiente es de *L. ${formattedAmount}*. ¿Me podrían indicar los datos de transferencia para coordinar el pago?`;
+    } else if (completedOrderDetails?.isLayawayGift) {
+      message = `¡Hola Joa Baby Shop! 🧸 Acabo de realizar el pedido *#${orderId}* como abono/regalo para el apartado *${completedOrderDetails.layawayCode}* por un monto de *L. ${formattedAmount}*. Adjunto el comprobante de transferencia para confirmarlo.`;
+    } else {
+      const method = completedOrderDetails?.paymentMethod || paymentMethod || 'Transferencia Bancaria';
+      message = `¡Hola Joa Baby Shop! 🧸 Acabo de realizar el pedido *#${orderId}* con método de pago *${method}* por un monto de *L. ${formattedAmount}*. Adjunto mi comprobante para procesar la orden.`;
+    }
+
+    return `https://wa.me/50499661107?text=${encodeURIComponent(message)}`;
+  };
+
   if (!isOpen) return null;
 
   const cartSubtotal = calculateCartSubtotal(cart);
@@ -524,6 +626,32 @@ const CheckoutModal = ({ isOpen, onClose }) => {
                   {completedOrderNumber}
                 </strong>
               </p>
+
+              {isManualTransferOrAbono() && (
+                <div className="cro-whatsapp-success-box">
+                  <p className="cro-whatsapp-notice">
+                    {completedOrderDetails?.isLayaway || isLayawayMode
+                      ? '⚡ Coordina tu abono inicial para activar tu apartado de inmediato:'
+                      : '⚡ Reporta tu comprobante de pago para procesar y despachar tu pedido:'}
+                  </p>
+                  <a
+                    href={getWhatsAppPaymentLink()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="cro-whatsapp-btn"
+                  >
+                    <MessageCircle size={20} />
+                    <span>
+                      {completedOrderDetails?.isLayaway || isLayawayMode
+                        ? 'Confirmar Abono por WhatsApp'
+                        : 'Enviar Comprobante por WhatsApp'}
+                    </span>
+                  </a>
+                  <p className="cro-whatsapp-subtext">
+                    Pedido: <strong>{completedOrderDetails?.orderId || completedOrderNumber}</strong> • Pendiente: <strong>L. {Number(completedOrderDetails?.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                  </p>
+                </div>
+              )}
 
               <div style={{ marginTop: '16px', marginBottom: '16px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
                 {isLayawayMode ? (

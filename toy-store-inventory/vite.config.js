@@ -24,6 +24,15 @@ export default defineConfig({
             ) {
               return 'pdf-export';
             }
+            if (id.includes('node_modules/browser-image-compression')) {
+              return 'vendor-compression';
+            }
+            if (id.includes('node_modules/lucide-react')) {
+              return 'vendor-icons';
+            }
+            if (id.includes('node_modules/date-fns')) {
+              return 'vendor-date';
+            }
             if (id.includes('node_modules/@supabase')) {
               return 'vendor-supabase';
             }

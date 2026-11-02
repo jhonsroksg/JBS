@@ -19,25 +19,28 @@
 
 :root {
   /* Colors - Joa Baby Shop Theme */
-  --bg-primary: #EBF5FB;
-  --bg-secondary: #FFFFFF;
-  --bg-tertiary: #F4F9FD;
-  --text-primary: #2D3748;
-  --text-secondary: #4A5568;
-  --accent-primary: #1FB7B9;
-  --accent-hover: #139B9D;
-  --accent-gradient: linear-gradient(135deg, #1FB7B9 0%, #139B9D 100%);
+  --bg-primary: #FFF0E5;       /* Crema para fondos de sección */
+  --bg-secondary: #FFFFFF;     /* Blanco para tarjetas de producto */
+  --bg-tertiary: #FFF0E5;      /* Crema para fondos de sección */
+  --text-primary: #1D1D2C;     /* Carbón Oscuro para textos */
+  --text-secondary: #454558;   /* Carbón Oscuro suave */
+  --accent-primary: #00C4CC;   /* Turquesa para botones principales */
+  --accent-hover: #00A8AF;     /* Turquesa hover */
+  --accent-gradient: linear-gradient(135deg, #00C4CC 0%, #00A8AF 100%);
+  --accent-coral: #FF1493;     /* Rosa Coral para acentos */
+  --accent-secondary: #FF1493; /* Rosa Coral */
+  --accent: #FF1493;           /* Rosa Coral para acentos */
   --success: #25D366;
-  --danger: #FF4B75;
+  --danger: #FF1493;           /* Rosa Coral */
   --warning: #FDE170;
-  --border-color: #E2E8F0;
-  --glass-bg: #FFFFFF;
-  --glass-border: #E2E8F0;
+  --border-color: #F0DCD0;     /* Borde crema suave */
+  --glass-bg: #FFFFFF;         /* Blanco para tarjetas */
+  --glass-border: #F0DCD0;
 
   /* Shadows */
-  --shadow-sm: 0 4px 6px -1px rgba(34, 193, 195, 0.1);
-  --shadow-md: 0 10px 30px rgba(179, 221, 242, 0.6);
-  --shadow-glow: 0 0 20px rgba(34, 193, 195, 0.3);
+  --shadow-sm: 0 4px 6px -1px rgba(29, 29, 44, 0.05);
+  --shadow-md: 0 10px 30px rgba(29, 29, 44, 0.08);
+  --shadow-glow: 0 0 20px rgba(0, 196, 204, 0.35);
 
   /* Layout */
   --sidebar-width: 260px;
@@ -94,8 +97,8 @@ body {
   font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background: var(--bg-primary);
   background-image: 
-    radial-gradient(ellipse 80% 50% at 50% 0%, color-mix(in srgb, var(--accent-primary) 12%, transparent), transparent 70%),
-    radial-gradient(ellipse 60% 40% at 100% 100%, color-mix(in srgb, var(--accent-primary) 8%, transparent), transparent 60%);
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0, 196, 204, 0.07), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(255, 20, 147, 0.05), transparent 60%);
   background-attachment: fixed;
   transition: background-color 0.6s ease, background-image 0.6s ease;
   min-height: 100vh;
@@ -108,26 +111,58 @@ body {
 
 /* Base Elements */
 a {
-  color: var(--accent-primary);
+  color: var(--accent-coral);
   text-decoration: none;
   transition: color var(--transition-fast);
 }
 
 a:hover {
-  color: var(--accent-hover);
+  color: var(--accent-primary);
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
+  color: var(--text-primary);
+  font-weight: 700;
   line-height: 1.2;
 }
 
-/* Glassmorphism Classes */
+/* Glassmorphism & Tarjetas */
 .glass-panel {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   border-radius: 24px;
   box-shadow: var(--shadow-md);
+}
+
+/* Botones Principales - Turquesa #00C4CC */
+.btn-primary,
+button.btn-primary,
+.btn-action-primary {
+  background: #00C4CC !important;
+  color: #FFFFFF !important;
+  border-color: #00C4CC !important;
+}
+
+.btn-primary:hover,
+button.btn-primary:hover,
+.btn-action-primary:hover {
+  background: #00A8AF !important;
+  border-color: #00A8AF !important;
+}
+
+/* Tarjetas de Producto - Blanco #FFFFFF */
+.product-card {
+  background: #FFFFFF !important;
+  color: var(--text-primary) !important;
+}
+
+/* Fondos de Sección - Crema #FFF0E5 */
+.hero-section,
+.store-main,
+.page-content,
+.section-container,
+.products-section {
+  background-color: var(--bg-primary);
 }
 
 /* Layout System */
@@ -689,6 +724,18 @@ html[data-section="ofertas"] {
 /* Transición suave al cambiar de sección */
 .store-container {
   transition: background 0.6s ease, color 0.6s ease;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.store-container .product-card {
+  background: #FFFFFF !important;
+  color: #1D1D2C !important;
+}
+
+.store-container .btn-primary {
+  background: #00C4CC !important;
+  color: #FFFFFF !important;
 }
 
 .store-container .hero-section,

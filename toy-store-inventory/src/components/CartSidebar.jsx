@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { X, ShoppingBag, Trash2, Plus, Minus, ArrowRight } from 'lucide-react';
 import { getOptimizedSupabaseUrl } from './OptimizedImage';
 import { useCart } from '../contexts/CartContext';
+import { trackAddToCart } from '../utils/metaPixel';
 import './CartSidebar.css';
 
 const CartSidebar = ({ isOpen, onClose, onCheckout }) => {
@@ -14,6 +15,39 @@ const CartSidebar = ({ isOpen, onClose, onCheckout }) => {
     subtotal,
     syncCartWithServer
   } = useCart();
+
+  const prevCartRef = useRef(cart);
+
+  // Capturar adición de nuevos productos al carrito (Meta Pixel AddToCart)
+  useEffect(() => {
+    try {
+      const prevCart = prevCartRef.current || [];
+      if (cart.length > prevCart.length) {
+        // Encontrar los nuevos items incorporados
+        const newItems = cart.filter(curr => !prevCart.some(p => (p.product?.id || p.id) === (curr.product?.id || curr.id)));
+        newItems.forEach(item => {
+          if (item?.product) {
+            trackAddToCart(item.product, item.quantity || 1);
+          }
+        });
+      }
+    } catch (pixelErr) {
+      console.warn('[Analytics] Error tracking AddToCart en CartSidebar:', pixelErr?.message || pixelErr);
+    } finally {
+      prevCartRef.current = cart;
+    }
+  }, [cart]);
+
+  const handleIncreaseQuantity = (item, index) => {
+    try {
+      if (item?.product) {
+        trackAddToCart(item.product, 1);
+      }
+    } catch (pixelErr) {
+      console.warn('[Analytics] Error tracking AddToCart al incrementar:', pixelErr?.message || pixelErr);
+    }
+    updateQuantity(index, 1);
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -65,7 +99,7 @@ const CartSidebar = ({ isOpen, onClose, onCheckout }) => {
                     <div className="sidebar-qty-controls">
                       <button onClick={() => updateQuantity(index, -1)} disabled={item.quantity <= 1} aria-label={`Disminuir cantidad de ${item.product.name}`}><Minus size={14} aria-hidden="true" /></button>
                       <span>{item.quantity}</span>
-                      <button onClick={() => updateQuantity(index, 1)} aria-label={`Aumentar cantidad de ${item.product.name}`}><Plus size={14} aria-hidden="true" /></button>
+                      <button onClick={() => handleIncreaseQuantity(item, index)} aria-label={`Aumentar cantidad de ${item.product.name}`}><Plus size={14} aria-hidden="true" /></button>
                     </div>
                     <button className="btn-remove-sidebar" onClick={() => removeItem(index)} aria-label={`Eliminar ${item.product.name} del carrito`}>
                       <Trash2 size={16} aria-hidden="true" />
