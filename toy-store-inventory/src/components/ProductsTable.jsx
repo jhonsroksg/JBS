@@ -44,22 +44,18 @@ export const ProductsTable = ({
             </tr>
           ) : (
             paginatedProducts.map(product => {
-              // Resolver ruta de la imagen proveniente de la base de datos
-              const rawImage = product.imageUrl || (Array.isArray(product.images) && product.images[0]?.url) || (Array.isArray(product.images) && product.images[0]) || null;
+              // 1. Extraer la imagen del producto (imageUrl o primera imagen del array)
+              const rawImage = product.imageUrl || (Array.isArray(product.images) && (product.images[0]?.url || product.images[0])) || null;
               
-              // Si la base de datos devuelve solo la ruta o el nombre del archivo, envuélvela con getPublicUrl de Supabase
-              const resolvedUrl = rawImage ? resolveStorageUrl(rawImage) : '/email-product-placeholder.png';
-              
-              // Solicitar versión optimizada WebP para miniaturas de la tabla (80x80)
-              const optimizedThumb = rawImage
-                ? getOptimizedSupabaseUrl(resolvedUrl, 80, 80, 'webp')
-                : '/email-product-placeholder.png';
+              // 2. Resolver la URL canónica directa de Supabase Storage (/storage/v1/object/public/...)
+              // Esto asegura que la miniatura cargue directamente igual que en el modal interno de edición
+              const resolvedThumb = rawImage ? resolveStorageUrl(rawImage) : '/email-product-placeholder.png';
 
               return (
                 <tr key={product.id}>
                   <td data-label="Producto" className="product-cell">
                     <img 
-                      src={optimizedThumb} 
+                      src={resolvedThumb} 
                       alt={product.name || 'Producto'} 
                       className="product-thumb" 
                       loading="lazy" 
@@ -67,7 +63,7 @@ export const ProductsTable = ({
                       width="40" 
                       height="40" 
                       onError={(e) => {
-                        // Fallback visual: si la imagen dispara el evento onError, renderiza /email-product-placeholder.png
+                        // Fallback visual: si la imagen de Supabase no existe o fue borrada, renderiza /email-product-placeholder.png
                         if (!e.currentTarget.src.endsWith('/email-product-placeholder.png')) {
                           e.currentTarget.onerror = null;
                           e.currentTarget.src = '/email-product-placeholder.png';

@@ -169,8 +169,9 @@ export const OptimizedImage = ({
   const svgPlaceholder = placeholderType === 'svg' ? getPlaceholderSvg(width || 400, height || 400) : null;
 
   const handleImageError = () => {
-    // Si la versión transformada de Supabase falla, reintentamos con la URL original directa antes de marcar error
-    if (!useFallbackDirect && resolvedSrc && resolvedSrc.includes('supabase.co') && resolvedSrc.includes('/storage/v1/render/image/public/')) {
+    // Si la versión optimizada/transformada falla (ej. proyecto sin Supabase Pro Image Transformation),
+    // reintentamos inmediatamente con la URL directa canónica de Storage (/object/public/) antes de marcar error
+    if (!useFallbackDirect && resolvedSrc && resolvedSrc.includes('supabase.co')) {
       setUseFallbackDirect(true);
     } else {
       setError(true);
@@ -180,7 +181,7 @@ export const OptimizedImage = ({
   const currentImgSrc = error
     ? fallback
     : useFallbackDirect
-      ? resolvedSrc.replace('/storage/v1/render/image/public/', '/storage/v1/object/public/')
+      ? resolvedSrc.replace('/storage/v1/render/image/public/', '/storage/v1/object/public/').split('?')[0]
       : getOptimizedSupabaseUrl(resolvedSrc, width, quality, 'webp');
 
   return (
