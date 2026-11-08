@@ -2,12 +2,11 @@
 import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { ShoppingCart, X, Search, Filter, MessageCircle, Package, Users, CheckCircle, Truck, Share2, ChevronLeft, ChevronRight, Maximize2, RotateCcw, SlidersHorizontal, Plus, Heart, Clock } from 'lucide-react';
+import { ShoppingCart, X, Search, Filter, MessageCircle, Package, Users, CheckCircle, Truck, Share2, ChevronLeft, ChevronRight, Maximize2, RotateCcw, SlidersHorizontal, Plus, Heart } from 'lucide-react';
 import { productRepository, db, dataCache } from '../services/db';
 import { OptimizedImage, getOptimizedSupabaseUrl } from '../components/OptimizedImage';
 import { SkeletonGrid } from '../components/SkeletonLoader';
 import { SearchBar } from '../components/SearchBar';
-import { useRecentProducts } from '../hooks/useRecentProducts';
 import { getEffectivePrice, matchesPriceFilter, clampPriceRange } from '../utils/priceFilter';
 import { matchesProductSearch } from '../utils/searchUtils';
 const ProductGrid = lazy(() => import('../components/ProductGrid'));
@@ -96,8 +95,6 @@ const Storefront = () => {
   const searchTerm = searchParams.get('q') || '';
   const selectedProductId = searchParams.get('producto');
   const isFavoritesOnly = searchParams.get('fav') === 'true' || activeCategory === 'favorites';
-
-  const { recentProducts } = useRecentProducts(selectedProductId);
 
   const initialProductsCache = dataCache.get('products:paginated:all:all:all:0:100000::0:24');
 
@@ -804,32 +801,6 @@ const Storefront = () => {
               </div>
             )}
           </div>
-        )}
-
-        {recentProducts && recentProducts.length > 0 && (
-          <section className="recent-products-section glass-panel" aria-label="Productos vistos recientemente">
-            <div className="section-header-modern">
-              <div className="section-title-wrap">
-                <Clock size={22} className="section-icon" aria-hidden="true" />
-                <h2 className="section-title">Vistos recientemente</h2>
-              </div>
-              <span className="recent-count-tag">
-                {recentProducts.length} {recentProducts.length === 1 ? 'producto' : 'productos'}
-              </span>
-            </div>
-
-            <Suspense fallback={<SkeletonGrid count={Math.min(recentProducts.length || 4, 4)} />}>
-              <ProductGrid
-                products={recentProducts}
-                categories={categories}
-                onSelect={setSelectedProduct}
-                onWhatsApp={handleWhatsAppContact}
-                onAddToCart={handleAddToCart}
-                onShare={handleShareProduct}
-                gridClassName="recent-products-grid"
-              />
-            </Suspense>
-          </section>
         )}
       </section>
 
