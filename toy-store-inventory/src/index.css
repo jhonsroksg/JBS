@@ -18,29 +18,50 @@
 }
 
 :root {
-  /* Colors - Joa Baby Shop Theme */
-  --bg-primary: #FFF0E5;       /* Crema para fondos de sección */
-  --bg-secondary: #FFFFFF;     /* Blanco para tarjetas de producto */
-  --bg-tertiary: #FFF0E5;      /* Crema para fondos de sección */
-  --text-primary: #1D1D2C;     /* Carbón Oscuro para textos */
-  --text-secondary: #454558;   /* Carbón Oscuro suave */
-  --accent-primary: #00C4CC;   /* Turquesa para botones principales */
-  --accent-hover: #00A8AF;     /* Turquesa hover */
-  --accent-gradient: linear-gradient(135deg, #00C4CC 0%, #00A8AF 100%);
-  --accent-coral: #FF1493;     /* Rosa Coral para acentos */
-  --accent-secondary: #FF1493; /* Rosa Coral */
-  --accent: #FF1493;           /* Rosa Coral para acentos */
-  --success: #25D366;
-  --danger: #FF1493;           /* Rosa Coral */
-  --warning: #FDE170;
-  --border-color: #F0DCD0;     /* Borde crema suave */
-  --glass-bg: #FFFFFF;         /* Blanco para tarjetas */
-  --glass-border: #F0DCD0;
+  /* --- PALETA OFICIAL JOA BABY SHOP --- */
+  --brand-celeste-suave: #EBF5FB;  /* Fondo principal de la tienda pública */
+  --brand-turquesa: #36BECD;       /* Turquesa oficial para acentos y elementos decorativos */
+  --brand-turquesa-dark: #007A84;  /* Turquesa oscuro: contraste accesible WCAG AA con texto blanco (4.62:1) */
+  --brand-turquesa-hover: #006870; /* Hover para botones principales */
+  --brand-rosa-pastel: #FF8FA3;    /* Rosa pastel para favoritos y detalles emocionales */
+  --brand-rosa-dark: #A32653;      /* Rosa oscuro: contraste accesible WCAG AA con texto blanco (6.8:1) */
+  --brand-rosa-hover: #8C1F46;     /* Hover para botones/badges rosa con texto blanco */
+  --brand-blanco: #FFFFFF;         /* Tarjetas de producto y superficies elevadas */
+  --brand-texto-oscuro: #1D1D2C;   /* Texto principal carbón oscuro */
+  --brand-texto-suave: #454558;    /* Texto secundario */
+  --brand-borde-celeste: #D6E8F5;  /* Borde sutil armonizado con celeste suave */
+
+  /* --- VARIABLES SEMÁNTICAS GLOBALES --- */
+  --bg-primary: var(--brand-celeste-suave);
+  --bg-secondary: var(--brand-blanco);
+  --bg-tertiary: #E1EFF8;
+  --text-primary: var(--brand-texto-oscuro);
+  --text-secondary: var(--brand-texto-suave);
+  --accent-primary: var(--brand-turquesa);
+  --accent-primary-contrast: var(--brand-turquesa-dark);
+  --accent-hover: var(--brand-turquesa-hover);
+  --accent-light: var(--brand-celeste-suave, #EBF5FB);
+  --accent-gradient: linear-gradient(135deg, #36BECD 0%, #007A84 100%);
+  --accent-pink: var(--brand-rosa-pastel);
+  --accent-pink-contrast: var(--brand-rosa-dark);
+  --accent-coral: var(--brand-rosa-pastel);
+  --accent-secondary: var(--brand-rosa-pastel);
+  --accent: var(--brand-turquesa);
+  --border-color: var(--brand-borde-celeste);
+  --glass-bg: var(--brand-blanco);
+  --glass-border: var(--brand-borde-celeste);
+
+  /* --- COLORES SEMÁNTICOS OPERATIVOS (PRESERVADOS) --- */
+  --success: #25D366;              /* Éxito / WhatsApp */
+  --whatsapp: #25D366;
+  --whatsapp-dark: #128C7E;
+  --danger: #E53E3E;               /* Error semántico */
+  --warning: #FDE170;              /* Advertencia */
 
   /* Shadows */
   --shadow-sm: 0 4px 6px -1px rgba(29, 29, 44, 0.05);
   --shadow-md: 0 10px 30px rgba(29, 29, 44, 0.08);
-  --shadow-glow: 0 0 20px rgba(0, 196, 204, 0.35);
+  --shadow-glow: 0 0 20px rgba(54, 190, 205, 0.35);
 
   /* Layout */
   --sidebar-width: 260px;
@@ -87,9 +108,9 @@ input::placeholder, textarea::placeholder {
   border-width: 0 !important;
 }
 
-/* Accesibilidad: mantener siempre visible el foco de teclado */
+/* Accesibilidad: mantener siempre visible el foco de teclado con alto contraste */
 :focus-visible {
-  outline: 2px solid var(--accent-primary) !important;
+  outline: 2px solid var(--accent-primary-contrast, var(--accent-primary)) !important;
   outline-offset: 2px !important;
 }
 
@@ -97,8 +118,8 @@ body {
   font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background: var(--bg-primary);
   background-image: 
-    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0, 196, 204, 0.07), transparent 70%),
-    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(255, 20, 147, 0.05), transparent 60%);
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(54, 190, 205, 0.08), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(255, 143, 163, 0.06), transparent 60%);
   background-attachment: fixed;
   transition: background-color 0.6s ease, background-image 0.6s ease;
   min-height: 100vh;
@@ -111,13 +132,13 @@ body {
 
 /* Base Elements */
 a {
-  color: var(--accent-coral);
+  color: var(--accent-primary-contrast, #007A84);
   text-decoration: none;
   transition: color var(--transition-fast);
 }
 
 a:hover {
-  color: var(--accent-primary);
+  color: var(--accent-hover, #006870);
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -134,20 +155,28 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: var(--shadow-md);
 }
 
-/* Botones Principales - Turquesa #00C4CC */
-.btn-primary,
-button.btn-primary,
-.btn-action-primary {
-  background: #00C4CC !important;
-  color: #FFFFFF !important;
-  border-color: #00C4CC !important;
+/* Botones Principales - Turquesa Oscuro Accesible #007A84 con texto blanco (WCAG AA 4.62:1) */
+.btn-primary {
+  background: var(--accent-primary-contrast, #007A84);
+  color: #FFFFFF;
+  border: 1px solid var(--accent-primary-contrast, #007A84);
+  cursor: pointer;
+  transition: all var(--transition-fast);
 }
 
-.btn-primary:hover,
-button.btn-primary:hover,
-.btn-action-primary:hover {
-  background: #00A8AF !important;
-  border-color: #00A8AF !important;
+.btn-primary:hover {
+  background: var(--accent-hover, #006870);
+  border-color: var(--accent-hover, #006870);
+  color: #FFFFFF;
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Tarjetas de Producto - Blanco #FFFFFF */
@@ -156,17 +185,24 @@ button.btn-primary:hover,
   color: var(--text-primary) !important;
 }
 
-/* Fondos de Sección - Crema #FFF0E5 */
+/* Fondos de Sección */
 .hero-section,
 .store-main,
-.page-content,
 .section-container,
 .products-section {
   background-color: var(--bg-primary);
 }
 
-/* Layout System */
+/* Layout System - Panel Administrativo (Aislado para preservar su paleta y layout intactos) */
 .layout-container {
+  --bg-primary: #FFF0E5;       /* Fondo crema original preservado para el dashboard */
+  --bg-secondary: #FFFFFF;     /* Tarjetas y tablas en blanco */
+  --bg-tertiary: #FFF0E5;
+  --border-color: #F0DCD0;     /* Borde crema suave */
+  --accent-primary: #00C4CC;
+  --accent-hover: #00A8AF;
+  --accent-gradient: linear-gradient(135deg, #00C4CC 0%, #00A8AF 100%);
+  background-color: var(--bg-primary);
   display: flex;
   min-height: 100vh;
   min-height: 100dvh;
@@ -666,7 +702,9 @@ button.btn-primary:hover,
 html[data-section="mamá"],
 html[data-section="mama"] {
   --accent-primary: #D4537E;
+  --accent-primary-contrast: var(--brand-rosa-dark, #A32653);
   --accent-hover: #993556;
+  --accent-light: #FCF1F5;
   --accent-gradient: linear-gradient(135deg, #D4537E 0%, #993556 100%);
   --bg-primary: #FCF1F5;
   --bg-tertiary: #F8EAF0;
@@ -678,7 +716,9 @@ html[data-section="mama"] {
 html[data-section="papá"],
 html[data-section="papa"] {
   --accent-primary: #378ADD;
+  --accent-primary-contrast: #185FA5;
   --accent-hover: #185FA5;
+  --accent-light: #EEF4FB;
   --accent-gradient: linear-gradient(135deg, #378AD0 0%, #185FA5 100%);
   --bg-primary: #EEF4FB;
   --bg-tertiary: #E6F1FB;
@@ -690,7 +730,9 @@ html[data-section="papa"] {
 html[data-section="bebé"],
 html[data-section="bebe"] {
   --accent-primary: #E6A817;
+  --accent-primary-contrast: #9E6B00;
   --accent-hover: #C48F0E;
+  --accent-light: #FDF8ED;
   --accent-gradient: linear-gradient(135deg, #E6A817 0%, #C48F0E 100%);
   --bg-primary: #FDF8ED;
   --bg-tertiary: #FAF3E0;
@@ -701,7 +743,9 @@ html[data-section="bebe"] {
 
 html[data-section="accesorios"] {
   --accent-primary: #2E9E5A;
+  --accent-primary-contrast: #1F7A42;
   --accent-hover: #1F7A42;
+  --accent-light: #EFF8F3;
   --accent-gradient: linear-gradient(135deg, #2E9E5A 0%, #1F7A42 100%);
   --bg-primary: #EFF8F3;
   --bg-tertiary: #E4F3EA;
@@ -712,7 +756,9 @@ html[data-section="accesorios"] {
 
 html[data-section="ofertas"] {
   --accent-primary: #E8722A;
+  --accent-primary-contrast: #B84706;
   --accent-hover: #C45A18;
+  --accent-light: #FEF5EE;
   --accent-gradient: linear-gradient(135deg, #E8722A 0%, #C45A18 100%);
   --bg-primary: #FEF5EE;
   --bg-tertiary: #FAEEE4;
@@ -734,8 +780,15 @@ html[data-section="ofertas"] {
 }
 
 .store-container .btn-primary {
-  background: #00C4CC !important;
-  color: #FFFFFF !important;
+  background: var(--accent-primary-contrast, #007A84);
+  color: #FFFFFF;
+  border-color: var(--accent-primary-contrast, #007A84);
+}
+
+.store-container .btn-primary:hover {
+  background: var(--accent-hover, #006870);
+  border-color: var(--accent-hover, #006870);
+  color: #FFFFFF;
 }
 
 .store-container .hero-section,

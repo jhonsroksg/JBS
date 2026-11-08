@@ -246,8 +246,8 @@
 
 .product-btn-secondary:hover {
   border-color: var(--accent-primary);
-  color: var(--accent-primary);
-  background: var(--accent-light);
+  color: var(--accent-primary-contrast, #007A84);
+  background: var(--accent-light, #EBF5FB);
 }
 
 .product-btn-secondary.whatsapp {

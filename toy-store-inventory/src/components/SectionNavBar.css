@@ -51,14 +51,19 @@
 }
 
 .section-nav-link:hover {
-  color: var(--accent-primary);
+  color: var(--accent-primary-contrast, var(--accent-primary));
   background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
+}
+
+.section-nav-link:focus-visible {
+  outline: 2px solid var(--accent-primary-contrast, #007A84);
+  outline-offset: 2px;
 }
 
 .section-nav-link.active {
   color: #ffffff;
-  background: var(--accent-gradient);
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent-primary) 35%, transparent);
+  background: var(--accent-primary-contrast, var(--accent-gradient));
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent-primary-contrast, var(--accent-primary)) 35%, transparent);
   font-weight: 700;
   transform: translateY(-1px);
 }
@@ -73,7 +78,7 @@
   width: 30px;
   height: 3px;
   border-radius: 3px;
-  background: var(--accent-primary);
+  background: var(--accent-primary-contrast, var(--accent-primary));
   box-shadow: 0 0 8px var(--accent-primary);
   animation: navIndicatorIn 0.4s ease;
 }

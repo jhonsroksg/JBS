@@ -20,8 +20,8 @@
 }
 
 .search-input-box.focused {
-  border-color: var(--accent-primary);
-  box-shadow: 0 10px 25px rgba(31, 183, 185, 0.12);
+  border-color: var(--accent-primary, #36BECD);
+  box-shadow: 0 10px 25px rgba(54, 190, 205, 0.15);
   transform: translateY(-2px);
 }
 
@@ -70,7 +70,7 @@
   right: 6px;
   top: 50%;
   transform: translateY(-50%);
-  background: var(--accent-primary);
+  background: var(--accent-primary-contrast, #007A84);
   border: none;
   border-radius: 12px;
   width: 44px;
@@ -85,12 +85,22 @@
   cursor: pointer;
   transition: all 0.2s ease;
   z-index: 2;
-  box-shadow: 0 4px 10px rgba(34, 193, 195, 0.2);
+  box-shadow: 0 4px 10px rgba(0, 122, 132, 0.2);
 }
 
 .btn-filter-trigger-inline:hover {
-  background: #1da8aa;
+  background: var(--accent-hover, #006870);
   transform: translateY(-50%) scale(1.05);
+}
+
+.btn-filter-trigger-inline:focus-visible {
+  outline: 2px solid var(--accent-primary-contrast, #007A84);
+  outline-offset: 2px;
+}
+
+.btn-clear-search:focus-visible {
+  outline: 2px solid var(--accent-primary-contrast, #007A84);
+  outline-offset: 2px;
 }
 
 .btn-clear-search:hover {
@@ -160,8 +170,13 @@
 }
 
 .suggestion-item:hover, .suggestion-item.active {
-  background: rgba(31, 183, 185, 0.08);
-  color: var(--accent-primary);
+  background: rgba(54, 190, 205, 0.1);
+  color: var(--accent-primary-contrast, #007A84);
+}
+
+.suggestion-item:focus-visible {
+  outline: 2px solid var(--accent-primary-contrast, #007A84);
+  outline-offset: -2px;
 }
 
 .suggestion-item.complex {
@@ -183,7 +198,7 @@
 .suggestion-item:hover .suggestion-icon, 
 .suggestion-item.active .suggestion-icon {
   background: white;
-  color: var(--accent-primary);
+  color: var(--accent-primary-contrast, #007A84);
 }
 
 .suggestion-info {
@@ -208,7 +223,7 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   padding: 8px 16px;
-  min-height: 38px;
+  min-height: 40px;
   border-radius: 20px;
   font-size: 0.85rem;
   font-weight: 600;
@@ -220,8 +235,13 @@
   justify-content: center;
 }
 
+.popular-tag:focus-visible {
+  outline: 2px solid var(--accent-primary-contrast, #007A84);
+  outline-offset: 2px;
+}
+
 .popular-tag:hover {
-  background: var(--accent-gradient);
+  background: var(--accent-primary-contrast, #007A84);
   color: white;
   border-color: transparent;
   transform: scale(1.05);

@@ -1,15 +1,24 @@
 import React from 'react';
 import { Globe, MessageCircle, Instagram } from 'lucide-react';
+import { normalizeWhatsApp, normalizeInstagram } from '../utils/footerData';
+
+export { normalizeWhatsApp, normalizeInstagram };
 
 /**
  * Footer minimalista de 3 líneas exactas.
- * Aplica estrictamente la paleta corporativa:
- * - Dominio joababyshophn.com con acento Rosa Coral (#FF1493)
- * - WhatsApp 9966-1107 con Turquesa (#00C4CC)
- * - Redes sociales @joababyshop / @joababyshop.hn en Carbón Oscuro (#1D1D2C)
- * - Fondo Blanco (#FFFFFF) con bordes armónicos
+ * Consume storeInfo configurable desde la administración y aplica la paleta oficial:
+ * - Dominio joababyshophn.com con icono Turquesa (#36BECD)
+ * - WhatsApp configurable con icono verde (#25D366) y enlace Turquesa Oscuro (#007A84)
+ * - Instagram configurable con icono Rosa Pastel (#FF8FA3) y hover Rosa Oscuro (#A32653)
  */
-const Footer = () => {
+const Footer = ({ storeInfo = {} }) => {
+  const { waUrl, displayPhone } = normalizeWhatsApp(storeInfo?.phone);
+  const primaryInstagram = normalizeInstagram(storeInfo?.instagram_url);
+  const secondaryInstagram = {
+    url: 'https://instagram.com/joababyshop.hn',
+    handle: '@joababyshop.hn'
+  };
+
   return (
     <footer 
       className="store-footer glass-panel" 
@@ -17,9 +26,9 @@ const Footer = () => {
         marginTop: '60px', 
         padding: '36px 20px', 
         borderRadius: '32px 32px 0 0', 
-        borderTop: '1px solid var(--border-color, #F0DCD0)',
+        borderTop: '1px solid var(--border-color, #D6E8F5)',
         backgroundColor: '#FFFFFF',
-        color: '#1D1D2C',
+        color: 'var(--text-primary, #1D1D2C)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -28,7 +37,7 @@ const Footer = () => {
         textAlign: 'center'
       }}
     >
-      {/* Línea 1: Dominio */}
+      {/* Línea 1: Dominio de la tienda */}
       <div 
         className="footer-row footer-domain" 
         style={{ 
@@ -41,25 +50,25 @@ const Footer = () => {
           fontWeight: 700 
         }}
       >
-        <Globe size={18} style={{ color: '#FF1493' }} aria-hidden="true" />
+        <Globe size={18} style={{ color: 'var(--brand-turquesa, #36BECD)' }} aria-hidden="true" />
         <a 
           href="https://joababyshophn.com" 
           target="_blank" 
           rel="noopener noreferrer" 
           style={{ 
-            color: '#1D1D2C', 
+            color: 'var(--text-primary, #1D1D2C)', 
             textDecoration: 'none',
             letterSpacing: '0.3px',
             transition: 'color var(--transition-fast, 0.15s ease-in-out)'
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = '#00C4CC')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = '#1D1D2C')}
+          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent-primary-contrast, #007A84)')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-primary, #1D1D2C)')}
         >
           joababyshophn.com
         </a>
       </div>
 
-      {/* Línea 2: WhatsApp */}
+      {/* Línea 2: WhatsApp con datos configurables */}
       <div 
         className="footer-row footer-whatsapp" 
         style={{ 
@@ -70,17 +79,17 @@ const Footer = () => {
           fontFamily: "'Quicksand', sans-serif",
           fontSize: '0.95rem', 
           fontWeight: 600,
-          color: '#1D1D2C'
+          color: 'var(--text-primary, #1D1D2C)'
         }}
       >
-        <MessageCircle size={18} style={{ color: '#00C4CC' }} aria-hidden="true" />
+        <MessageCircle size={18} style={{ color: '#25D366' }} aria-hidden="true" />
         <span>WhatsApp:</span>
         <a 
-          href="https://wa.me/50499661107" 
+          href={waUrl} 
           target="_blank" 
           rel="noopener noreferrer" 
           style={{ 
-            color: '#00C4CC', 
+            color: 'var(--accent-primary-contrast, #007A84)', 
             fontWeight: 700, 
             textDecoration: 'none',
             transition: 'opacity var(--transition-fast, 0.15s ease-in-out)'
@@ -88,11 +97,11 @@ const Footer = () => {
           onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.85')}
           onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
         >
-          9966-1107
+          {displayPhone}
         </a>
       </div>
 
-      {/* Línea 3: Redes Sociales */}
+      {/* Línea 3: Redes Sociales configurables */}
       <div 
         className="footer-row footer-socials" 
         style={{ 
@@ -103,41 +112,47 @@ const Footer = () => {
           fontFamily: "'Quicksand', sans-serif",
           fontSize: '0.9rem', 
           fontWeight: 500,
-          color: '#1D1D2C'
+          color: 'var(--text-primary, #1D1D2C)'
         }}
       >
-        <Instagram size={18} style={{ color: '#FF1493' }} aria-hidden="true" />
+        <Instagram size={18} style={{ color: 'var(--brand-rosa-pastel, #FF8FA3)' }} aria-hidden="true" />
         <a 
-          href="https://instagram.com/joababyshop" 
+          href={primaryInstagram.url} 
           target="_blank" 
           rel="noopener noreferrer" 
           style={{ 
-            color: '#1D1D2C', 
+            color: 'var(--text-primary, #1D1D2C)', 
             fontWeight: 600, 
             textDecoration: 'none',
             transition: 'color var(--transition-fast, 0.15s ease-in-out)'
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = '#FF1493')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = '#1D1D2C')}
+          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--brand-rosa-dark, #A32653)')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-primary, #1D1D2C)')}
         >
-          @joababyshop
+          {primaryInstagram.handle}
         </a>
-        <span style={{ color: '#FF1493', fontWeight: 700 }}>/</span>
-        <a 
-          href="https://instagram.com/joababyshop.hn" 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          style={{ 
-            color: '#1D1D2C', 
-            fontWeight: 600, 
-            textDecoration: 'none',
-            transition: 'color var(--transition-fast, 0.15s ease-in-out)'
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = '#FF1493')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = '#1D1D2C')}
-        >
-          @joababyshop.hn
-        </a>
+
+        {/* Mostrar cuenta regional si no duplica la cuenta principal */}
+        {primaryInstagram.handle !== secondaryInstagram.handle && (
+          <>
+            <span style={{ color: 'var(--brand-rosa-pastel, #FF8FA3)', fontWeight: 700 }}>/</span>
+            <a 
+              href={secondaryInstagram.url} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              style={{ 
+                color: 'var(--text-primary, #1D1D2C)', 
+                fontWeight: 600, 
+                textDecoration: 'none',
+                transition: 'color var(--transition-fast, 0.15s ease-in-out)'
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--brand-rosa-dark, #A32653)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-primary, #1D1D2C)')}
+            >
+              {secondaryInstagram.handle}
+            </a>
+          </>
+        )}
       </div>
     </footer>
   );

@@ -62,7 +62,13 @@ export const getOptimizedSupabaseUrl = (url, w, q = 80, format = 'webp') => {
     ? url
     : resolveStorageUrl(url);
 
-  if (resolvedUrl.includes('supabase.co/storage/v1/object/public/') || resolvedUrl.includes('supabase.co/storage/v1/render/image/public/')) {
+  // NOTA CRÍTICA: La transformación dinámica de imágenes (/render/image/public/) requiere
+  // plan Pro en Supabase ("feature not enabled for this tenant" -> HTTP 403).
+  // Solo se activa si la variable VITE_SUPABASE_TRANSFORM_ENABLED está explícitamente en 'true'.
+  // Por defecto, devolvemos la URL canónica de Storage (/storage/v1/object/public/) que responde 200 OK.
+  const isTransformEnabled = typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_TRANSFORM_ENABLED === 'true';
+
+  if (isTransformEnabled && (resolvedUrl.includes('supabase.co/storage/v1/object/public/') || resolvedUrl.includes('supabase.co/storage/v1/render/image/public/'))) {
     try {
       // Reemplaza /object/public/ por /render/image/public/ para activar la transformación de Supabase
       const renderBase = resolvedUrl.replace(
@@ -151,10 +157,12 @@ export const OptimizedImage = ({
 
   /**
    * Genera el atributo srcset con múltiples resoluciones para diseño responsivo.
-   * Resoluciones: 300px, 600px, 1200px.
+   * Solo si la transformación de imágenes de Supabase está habilitada en el entorno.
    */
+  const isTransformEnabled = typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_TRANSFORM_ENABLED === 'true';
+
   const generateSrcSet = (url, format = 'avif') => {
-    if (!url || !url.includes('supabase.co') || useFallbackDirect || error) return null;
+    if (!isTransformEnabled || !url || !url.includes('supabase.co') || useFallbackDirect || error) return null;
     return [300, 600, 1200]
       .map(w => `${getOptimizedSupabaseUrl(url, w, quality, format)} ${w}w`)
       .join(', ');

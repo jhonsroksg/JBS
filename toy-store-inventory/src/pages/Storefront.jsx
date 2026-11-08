@@ -8,6 +8,8 @@ import { OptimizedImage, getOptimizedSupabaseUrl } from '../components/Optimized
 import { SkeletonGrid } from '../components/SkeletonLoader';
 import { SearchBar } from '../components/SearchBar';
 import { useRecentProducts } from '../hooks/useRecentProducts';
+import { getEffectivePrice, matchesPriceFilter, clampPriceRange } from '../utils/priceFilter';
+import { matchesProductSearch } from '../utils/searchUtils';
 const ProductGrid = lazy(() => import('../components/ProductGrid'));
 const ProductModal = lazy(() => import('../components/ProductModal').then(module => ({ default: module.ProductModal })));
 import './Storefront.css';
@@ -106,15 +108,41 @@ const Storefront = () => {
   const [storeInfo, setStoreInfo] = useState(dataCache.get('store_info') || { name: 'Joa Baby Shop' });
   const [isLoading, setIsLoading] = useState(false);
   
-  // --- Estados de Paginación ---
+  // --- Estados de Paginación y Filtros ---
   const [currentPage, setCurrentPage] = useState(1);
   const [activeAgeRange, setActiveAgeRange] = useState('all');
   const [priceRange, setPriceRange] = useState(null); 
+  const [catalogMaxPrice, setCatalogMaxPrice] = useState(() => {
+    return dataCache.get(`products:maxPrice:${activeCategory}:${activeSection}`) || 5000;
+  });
+  const [favoritesMaxPrice, setFavoritesMaxPrice] = useState(5000);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [urlProduct, setUrlProduct] = useState(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const requestIdRef = useRef(0);
+
+  // Obtener precio máximo estable del catálogo (independiente de los resultados paginados o filtrados por precio)
+  useEffect(() => {
+    if (isFavoritesOnly) return;
+    let isCurrent = true;
+
+    productRepository.getMaxPrice({ category: activeCategory, section: activeSection })
+      .then(max => {
+        if (isCurrent && typeof max === 'number' && max > 0) {
+          setCatalogMaxPrice(max);
+        }
+      })
+      .catch(err => {
+        if (isCurrent) {
+          console.error("Error al obtener precio máximo del catálogo:", err);
+        }
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [activeCategory, activeSection, isFavoritesOnly]);
 
   const updateParams = useCallback((updates) => {
     const newParams = new URLSearchParams(searchParams);
@@ -128,6 +156,32 @@ const Storefront = () => {
   const setActiveCategory = useCallback((cat) => updateParams({ cat }), [updateParams]);
 
   const setSearchTerm = useCallback((q) => updateParams({ q }), [updateParams]);
+
+  const handleSearchSelect = useCallback((termOrObj, type, id) => {
+    // 1. Selección de categoría desde sugerencias (click o teclado Enter)
+    if (type === 'category' || (termOrObj && termOrObj.type === 'category')) {
+      const categoryId = id || termOrObj.id;
+      if (categoryId) {
+        updateParams({ cat: categoryId, q: null });
+        return;
+      }
+      const found = categories.find(c => c.name && c.name.toLowerCase() === (termOrObj.text || termOrObj).toLowerCase());
+      if (found) {
+        updateParams({ cat: found.id, q: null });
+        return;
+      }
+    }
+
+    // 2. Selección de producto específico desde sugerencias
+    if (type === 'product' && id) {
+      updateParams({ producto: id, q: null });
+      return;
+    }
+
+    // 3. Búsqueda por término (nombre, SKU, marca o texto libre)
+    const text = typeof termOrObj === 'string' ? termOrObj : (termOrObj?.text || '');
+    updateParams({ q: text || null });
+  }, [updateParams, categories]);
   const toggleFavoritesFilter = useCallback(() => updateParams({ fav: isFavoritesOnly ? null : 'true' }), [updateParams, isFavoritesOnly]);
   const setSelectedProduct = useCallback((product) => {
     updateParams({ producto: product ? product.id : null });
@@ -217,15 +271,18 @@ const Storefront = () => {
         if (activeAgeRange !== 'all') {
           valid = valid.filter(p => p.ageRange === activeAgeRange);
         }
-        if (priceRange !== null && priceRange !== undefined) {
-          valid = valid.filter(p => Number(p.discountPrice || p.sellingPrice || 0) <= priceRange);
-        }
         if (searchTerm && searchTerm.trim()) {
-          const term = searchTerm.trim().toLowerCase();
-          valid = valid.filter(p =>
-            (p.name && p.name.toLowerCase().includes(term)) ||
-            (p.sku && p.sku.toLowerCase().includes(term))
-          );
+          valid = valid.filter(p => matchesProductSearch(p, searchTerm, categories));
+        }
+
+        // Determinar precio máximo de los favoritos ANTES de aplicar el filtro de precio,
+        // garantizando que el slider no se encoja al filtrar
+        const favPrices = valid.map(p => getEffectivePrice(p));
+        const maxFav = favPrices.length > 0 ? Math.max(...favPrices, 0) : 1000;
+        setFavoritesMaxPrice(Math.max(1000, Math.ceil(maxFav / 50) * 50));
+
+        if (priceRange !== null && priceRange !== undefined) {
+          valid = valid.filter(p => matchesPriceFilter(p, priceRange));
         }
 
         setProducts(valid);
@@ -252,7 +309,8 @@ const Storefront = () => {
         section: activeSection,
         search: searchTerm,
         maxPrice: priceRange !== null ? priceRange : 100000,
-        ageRange: activeAgeRange
+        ageRange: activeAgeRange,
+        categories
       }, { forceRefresh });
 
       // Si llegó otra petición posterior mientras esta se procesaba, descartar
@@ -272,7 +330,7 @@ const Storefront = () => {
         setIsLoading(false);
       }
     }
-  }, [activeCategory, activeSection, activeAgeRange, priceRange, searchTerm, isFavoritesOnly, favorites]);
+  }, [activeCategory, activeSection, activeAgeRange, priceRange, searchTerm, isFavoritesOnly, favorites, categories]);
 
   const revalidateStaticData = useCallback(async ({ forceRefresh = false } = {}) => {
     try {
@@ -336,14 +394,26 @@ const Storefront = () => {
     return [...new Set(rawRanges)].sort();
   }, [products]);
 
-  const filteredProducts = products.filter(p => p.stock > 0 && p.isHidden !== true);
+  // maxPriceAvailable se deriva de la consulta eficiente del catálogo o de favoritos,
+  // nunca de la página actual ni de los resultados que ya están filtrados por precio.
   const maxPriceAvailable = useMemo(() => {
-    if (!products || products.length === 0) return 5000;
-    const max = Math.max(...products.map(p => Number(p.discountPrice || p.sellingPrice || 0)));
-    return Math.max(1000, Math.ceil(max / 50) * 50); 
-  }, [products]);
+    if (isFavoritesOnly) {
+      return favoritesMaxPrice || 5000;
+    }
+    return catalogMaxPrice || 5000;
+  }, [isFavoritesOnly, favoritesMaxPrice, catalogMaxPrice]);
 
-  const currentPriceRange = priceRange !== null ? priceRange : maxPriceAvailable;
+  const currentPriceRange = clampPriceRange(priceRange, maxPriceAvailable);
+
+  const filteredProducts = useMemo(() => {
+    return products.filter(p => {
+      if (p.stock <= 0 || p.isHidden === true || p.deleted) return false;
+      if (priceRange !== null && priceRange !== undefined) {
+        return matchesPriceFilter(p, priceRange);
+      }
+      return true;
+    });
+  }, [products, priceRange]);
 
   const totalPages = Math.max(1, Math.ceil(totalProducts / PAGE_SIZE));
   const currentProducts = filteredProducts;
@@ -437,7 +507,7 @@ const Storefront = () => {
         <SearchBar 
           value={searchTerm} 
           onChange={setSearchTerm} 
-          onSelect={setSearchTerm}
+          onSelect={handleSearchSelect}
           products={products}
           categories={categories}
           onFilterClick={() => setIsMobileFiltersOpen(true)}

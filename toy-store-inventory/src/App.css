@@ -1,12 +1,15 @@
 :root {
-  --accent: #FF1493;            /* Rosa Coral para acentos */
-  --accent-bg: #FFF0E5;         /* Crema para fondos de sección */
-  --accent-border: #FF1493;     /* Rosa Coral */
-  --border: #F0DCD0;            /* Borde sutil armonizado con Crema */
-  --text-h: #1D1D2C;            /* Carbón Oscuro para encabezados */
-  --text-body: #1D1D2C;         /* Carbón Oscuro para cuerpo */
-  --social-bg: #FFFFFF;         /* Blanco para tarjetas */
-  --btn-primary: #00C4CC;       /* Turquesa para botones principales */
+  --accent: var(--brand-turquesa, #36BECD);
+  --accent-contrast: var(--brand-turquesa-dark, #007A84);
+  --accent-pink: var(--brand-rosa-pastel, #FF8FA3);
+  --accent-pink-dark: var(--brand-rosa-dark, #A32653);
+  --accent-bg: var(--brand-celeste-suave, #EBF5FB);
+  --accent-border: var(--brand-turquesa, #36BECD);
+  --border: var(--brand-borde-celeste, #D6E8F5);
+  --text-h: var(--brand-texto-oscuro, #1D1D2C);
+  --text-body: var(--brand-texto-oscuro, #1D1D2C);
+  --social-bg: var(--brand-blanco, #FFFFFF);
+  --btn-primary: var(--brand-turquesa-dark, #007A84);
   --shadow: 0 4px 12px rgba(29, 29, 44, 0.08);
 }
 
@@ -15,7 +18,7 @@
   font-size: 16px;
   padding: 5px 10px;
   border-radius: 5px;
-  color: var(--accent);
+  color: var(--accent-contrast);
   background: var(--accent-bg);
   border: 2px solid transparent;
   transition: border-color 0.3s;
@@ -25,7 +28,7 @@
     border-color: var(--accent-border);
   }
   &:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--accent-contrast);
     outline-offset: 2px;
   }
 }
@@ -147,8 +150,8 @@
 
     &:hover {
       box-shadow: var(--shadow);
-      color: var(--accent);
-      border-color: var(--accent);
+      color: var(--accent-contrast, #007A84);
+      border-color: var(--accent, #36BECD);
     }
     .button-icon {
       height: 18px;

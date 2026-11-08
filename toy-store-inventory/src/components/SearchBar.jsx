@@ -20,6 +20,8 @@ export const SearchBar = ({
   const [history, setHistory] = useState([]);
   const [cursor, setCursor] = useState(-1);
   const searchRef = useRef(null);
+  const debounceTimerRef = useRef(null);
+  const skipNextDebounceRef = useRef(false);
 
   // Notificar cambios de visibilidad del dropdown
   useEffect(() => {
@@ -40,47 +42,63 @@ export const SearchBar = ({
 
   // Debounce para actualizar el término de búsqueda global
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (inputValue !== value) {
+    if (skipNextDebounceRef.current) {
+      skipNextDebounceRef.current = false;
+      return;
+    }
+
+    if (inputValue !== value) {
+      debounceTimerRef.current = setTimeout(() => {
         onChange(inputValue);
+      }, 300);
+    }
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
       }
-    }, 300);
-    return () => clearTimeout(timer);
+    };
   }, [inputValue, onChange, value]);
 
-  // Sincronizar input con valor externo (ej. al limpiar filtros)
+  // Sincronizar input con valor externo (ej. al limpiar filtros o seleccionar categoría)
   useEffect(() => {
     setInputValue(value);
   }, [value]);
 
-  // Generar sugerencias inteligentes
+  // Generar sugerencias inteligentes multi-campo
   useEffect(() => {
     if (!inputValue.trim() || inputValue.length < 2) {
       setSuggestions([]);
       return;
     }
 
-    const term = inputValue.toLowerCase();
+    const term = inputValue.toLowerCase().trim();
 
-    // 1. Buscar en nombres de productos
-    const productMatches = products
+    // 1. Buscar en Categorías
+    const categoryMatches = (categories || [])
+      .filter(c => c && c.name && c.name.toLowerCase().includes(term))
+      .slice(0, 2)
+      .map(c => ({ type: 'category', id: c.id, text: c.name, sub: 'Ver categoría' }));
+
+    // 2. Buscar en Marcas
+    const brandMatches = [...new Set((products || []).map(p => p.brand).filter(Boolean))]
+      .filter(b => b.toLowerCase().includes(term))
+      .slice(0, 2)
+      .map(b => ({ type: 'brand', id: b, text: b, sub: 'Marca' }));
+
+    // 3. Buscar en nombres de productos
+    const productMatches = (products || [])
       .filter(p => p.name && p.name.toLowerCase().includes(term))
       .slice(0, 3)
       .map(p => ({ type: 'product', id: p.id, text: p.name, sub: p.brand || 'Joa Baby Shop' }));
 
-    // 2. Buscar en SKU
-    const skuMatches = products
+    // 4. Buscar en SKU
+    const skuMatches = (products || [])
       .filter(p => p.sku?.toLowerCase().includes(term))
       .slice(0, 1)
       .map(p => ({ type: 'sku', id: p.id, text: p.sku, sub: p.name }));
 
-    // 3. Buscar en Categorías
-    const categoryMatches = categories
-      .filter(c => c.name && c.name.toLowerCase().includes(term))
-      .slice(0, 2)
-      .map(c => ({ type: 'category', id: c.id, text: c.name, sub: 'Ver categoría' }));
-
-    setSuggestions([...categoryMatches, ...productMatches, ...skuMatches]);
+    setSuggestions([...categoryMatches, ...brandMatches, ...productMatches, ...skuMatches]);
   }, [inputValue, products, categories]);
 
   // Manejar click fuera para cerrar dropdown
@@ -98,11 +116,53 @@ export const SearchBar = ({
     };
   }, []);
 
-  const handleSelect = (term, type = 'term') => {
-    setInputValue(term);
-    onSelect(term);
+  const handleSelect = (item, explicitType = null) => {
+    // Cancelar cualquier debounce pendiente para evitar reactivar términos viejos
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    skipNextDebounceRef.current = true;
     setShowSuggestions(false);
-    
+    setCursor(-1);
+
+    // Caso 1: Se pasó un objeto de sugerencia (desde click o Enter en sugerencias)
+    if (item && typeof item === 'object') {
+      const type = item.type || explicitType || 'term';
+      const text = item.text || '';
+      const id = item.id;
+
+      if (type === 'category') {
+        // Al seleccionar una categoría, se limpia el texto de búsqueda del input
+        setInputValue('');
+        onSelect(text, 'category', id);
+        return;
+      }
+
+      setInputValue(text);
+      onSelect(text, type, id);
+
+      if (text.trim() && (type === 'term' || type === 'brand')) {
+        const newHistory = [text, ...history.filter(h => h !== text)].slice(0, 5);
+        setHistory(newHistory);
+        localStorage.setItem('joa_search_history', JSON.stringify(newHistory));
+      }
+      return;
+    }
+
+    // Caso 2: Texto plano
+    const term = typeof item === 'string' ? item : '';
+    const type = explicitType || 'term';
+
+    if (type === 'category') {
+      setInputValue('');
+      onSelect(term, 'category');
+      return;
+    }
+
+    setInputValue(term);
+    onSelect(term, type);
+
     // Guardar en historial si es un término nuevo
     if (term.trim() && type === 'term') {
       const newHistory = [term, ...history.filter(h => h !== term)].slice(0, 5);
@@ -119,10 +179,12 @@ export const SearchBar = ({
       e.preventDefault();
       setCursor(c => (c > 0 ? c - 1 : 0));
     } else if (e.key === 'Enter') {
+      e.preventDefault();
       if (cursor >= 0 && suggestions[cursor]) {
-        handleSelect(suggestions[cursor].text);
+        // Transmite la sugerencia completa preservando su tipo (ej. category, brand, product, sku)
+        handleSelect(suggestions[cursor]);
       } else {
-        handleSelect(inputValue);
+        handleSelect(inputValue, 'term');
       }
     } else if (e.key === 'Escape') {
       setShowSuggestions(false);
@@ -209,12 +271,12 @@ export const SearchBar = ({
                 <button 
                   key={i} 
                   className={`suggestion-item complex ${cursor === i ? 'active' : ''}`}
-                  onClick={() => handleSelect(s.text, s.type)}
+                  onClick={() => handleSelect(s)}
                   role="option"
                   aria-selected={cursor === i}
                 >
                   <div className="suggestion-icon">
-                    {s.type === 'category' ? <Tag size={16} aria-hidden="true" /> : <Package size={16} aria-hidden="true" />}
+                    {s.type === 'category' || s.type === 'brand' ? <Tag size={16} aria-hidden="true" /> : <Package size={16} aria-hidden="true" />}
                   </div>
                   <div className="suggestion-info">
                     <span className="suggestion-text">{s.text}</span>

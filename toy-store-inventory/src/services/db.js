@@ -5,6 +5,14 @@ import {
   sanitizeStoragePath, 
   validateStorageFile 
 } from '../utils/storageValidation';
+import { 
+  buildPriceQueryFilter, 
+  computeCatalogMaxPrice 
+} from '../utils/priceFilter';
+import { 
+  buildSearchOrClause, 
+  findMatchingCategoryIds 
+} from '../utils/searchUtils';
 
 export { supabase, dataCache, CACHE_TTL };
 
@@ -25,7 +33,7 @@ export const productRepository = {
     return data || [];
   },
 
-  async getPaginated({ page = 0, limit = 24, category = 'all', search = '', minPrice = 0, maxPrice = 100000, ageRange = 'all', section = 'all' }, { forceRefresh = false } = {}) {
+  async getPaginated({ page = 0, limit = 24, category = 'all', search = '', minPrice = 0, maxPrice = 100000, ageRange = 'all', section = 'all', categories = null }, { forceRefresh = false } = {}) {
     const cacheKey = `products:paginated:${category}:${section}:${ageRange}:${minPrice}:${maxPrice}:${search}:${page}:${limit}`;
 
     return dataCache.fetchWithCache(cacheKey, async () => {
@@ -45,17 +53,23 @@ export const productRepository = {
         query = query.eq('section', section);
       }
       if (search && search.trim()) {
-        const term = search.trim();
-        // Búsqueda en nombre o SKU
-        query = query.or(`name.ilike.%${term}%,sku.ilike.%${term}%`);
+        const availableCategories = (categories && categories.length > 0)
+          ? categories
+          : (dataCache.get('collection:categories') || []);
+        const matchingCategoryIds = findMatchingCategoryIds(search, availableCategories);
+        const searchClause = buildSearchOrClause(search, matchingCategoryIds);
+        if (searchClause) {
+          query = query.or(searchClause);
+        }
       }
       
-      // Filtro de precio
+      // Filtro de precio consistente con precio efectivo (discountPrice || sellingPrice)
       if (minPrice > 0) {
         query = query.gte('sellingPrice', minPrice);
       }
-      if (maxPrice !== null && maxPrice !== undefined && Number(maxPrice) < 100000) {
-        query = query.lte('sellingPrice', Number(maxPrice));
+      const priceFilterClause = buildPriceQueryFilter(maxPrice);
+      if (priceFilterClause) {
+        query = query.or(priceFilterClause);
       }
 
       const from = page * limit;
@@ -71,6 +85,36 @@ export const productRepository = {
         total: count || 0,
         hasNextPage: (count || 0) > to + 1
       };
+    }, { ttl: CACHE_TTL.CATALOG, forceRefresh });
+  },
+
+  async getMaxPrice({ category = 'all', section = 'all' } = {}, { forceRefresh = false } = {}) {
+    const cacheKey = `products:maxPrice:${category}:${section}`;
+
+    return dataCache.fetchWithCache(cacheKey, async () => {
+      let query = supabase
+        .from('products')
+        .select('sellingPrice, discountPrice')
+        .gt('stock', 0);
+
+      if (category !== 'all') {
+        query = query.eq('categoryId', category);
+      }
+
+      if (section === 'all') {
+        query = query.in('section', ['BEBÉ', 'TODOS']);
+      } else {
+        query = query.eq('section', section);
+      }
+
+      // Consulta de solo lectura optimizada: orden descendente por sellingPrice limitando a 10 filas
+      // para determinar el precio efectivo superior sin descargar todo el inventario.
+      const { data, error } = await query
+        .order('sellingPrice', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      return computeCatalogMaxPrice(data || [], 1000);
     }, { ttl: CACHE_TTL.CATALOG, forceRefresh });
   },
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ShoppingCart, X } from 'lucide-react';
 import { db, layawayRepository } from '../services/db';
 import { useCart } from '../contexts/CartContext';
@@ -23,6 +23,34 @@ const PublicLayout = () => {
   const [isSearching, setIsSearching] = useState(false);
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const rawSection = searchParams.get('section');
+
+  // Sincronización del tema dinámico por sección en la raíz <html> (solo ámbito público)
+  useEffect(() => {
+    if (!rawSection || rawSection === 'all' || rawSection.toUpperCase() === 'TODOS') {
+      document.documentElement.removeAttribute('data-section');
+      return;
+    }
+
+    // Normalizar nombres (ej. PAPÁ/PAPA -> papa, MAMÁ/MAMA -> mama, BEBÉ/BEBE -> bebe)
+    const normalized = rawSection
+      .trim()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+
+    if (normalized) {
+      document.documentElement.setAttribute('data-section', normalized);
+    } else {
+      document.documentElement.removeAttribute('data-section');
+    }
+
+    return () => {
+      // Limpiar al salir o desmontar para no afectar rutas administrativas ni login
+      document.documentElement.removeAttribute('data-section');
+    };
+  }, [rawSection]);
 
   useEffect(() => {
     // Al añadir un producto o abrir el carrito, mostramos la barra lateral

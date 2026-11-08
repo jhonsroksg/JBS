@@ -175,6 +175,9 @@ const Settings = () => {
         store_email: storeInfo.store_email ? storeInfo.store_email.trim() : null
       };
       await db.updateStoreInfo(infoToSave);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('store_info_updated'));
+      }
       showToast('Configuración de la tienda actualizada con éxito.', 'success');
       await loadData();
     } catch (error) {
