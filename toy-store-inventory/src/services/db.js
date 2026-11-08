@@ -49,8 +49,8 @@ export const productRepository = {
 
     return dataCache.fetchWithCache(cacheKey, async () => {
       let query = supabase
-        .from('products')
-        .select(PUBLIC_PRODUCT_FIELDS, { count: 'exact' })
+        .from('products_public')
+        .select('*', { count: 'exact' })
         .gt('stock', 0);
 
       if (category !== 'all') query = query.eq('categoryId', category);
@@ -104,7 +104,7 @@ export const productRepository = {
 
     return dataCache.fetchWithCache(cacheKey, async () => {
       let query = supabase
-        .from('products')
+        .from('products_public')
         .select('sellingPrice, discountPrice')
         .gt('stock', 0);
 
@@ -131,7 +131,7 @@ export const productRepository = {
 
   async getActive() {
     const { data, error } = await supabase
-      .from('products')
+      .from('products_public')
       .select('*')
       .gt('stock', 0)
       .order('name');
@@ -142,8 +142,8 @@ export const productRepository = {
   async getById(id, { forceRefresh = false } = {}) {
     return dataCache.fetchWithCache(`product:${id}`, async () => {
       const { data, error } = await supabase
-        .from('products')
-        .select(PUBLIC_PRODUCT_FIELDS)
+        .from('products_public')
+        .select('*')
         .eq('id', id)
         .single();
       if (error) throw error;
@@ -155,8 +155,8 @@ export const productRepository = {
     if (!Array.isArray(ids) || ids.length === 0) return [];
     // LIVE QUERY (Bypass cache) para garantizar stock exacto en checkout y reconciliación
     const { data, error } = await supabase
-      .from('products')
-      .select(PUBLIC_PRODUCT_FIELDS)
+      .from('products_public')
+      .select('*')
       .in('id', ids);
     if (error) throw error;
     return data || [];
@@ -250,7 +250,7 @@ export const orderRepository = {
 
       if (productIds.length > 0) {
         const { data: dbProducts, error: prodErr } = await supabase
-          .from('products')
+          .from('products_public')
           .select('id, name, stock')
           .in('id', productIds);
 

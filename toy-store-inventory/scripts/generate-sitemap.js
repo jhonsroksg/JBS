@@ -45,8 +45,8 @@ async function generateSitemap() {
     try {
       const supabase = createClient(supabaseUrl, supabaseKey);
       const { data: products, error } = await supabase
-        .from('products')
-        .select('id, name, created_at, stock, isHidden')
+        .from('products_public')
+        .select('id, name, created_at, stock')
         .gt('stock', 0);
 
       if (error) {
