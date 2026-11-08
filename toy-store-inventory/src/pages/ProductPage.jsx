@@ -197,8 +197,14 @@ const ProductPage = () => {
             <div style={{ display: 'flex', gap: '10px', padding: '15px 20px', overflowX: 'auto', background: 'rgba(34, 193, 195, 0.04)', borderTop: '1px solid var(--border-color)' }}>
               {product.images.map((img, idx) => (
                 <OptimizedImage 
-                  key={idx} src={img} alt={`${product.name} vista ${idx + 1}`} 
+                  key={idx} 
+                  src={img} 
+                  alt={`${product.name} vista ${idx + 1}`} 
                   onClick={() => setMainImageIndex(idx)} 
+                  width="60"
+                  height="60"
+                  lazy={true}
+                  priority={false}
                   style={{ width: '60px', height: '60px', objectFit: 'cover', cursor: 'pointer', borderRadius: '12px', border: mainImageIndex === idx ? '2px solid var(--accent-primary)' : '2px solid transparent', opacity: mainImageIndex === idx ? 1 : 0.6, transition: 'all 0.2s ease', background: '#fff' }} 
                 />
               ))}

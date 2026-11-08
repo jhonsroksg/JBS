@@ -17,6 +17,17 @@ import {
 export { supabase, dataCache, CACHE_TTL };
 
 /**
+ * Columnas públicas estrictamente necesarias para el catálogo, modal, filtros y carrito.
+ * Excluye campos sensibles o administrativos como costPrice y minStock.
+ */
+export const PUBLIC_PRODUCT_FIELDS = 'id, sku, name, brand, description, categoryId, categorySlug, sellingPrice, discountPrice, stock, imageUrl, images, ageRange, section, isNewBadge, showStockBadge, isLimitedBadge, isFeatured, isNew, tags, created_at';
+
+/**
+ * Columnas públicas de configuración de tienda necesarias para layout, navbar y footer.
+ */
+export const PUBLIC_STORE_INFO_FIELDS = 'id, name, phone, welcomeMessage, footer_description, facebook_url, instagram_url, store_address, store_email, hero_image_url, delivery_info, pickup_locations, email_logo_url';
+
+/**
  * REPOSITORY PATTERN - CENTRALIZED DATA ACCESS
  * This service centralizes all Supabase interactions to improve maintainability
  * and follow the single responsibility principle.
@@ -39,7 +50,7 @@ export const productRepository = {
     return dataCache.fetchWithCache(cacheKey, async () => {
       let query = supabase
         .from('products')
-        .select('*', { count: 'exact' })
+        .select(PUBLIC_PRODUCT_FIELDS, { count: 'exact' })
         .gt('stock', 0);
 
       if (category !== 'all') query = query.eq('categoryId', category);
@@ -132,7 +143,7 @@ export const productRepository = {
     return dataCache.fetchWithCache(`product:${id}`, async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select(PUBLIC_PRODUCT_FIELDS)
         .eq('id', id)
         .single();
       if (error) throw error;
@@ -145,7 +156,7 @@ export const productRepository = {
     // LIVE QUERY (Bypass cache) para garantizar stock exacto en checkout y reconciliación
     const { data, error } = await supabase
       .from('products')
-      .select('*')
+      .select(PUBLIC_PRODUCT_FIELDS)
       .in('id', ids);
     if (error) throw error;
     return data || [];
@@ -400,7 +411,7 @@ export const db = {
     return dataCache.fetchWithCache('store_info', async () => {
       const { data, error } = await supabase
         .from('store_info')
-        .select('*')
+        .select(PUBLIC_STORE_INFO_FIELDS)
         .eq('id', 1)
         .single();
       if (error) return null;

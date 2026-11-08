@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { productRepository, db, dataCache } from '../services/db';
 import { validateStorageFile, generateSecureStoragePath } from '../utils/storageValidation';
+import { compressProductImage } from '../utils/imageUploadHelpers';
 import { Plus, Search, X, Download, Upload, AlertTriangle } from 'lucide-react';
 import './Products.css';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -349,7 +350,8 @@ const Products = () => {
         const img = formData.images[i];
         if (img.isNew) {
           const fileName = generateSecureStoragePath({ sku: formData.sku, index: i, ext: 'jpg' });
-          const uploadedUrl = await db.uploadFile('product-images', fileName, img.file);
+          const fileToUpload = await compressProductImage(img.file);
+          const uploadedUrl = await db.uploadFile('product-images', fileName, fileToUpload);
           finalImages.push(uploadedUrl);
         } else {
           finalImages.push(img.url);

@@ -14,7 +14,8 @@ export const ProductGrid = ({
   onAddToCart,
   onShare,
   isSingle = false,
-  gridClassName = 'products-grid'
+  gridClassName = 'products-grid',
+  priorityCount = 0
 }) => {
   return (
     <div
@@ -27,7 +28,7 @@ export const ProductGrid = ({
           key={product.id}
           product={product}
           categoryName={categories.find(c => c.id === product.categoryId)?.name || 'Sin Categoría'}
-          priority={index < 3}
+          priority={priorityCount > 0 && index < priorityCount}
           onSelect={onSelect}
           onWhatsApp={onWhatsApp}
           onAddToCart={onAddToCart}

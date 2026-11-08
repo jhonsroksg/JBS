@@ -24,3 +24,26 @@ export function evaluateAspectRatio(selectedWidth, selectedHeight, recommendedWi
     isWarning: diff > tolerance
   };
 }
+
+/**
+ * Optimiza y comprime una imagen antes de subirla a Supabase Storage.
+ * Reduce fotos pesadas de celulares (3-10 MB) a ~100-250 KB sin costo de servicios externos.
+ */
+export async function compressProductImage(file, { maxWidthOrHeight = 1000, maxSizeMB = 0.4 } = {}) {
+  if (!file || !(file instanceof Blob) || file.size < 120 * 1024) {
+    return file;
+  }
+  try {
+    const imageCompression = (await import('browser-image-compression')).default;
+    const options = {
+      maxSizeMB,
+      maxWidthOrHeight,
+      useWebWorker: true,
+      initialQuality: 0.82
+    };
+    return await imageCompression(file, options);
+  } catch (err) {
+    console.warn('[compressProductImage] Compresión omitida, usando archivo original:', err);
+    return file;
+  }
+}

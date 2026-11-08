@@ -13,16 +13,8 @@ export default defineConfig({
             if (id.includes('node_modules/xlsx')) {
               return 'xlsx-export';
             }
-            if (
-              id.includes('node_modules/jspdf') ||
-              id.includes('node_modules/jspdf-autotable') ||
-              id.includes('node_modules/html2canvas') ||
-              id.includes('node_modules/dompurify') ||
-              id.includes('node_modules/fflate') ||
-              id.includes('node_modules/canvg') ||
-              id.includes('node_modules/fast-png')
-            ) {
-              return 'pdf-export';
+            if (id.includes('node_modules/dompurify')) {
+              return 'vendor-sanitize';
             }
             if (id.includes('node_modules/browser-image-compression')) {
               return 'vendor-compression';

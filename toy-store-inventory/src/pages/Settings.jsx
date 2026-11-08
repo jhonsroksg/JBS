@@ -63,6 +63,7 @@ const Settings = () => {
     store_address: '',
     store_email: ''
   });
+  const [uploadingHero, setUploadingHero] = useState(false);
   const [uploadingEmailLogo, setUploadingEmailLogo] = useState(false);
   const [heroSelectedInfo, setHeroSelectedInfo] = useState(null);
   const [emailLogoSelectedInfo, setEmailLogoSelectedInfo] = useState(null);
@@ -256,36 +257,57 @@ const Settings = () => {
     showToast('Logo para correos eliminado. Se usará el logo predeterminado al guardar.', 'info');
   };
 
-  const resizeHeroImage = (dataUrl) => {
-    return new Promise((resolve) => {
+  const resizeHeroImageToBlob = (file) => {
+    return new Promise((resolve, reject) => {
       const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const targetWidth = 1920;
-        const targetHeight = 1080;
-        canvas.width = targetWidth;
-        canvas.height = targetHeight;
-        const ctx = canvas.getContext('2d');
-        const imgRatio = img.width / img.height;
-        const targetRatio = targetWidth / targetHeight;
-        let sourceX = 0, sourceY = 0, sourceWidth = img.width, sourceHeight = img.height;
-        if (imgRatio > targetRatio) {
-          sourceWidth = img.height * targetRatio;
-          sourceX = (img.width - sourceWidth) / 2;
-        } else {
-          sourceHeight = img.width / targetRatio;
-          sourceY = (img.height - sourceHeight) / 2;
+        try {
+          const canvas = document.createElement('canvas');
+          const targetWidth = 1920;
+          const targetHeight = 640;
+          canvas.width = targetWidth;
+          canvas.height = targetHeight;
+          const ctx = canvas.getContext('2d');
+          const imgRatio = img.width / img.height;
+          const targetRatio = targetWidth / targetHeight;
+          let sourceX = 0, sourceY = 0, sourceWidth = img.width, sourceHeight = img.height;
+          if (imgRatio > targetRatio) {
+            sourceWidth = img.height * targetRatio;
+            sourceX = (img.width - sourceWidth) / 2;
+          } else {
+            sourceHeight = img.width / targetRatio;
+            sourceY = (img.height - sourceHeight) / 2;
+          }
+          ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetWidth, targetHeight);
+          canvas.toBlob((blob) => {
+            URL.revokeObjectURL(objectUrl);
+            if (blob) resolve(blob);
+            else reject(new Error('Error al generar blob comprimido del banner.'));
+          }, 'image/jpeg', 0.82);
+        } catch (err) {
+          URL.revokeObjectURL(objectUrl);
+          reject(err);
         }
-        ctx.drawImage(img, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetWidth, targetHeight);
-        resolve(canvas.toDataURL('image/jpeg', 0.8));
       };
-      img.src = dataUrl;
+      img.onerror = (err) => {
+        URL.revokeObjectURL(objectUrl);
+        reject(err);
+      };
+      img.src = objectUrl;
     });
   };
 
-  const handleHeroImageFile = (e) => {
+  const handleHeroImageFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const validation = validateStorageFile(file);
+    if (!validation.valid) {
+      showToast(validation.error || 'Archivo no válido.', 'error');
+      e.target.value = '';
+      return;
+    }
 
     // Inspeccionar dimensiones reales del archivo seleccionado
     const objectUrl = URL.createObjectURL(file);
@@ -303,17 +325,38 @@ const Settings = () => {
     };
     tempImg.src = objectUrl;
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const resized = await resizeHeroImage(event.target.result);
-        setStoreInfo(prev => ({ ...prev, hero_image_url: resized }));
-      } catch (err) {
-        console.error('Error al procesar imagen hero:', err);
-        alert('Error al procesar la imagen.');
-      }
-    };
-    reader.readAsDataURL(file);
+    setUploadingHero(true);
+    try {
+      const blob = await resizeHeroImageToBlob(file);
+      const storagePath = `branding/hero_banner_${Date.now()}.jpg`;
+      const publicUrl = await db.uploadFile('product-images', storagePath, blob);
+      setStoreInfo(prev => ({ ...prev, hero_image_url: publicUrl }));
+      showToast('Banner optimizado y subido a Storage. Guarda los cambios para aplicar.', 'success');
+    } catch (err) {
+      console.error('Error al procesar e imagen hero:', err);
+      showToast('Error al procesar el banner: ' + (err.message || 'Error desconocido'), 'error');
+    } finally {
+      setUploadingHero(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleMigrateBase64Hero = async () => {
+    if (!storeInfo.hero_image_url?.startsWith('data:image/')) return;
+    setUploadingHero(true);
+    try {
+      const res = await fetch(storeInfo.hero_image_url);
+      const blob = await res.blob();
+      const storagePath = `branding/hero_banner_migrated_${Date.now()}.jpg`;
+      const publicUrl = await db.uploadFile('product-images', storagePath, blob);
+      setStoreInfo(prev => ({ ...prev, hero_image_url: publicUrl }));
+      showToast('Banner Base64 migrado a Supabase Storage con éxito. Haz clic en Guardar Cambios.', 'success');
+    } catch (err) {
+      console.error('Error migrando banner:', err);
+      showToast('Error migrando banner: ' + (err.message || 'Error desconocido'), 'error');
+    } finally {
+      setUploadingHero(false);
+    }
   };
 
   // Payment Methods CRUD
@@ -697,19 +740,34 @@ const Settings = () => {
                     )}
                     <label htmlFor="hero-image-input" style={{ 
                       position: 'absolute', bottom: '12px', right: '12px', padding: '8px 12px', 
-                      background: 'rgba(0,0,0,0.5)', borderRadius: '8px', color: 'white', cursor: 'pointer' 
+                      background: 'rgba(0,0,0,0.5)', borderRadius: '8px', color: 'white', cursor: uploadingHero ? 'not-allowed' : 'pointer' 
                     }}>
-                      <Upload size={14} /> Cambiar
+                      {uploadingHero ? <Loader2 size={14} className="spin" /> : <Upload size={14} />} {uploadingHero ? 'Subiendo...' : 'Cambiar'}
                       <input 
                         id="hero-image-input"
                         type="file" 
                         hidden 
+                        disabled={uploadingHero}
                         accept="image/png,image/jpeg,image/webp" 
                         aria-describedby="hero-image-help"
                         onChange={handleHeroImageFile} 
                       />
                     </label>
                   </div>
+                  {storeInfo.hero_image_url?.startsWith('data:image/') && (
+                    <div style={{ marginTop: '10px', padding: '10px 14px', background: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', fontSize: '13px', color: '#92400E' }}>
+                      <span>⚠️ El banner actual está almacenado en formato Base64 (pesado para conexiones móviles). Puedes migrarlo a Storage manteniendo la misma imagen.</span>
+                      <button 
+                        type="button" 
+                        onClick={handleMigrateBase64Hero}
+                        disabled={uploadingHero}
+                        className="btn-primary"
+                        style={{ padding: '6px 12px', fontSize: '12px', whiteSpace: 'nowrap' }}
+                      >
+                        {uploadingHero ? 'Migrando...' : 'Migrar a Storage'}
+                      </button>
+                    </div>
+                  )}
                   <ImageUploadHelp
                     id="hero-image-help"
                     recommendedWidth={1920}
